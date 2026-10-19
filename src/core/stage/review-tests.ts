@@ -9,7 +9,6 @@ import { acceptanceDirOf, matchesAny, writesOwnAcceptance } from '../state/paths
 import { commandsOnBranch } from '../state/project-commands.ts';
 import { TEST_GLOBS } from '../verify/test-adjust.ts';
 import { scanAcCoverage } from '../acceptance/coverage.ts';
-import { isArchitectTask } from '../plan/plan-flow.ts';
 
 /** 选择依据：本 task 改动的单元测试文件，以及 lean 共享验收目录下本 task 新增或修改的场景文件（相对 tests/acceptance/，如 suite/a.test.js）；accFiles 为 undefined 表示按目录名运行 */
 export interface TestSelection {
@@ -82,7 +81,8 @@ export const onlyDocs = (files: readonly string[]): boolean => files.length > 0 
 export function reviewTestPlan(config: FlowConfig, t: TaskFile, integrationBranch?: string): ReviewTestPlan {
   const wt = t.worktree;
   if (!wt) return { run: [], skipped: [] };
-  if (isArchitectTask(t)) {
+  // architect 的实现任务（S0 与最后的收尾整理）改的是整个仓库：跑全量
+  if (t.kind === 'impl' && t.role === 'architect') {
     // 只改了文档（例如打回后只改 docs/plan.md）时不跑：再跑一遍全量是重复，文档引出的问题由第 1 批的回归与门禁兜底
     if (onlyDocs(changedFilesOf(t, integrationBranch, true))) return { run: [], skipped: ['本轮只改了文档（.md 文件），不用运行测试'], full: true };
     // 命令取架构师分支上的 commands.yaml：S0 合入之前集成分支上还没有（stock rework-01b：审查者拿到的是模板里的空命令，一条测试都没跑）

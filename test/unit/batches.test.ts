@@ -70,7 +70,7 @@ test('checkBatchPlan：别的 domain 写 after: [identity]、identity 不在第 
   assert.deepEqual(checkBatchPlan(planOf('batches:\n  - id: B1\n    backend: [identity, catalog]').plan!, parsePrd('')).warnings, []);
 });
 
-test('deriveBatchTasks：每批一个阶段；domain 任务按 after 排序与依赖；前端基础只在第一批；每批一个页面任务；接入真实接口依赖本批的页面任务与后端且不审查；前端任务跨批接着上一个前端任务的会话', () => {
+test('deriveBatchTasks：每批一个阶段；domain 任务按 after 排序与依赖；前端基础只在第一批；每批一个页面任务；接入真实接口依赖本批的页面任务与后端且不审查；前端任务跨批接着上一个前端任务的会话；最后一批之后 architect 收尾整理', () => {
   const plan = parseBatchPlan(PLAN_MD_TEXT).plan!;
   const { stages, tasks } = deriveBatchTasks(plan, prd, 2, { verify: ['test'] });
   assert.deepEqual(stages, [{ id: 'S1', goal: 'B1 基础资料', exit: ['REQ-001', 'REQ-002'] }, { id: 'S2', goal: 'B2 单据', exit: ['REQ-003'] }]);
@@ -78,7 +78,7 @@ test('deriveBatchTasks：每批一个阶段；domain 任务按 after 排序与�
     const t = tasks.find((x) => x.id === id)!;
     return [t.stage, t.title, t.depends_on.map((d) => d.task), t.fork_from_task ?? null, t.review ?? null];
   };
-  assert.deepEqual(tasks.map((t) => t.id), ['T-002', 'T-003', 'T-004', 'T-005', 'T-006', 'T-007', 'T-008', 'T-009', 'T-010']);
+  assert.deepEqual(tasks.map((t) => t.id), ['T-002', 'T-003', 'T-004', 'T-005', 'T-006', 'T-007', 'T-008', 'T-009', 'T-010', 'T-011']);
   assert.deepEqual(row('T-002'), ['S1', '后端 user', [], null, null]);
   assert.deepEqual(row('T-003'), ['S1', '后端 catalog', [], null, null]);
   assert.deepEqual(row('T-004'), ['S1', '后端 inventory', ['T-003'], null, null]);
@@ -88,6 +88,10 @@ test('deriveBatchTasks：每批一个阶段；domain 任务按 after 排序与�
   assert.deepEqual(row('T-008'), ['S2', '后端 purchase', [], null, null], '依赖前面批次的 domain 视为已满足');
   assert.deepEqual(row('T-009'), ['S2', '页面（B2）', [], 'T-007', null], '之后的批次没有前端依赖，接着上一批接入真实接口的会话');
   assert.deepEqual(row('T-010'), ['S2', '接入真实接口（B2）', ['T-008', 'T-009'], 'T-009', 'skip']);
+  assert.deepEqual(row('T-011'), ['S2', '收尾整理', ['T-008', 'T-009', 'T-010'], null, null], '等最后一批的任务都完成，照常审查');
+  const cleanup = tasks.at(-1)!;
+  assert.deepEqual([cleanup.role, cleanup.writes, cleanup.layers, cleanup.ac, cleanup.verify], ['architect', ['**'], ['backend', 'frontend'], undefined, ['test']]);
+  assert.match(cleanup.description!, /只整理、不改行为[\s\S]*脚手架[\s\S]*重复[\s\S]*统一写法[\s\S]*测试不删、不放宽/);
   const user = tasks.find((t) => t.id === 'T-002')!;
   assert.deepEqual(user.writes, ['src/server/user/**', 'tests/acceptance/T-002/**']);
   assert.deepEqual(user.shared, ['src/shared/**']);
@@ -99,9 +103,9 @@ test('deriveBatchTasks：每批一个阶段；domain 任务按 after 排序与�
   assert.equal(pages.page, undefined);
   assert.ok(tasks.every((t) => t.kind === 'impl'));
   // 角色决定调度池：domain 任务是 backend（带 domain），前端基础、页面任务（带 pages）、接入真实接口是 frontend
-  assert.deepEqual(tasks.map((t) => t.role), ['backend', 'backend', 'backend', 'frontend', 'frontend', 'frontend', 'backend', 'frontend', 'frontend']);
-  assert.deepEqual(tasks.map((t) => t.layers![0]), tasks.map((t) => t.role));
-  assert.deepEqual(tasks.map((t) => t.domain ?? t.pages ?? null), ['user', 'catalog', 'inventory', null, ['login', 'products'], null, 'purchase', ['purchase-orders'], null]);
+  assert.deepEqual(tasks.map((t) => t.role), ['backend', 'backend', 'backend', 'frontend', 'frontend', 'frontend', 'backend', 'frontend', 'frontend', 'architect']);
+  assert.deepEqual(tasks.slice(0, -1).map((t) => t.layers![0]), tasks.slice(0, -1).map((t) => t.role));
+  assert.deepEqual(tasks.map((t) => t.domain ?? t.pages ?? null), ['user', 'catalog', 'inventory', null, ['login', 'products'], null, 'purchase', ['purchase-orders'], null, null]);
 });
 
 test('domain 的 reqs：后端任务的 AC 由它展开；没写 reqs 的 domain 与页面任务没有 AC；PRD 里找不到的编号只提醒', () => {

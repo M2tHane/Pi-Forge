@@ -34,6 +34,7 @@ test('批次验收：must 按归属建修复（页面归页面任务、跨 domai
       return submitWork(a, `修复 ${id}`, Object.fromEntries(t.writes.filter((w) => !w.includes('*')).map((f) => [f, `// 已修复（${id}）\n`])));
     }
     if (role === 'backend' || role === 'frontend') return submitWork(a, `${id} 完成`, { [FILE[id]!]: `export const id = '${id}';\n` });
+    if (role === 'architect') return submitWork(a, '收尾整理', { 'src/shared/cleanup.ts': '// 收尾整理\n' });
     if (role === 'stage-qa') {
       qaRuns.push(id);
       if (id === 'S1.qa') {
@@ -86,6 +87,8 @@ test('批次验收：must 按归属建修复（页面归页面任务、跨 domai
     await drive(e, p.flowId, 60);
     assert.deepEqual(e.errors, []);
     assert.deepEqual(qaRuns, ['S1.qa', 'S1.qa-2', 'S2.qa']);
+    const cleanup = p.store.listTasks(p.flowId).find((t) => t.title === '收尾整理')!;
+    assert.deepEqual([cleanup.stage, cleanup.role, cleanup.status], ['S2', 'architect', 'done'], '最后一批在浏览器验收之前收尾整理');
     assert.deepEqual([flow().stage, flow().stage_status], ['S2', 'awaiting_human']);
     assert.match(handoffs['T-009.rv']!, /原型：docs\/prototype\/purchase-orders\.html[\s\S]*没找到这一页的部分/);
 

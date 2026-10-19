@@ -80,7 +80,7 @@ test('S0：缺必需文件时提交被退回 → 补齐后提交 → 审查者�
     assert.match(renderStatus(p.store, p.config), /架构产出已合入主分支，等你在主工作区验收后批准/);
 
     const out = await runFlowCommand('approve', e.cmd);
-    assert.match(out, /架构产出在 main 上[\s\S]*已生成 2 个批次阶段（S1、S2）与 9 个 task[\s\S]*进入阶段 S1/);
+    assert.match(out, /架构产出在 main 上[\s\S]*已生成 2 个批次阶段（S1、S2）与 10 个 task[\s\S]*进入阶段 S1/);
     assert.equal(p.git('rev-parse', 'main'), merged, '批准时不再合入');
     const after = p.store.readFlow(p.flowId);
     assert.deepEqual(after.stages, ['S0', 'S1', 'S2']);
@@ -91,7 +91,7 @@ test('S0：缺必需文件时提交被退回 → 补齐后提交 → 审查者�
     const titles = p.store.listTasks(p.flowId).filter((t) => t.stage !== 'S0').map((t) => `${t.id} ${t.stage} ${t.title}`);
     assert.deepEqual(titles, [
       'T-002 S1 后端 user', 'T-003 S1 后端 catalog', 'T-004 S1 后端 inventory', 'T-005 S1 前端基础', 'T-006 S1 页面（B1）', 'T-007 S1 接入真实接口（B1）',
-      'T-008 S2 后端 purchase', 'T-009 S2 页面（B2）', 'T-010 S2 接入真实接口（B2）',
+      'T-008 S2 后端 purchase', 'T-009 S2 页面（B2）', 'T-010 S2 接入真实接口（B2）', 'T-011 S2 收尾整理',
     ]);
     assert.deepEqual(p.store.readTask(p.flowId, 'T-004').depends_on.map((d) => d.task), ['T-003']);
     assert.deepEqual(p.store.readTask(p.flowId, 'T-007').depends_on.map((d) => d.task), ['T-002', 'T-003', 'T-004', 'T-006']);

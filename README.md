@@ -111,7 +111,7 @@ tasks:
   → 后端 domain 并行、前端一个任务做完本批页面 → 逐个审查（页面按页并行审查）→ 合并
   → 本批页面与 domain 都完成 → 前端接入真实接口 → 门禁 → 浏览器验收 → 修复 → 复验 → 等你签收
 /forge-approve
-  → 下一批……最后一批签收后合入主分支（交付）
+  → 下一批……最后一批的任务做完后 architect 从整个仓库收尾整理，再门禁、浏览器验收；签收后合入主分支（交付）
 ```
 
 ### 架构阶段（S0）
@@ -123,7 +123,7 @@ tasks:
 | 代码 | 项目骨架、公共代码（统一响应、错误码、异常、枚举）、鉴权接口与只用于开发和测试的桩（真实实现是 identity domain，和别的 domain 并行开发）、domain 间接口与 DTO（空实现）、domain 骨架、数据库迁移配置、前端骨架（路由外壳、从 OpenAPI 生成的客户端与 mock）、检查工具（`arch_check`、`contract_check`、lint）、测试基础与一条前端 → API → 数据库的冒烟测试 |
 | 文档 | `AGENTS.md`（目录）、`docs/arch/overview.md`、`docs/arch/domains.md`、`docs/arch/decisions.md`、`docs/contracts/openapi.yaml`、`docs/contracts/page-api.md`、`docs/conventions.md`、`rules/backend.md`、`rules/frontend.md`、`commands.yaml`、`docs/plan.md` |
 
-提交时程序检查必需文件都在（AGENTS.md、overview、domains、openapi、page-api、commands.yaml 要有 test、plan.md），`docs/plan.md` 最后一节「## 程序读取的部分」的 yaml 能解析、调度做得下去（批次或 domain 不重名、`after` 指向存在且不更晚的 domain、不成环、批次不为空）；不满足就退回给 architect。其余（REQ 没进任何批次、页面 id 在 PRD 里找不到）只提醒。
+提交时程序检查必需文件都在（AGENTS.md、overview、domains、openapi、page-api、commands.yaml 要有 test、plan.md），`docs/plan.md` 最后一节「## 程序读取的部分」的 yaml 能解析、调度做得下去（批次或 domain 不重名、`after` 指向存在且不更晚的 domain、不成环、批次不为空）、PRD 的每条 REQ 都进了批次；不满足就退回给 architect。其余（页面 id 在 PRD 里找不到等）只提醒。
 
 审查时 reviewer 在架构师的分支上跑全量 `test` 与 `acceptance`（命令取那个分支上的 `commands.yaml`；这一轮只改了 `.md` 文件时不跑）。合入集成分支后，S0 的门禁不再跑测试，而是把集成分支 `--no-ff` 合入主分支（集成分支移到合入的提交），再在主工作区执行 `install` 与 `env_up`；主工作区有未提交的改动时合入失败，按门禁出错自动重试。然后等你在主工作区验收：批准页显示 plan.md 的说明部分、风险与假设、PRD 与计划的提醒和项目命令。`/forge-reject "<意见>"` 时 architect 接着原会话返工，返工合入后再合入主分支一次；`/forge-approve` 时不再合并，直接生成批次。
 
@@ -137,6 +137,7 @@ tasks:
 | 前端基础（只在第 1 批）：照原型的 `DESIGN.md`、`theme.css` 建公共组件 | frontend | 无 |
 | 每个页面一个 | frontend | 前一个页面；同一时间只有一个前端任务，接着同一个会话做 |
 | 接入真实接口（每批一个） | frontend | 本批所有页面与 domain；不单独审查，由本批浏览器验收检查 |
+| 收尾整理（只在最后一批）：删开发期的脚手架、合并同形的重复、统一写法，不改行为 | architect | 最后一批的全部任务；审查者跑全量测试 |
 
 - 新增常量、枚举值、错误码由开发 agent 自己加；plan.md 的 `shared` 文件只能追加（程序只在审查材料里提醒，不拦）。双方都只追加时合并由程序自动完成。
 - 修改或删除已有公共内容、改契约：开发 agent 调用 `forge_ask_architect`，自己不改。`docs/contracts/**`、`docs/arch/**`、`docs/plan.md`、`AGENTS.md`、`rules/**` 对后端和前端是受保护路径。
@@ -183,7 +184,7 @@ tasks:
 | 角色 | 做什么 | 能写什么 | bash |
 |---|---|---|---|
 | orchestrator（主会话） | 汇报进度；提醒你批准或签收；处理程序交上来的判断；技术问题交给架构师；签收打回时判断归属 | 无 | 无 |
-| architect | 架构阶段的全部产出；之后回答技术问题、修改公共内容与契约、修复归属不清的问题 | 工作区内除 PRD 与原型外的文件 | full |
+| architect | 架构阶段的全部产出；之后回答技术问题、修改公共内容与契约、修复归属不清的问题；最后收尾整理 | 工作区内除 PRD 与原型外的文件 | full |
 | backend | 一个 domain 的整条后端链路 | 除受保护路径外的文件 | full |
 | frontend | 前端基础与全部页面、每批的接入真实接口；同一时间只有 1 个 | 除受保护路径外的文件 | full |
 | reviewer | 审查架构产出、每个 domain、每个页面 | 无 | allowlist（只读命令加 `test`、`acceptance`、`typecheck`、`lint`、`arch_check`、`contract_check`） |

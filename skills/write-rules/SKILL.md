@@ -25,10 +25,10 @@ description: 写项目命令（commands.yaml）与编码规则（rules/backend.m
 
 | 文件 | 写什么 |
 |---|---|
-| `rules/backend.md` | 分层与依赖方向、domain 之间怎么调用（只经接口，不读写别人的表）、controller 怎么组织、错误码怎么抛、权限检查放在哪一层、迁移的命名与写法、事务、禁止的写法（拼接 SQL） |
+| `rules/backend.md` | 分层与依赖方向、domain 之间怎么调用（只经接口，不读写别人的表）、几个 domain 都要做的事用哪个公共函数（编号生成、共用的校验）、controller 怎么组织、错误码怎么抛、权限检查放在哪一层、迁移的命名与写法、事务、禁止的写法（拼接 SQL） |
 | `rules/frontend.md` | 目录、请求方式（只用生成的客户端）、mock 怎么切到真实接口、路由、表单校验、加载/空/错误/无权限四种状态的统一组件、怎样对照原型 |
 
-通用的约定写进 docs/conventions.md，两份规则不要重复。
+通用的约定写进 docs/conventions.md，两份规则不要重复。reviewer 只能拿规则条目、PRD 和契约当"必须改"的出处：要求每个 domain 都照做、又要审查把关的做法，写成规则条目，不要只写在 conventions.md 或名词表里。
 
 ## 写法
 

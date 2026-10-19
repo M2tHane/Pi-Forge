@@ -123,7 +123,7 @@ test/            unit/（纯函数与用 git 的单元测试）、e2e/（用假�
 **① 生成**（`core/plan/batches.ts`：`deriveBatchTasks`）
 
 - `/forge-build` 先把 `docs/PRD.md`、`docs/ARCHITECTURE.md` 与 `docs/prototype/` 提交到主分支（只含这几个路径），集成分支从这个提交开出。
-- 架构产出审查通过后已由架构阶段的门禁合入主分支；你批准时，程序读 `docs/plan.md` 最后一节的 yaml，为每个批次生成阶段与任务：每个 domain 一个后端任务、第 1 批的前端基础、每批一个页面任务（`pages` 列出本批页面）、每批一个接入真实接口的任务。
+- 架构产出审查通过后已由架构阶段的门禁合入主分支；你批准时，程序读 `docs/plan.md` 最后一节的 yaml，为每个批次生成阶段与任务：每个 domain 一个后端任务、第 1 批的前端基础、每批一个页面任务（`pages` 列出本批页面）、每批一个接入真实接口的任务，最后一批再加一个 architect 的收尾整理任务。
 
 **② 派发**（`core/engine/dispatcher.ts`：`Engine.next` → `dispatch`）
 

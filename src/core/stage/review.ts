@@ -368,7 +368,7 @@ function testsSection(tests: ReviewTestPlan, confirm: boolean): string {
     ? '确认轮也先运行这些命令。测试仍失败，或者新失败：把与失败相关的条目（找不到相关条目就用第一条）标 resolved=false，note 里写命令与失败摘要。'
     : '先运行这些命令再读 diff。测试失败是阻塞问题：提交 must，basis 写 `defect:<命令> 失败：<失败的用例与原因>`，file 写出错的源文件，expected 写“该命令通过”。区分环境问题（依赖缺失、端口被占用等）与代码问题，环境问题用 forge_block 说明，不要当成代码缺陷。';
   const head = !tests.full ? '## 先运行本 task 自己的测试（全量测试与全部验收测试在阶段门禁）'
-    : tests.run.length ? '## 先在架构师的分支上运行全量测试与验收测试（S0 的门禁不跑测试，只在这里跑）' : '## 测试';
+    : tests.run.length ? '## 先在架构师的分支上运行全量测试与验收测试（改动涉及整个仓库）' : '## 测试';
   return `${head}\n${cmds}${skipped}\n\n${how}只运行上面列出的命令，不要运行别的测试命令。`;
 }
 

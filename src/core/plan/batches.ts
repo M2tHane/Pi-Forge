@@ -174,6 +174,7 @@ function pageBrief(prd: Prd, id: string, n: number): string {
  * 第一个有页面的批次先做前端基础（单独审查、合并，页面的写法主要由它决定）；每批的页面是一个页面任务（pages 按 plan.md 的顺序），
  * 前端在一个任务里连续做完、每页一个 commit，审查按页拆开；有页面的批次最后接入真实接口（依赖本批的页面任务与后端，不单独审查）。
  * 每个前端任务接着计划顺序里上一个前端任务的会话做（跨批也接，会话太大时程序开新会话）。
+ * 最后一批的任务都完成后，architect 从整个仓库收尾整理一遍，之后才是最后一批的门禁与浏览器验收。
  */
 export function deriveBatchTasks(plan: BatchPlan, prd: Prd, firstId: number, opts: { verify?: string[] } = {}): { stages: PlanStage[]; tasks: TaskInput[] } {
   let n = firstId;
@@ -235,5 +236,19 @@ export function deriveBatchTasks(plan: BatchPlan, prd: Prd, firstId: number, opt
     tasks.push(integrate);
     prevFront = integrate.id;
   });
+  // 各 domain 并行开发、互相看不到，整个仓库只有这里有人统一看一遍
+  //（stock rework-02：鉴权桩与占位路由留在产品里，采购与销售的明细校验各写一份，三种单据三种单号生成方式）
+  const last = stages.at(-1)!.id;
+  tasks.push({ id: nextId(), stage: last, kind: 'impl', role: 'architect', title: '收尾整理', description: CLEANUP_BRIEF, scopes: ['code'], layers: ['backend', 'frontend'],
+    depends_on: tasks.filter((t) => t.stage === last).map((t) => hard(t.id, '收尾整理要等最后一批的任务都完成')), inputs: [], writes: ['**'], verify: [...(opts.verify ?? [])] });
   return { stages, tasks };
 }
+
+/** 收尾整理的任务说明（审查者也看这份） */
+const CLEANUP_BRIEF = [
+  '全部批次的功能都已合入。从整个仓库看一遍，只整理、不改行为：',
+  '1. 删掉开发期的脚手架：S0 的占位代码、鉴权桩与选择桩的逻辑（真实实现已合入）、没人调用的函数与文件；docs/arch/ 与 AGENTS.md 里对应的说明一起改。',
+  '2. 合并同形的重复：几个 domain 或页面各写了一份的同一类逻辑（例如几种单据各自的明细校验与编号生成、几乎一样的列表页），抽成一份。',
+  '3. 统一写法：同一件事有几种做法的，按 docs/arch/ 与 rules/ 统一成一种；约定没写的，选用得最多的那种。',
+  '接口、页面行为与 PRD 要求的结果都不变；测试不删、不放宽（重复的测试辅助代码可以合并）。改完跑全量测试与全部验收测试，都通过再提交。',
+].join('\n');
