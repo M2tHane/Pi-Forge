@@ -108,9 +108,12 @@ test('stage-qa 在临时 worktree 里按隔离工作区约束：写不到主工�
     `python3 -c 'open("${main}/src/server/a.ts","w")'`, `cp src/server/a.ts ${main}/src/server/b.ts`, `echo x > ${main}/src/server/a.ts`, `cat ../../proj/src/server/a.ts`]) {
     blocked(checkToolCall(bash(cmd), c));
   }
-  for (const cmd of ['pnpm test', 'curl -s http://localhost:41000/api/health', `echo result > ${scratch}/result.txt`, 'cat src/server/a.ts', `ls ${wt}/src/server`]) {
+  for (const cmd of ['pnpm test', 'curl -s http://localhost:41000/api/health', `echo result > ${scratch}/result.txt`, 'cat src/server/a.ts', `ls ${wt}/src/server`,
+    "sed -n '/purchase-orders/,+5p' docs/a.yaml", `sed -n -e '/heading "采购单"/,$p' ${scratch}/pos.md`]) {
     allowed(checkToolCall(bash(cmd), c));
   }
+  // sed 的脚本不当路径，但读的文件、写文件的脚本照常检查
+  for (const cmd of ["sed -n '/x/,+5p' /etc/hosts", `sed -n '1w ${main}/x' docs/a.yaml`]) blocked(checkToolCall(bash(cmd), c), 'read_paths');
   // 主工作区路径是工作区路径的前缀（<项目>.worktrees/…）时不误伤
   assert.ok(wt.startsWith(main));
 });
@@ -487,9 +490,10 @@ test('只读档位：可以读其他提交（git show、log -p、diff <版本>�
 test('只读档位：按行号打印的 sed、node --check、git -C 放行；sed 改文件、写文件、执行命令的写法仍拦', () => {
   const c = ctx('reviewer');
   for (const cmd of ['sed -n 1,60p docs/spec/requirements.md', "sed -n '212,216p' src/a.js", "cat -A src/a.js | sed -n '8,16p'", "sed -n -e '1,5p' -e '$p' src/a.js",
-    "sed -n '10p;20,30p' src/a.js", 'node --check src/a.js', 'node -c src/a.js && echo ok', 'git -C . diff --stat', `git -C ${wt} diff HEAD~1 --stat`]) allowed(checkToolCall(bash(cmd), c));
+    "sed -n '10p;20,30p' src/a.js", 'node --check src/a.js', 'node -c src/a.js && echo ok', 'git -C . diff --stat', `git -C ${wt} diff HEAD~1 --stat`,
+    'timeout 60 pnpm test:acceptance -- T-003', 'ps aux | grep node']) allowed(checkToolCall(bash(cmd), c));
   for (const cmd of ["sed -i '' 1d src/a.js", "sed -n '1,5w out.txt' src/a.js", "sed 's/a/b/w out.txt' src/a.js", "sed -n '1e rm x' src/a.js", 'sed -n "$S" src/a.js',
-    'node src/a.js', 'node --check', 'node --check --eval x', 'git --git-dir=/tmp/x log', 'git -C . commit -m x']) blocked(checkToolCall(bash(cmd), c), 'bash');
+    'node src/a.js', 'node --check', 'node --check --eval x', 'git --git-dir=/tmp/x log', 'git -C . commit -m x', 'timeout 5 rm x', 'nice ls']) blocked(checkToolCall(bash(cmd), c), 'bash');
 });
 
 test('只读档位：只输出到标准输出的 sed、看不出写文件的 node -e 与 python -c、for 循环与 paste 放行；写文件、起子进程的仍拦', () => {

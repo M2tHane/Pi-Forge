@@ -26,7 +26,8 @@ export function wrapUpMessage(minutes: number, grace: number): string {
   return [
     `⏰ 本次运行的时间预算（${minutes} 分钟）已用完。请在 ${grace} 分钟内收尾，不要再开始新的尝试：`,
     '1. 用 forge_note 写 handoff：做到哪、下一步打算怎么做、卡在哪（试过什么、结果如何）。',
-    '2. 已经做完就照常提交（forge_submit）；没做完就停下，本地改动先 git commit 作为检查点。',
+    // stock rework-02：T-003 收到提醒后提交了验收测试会挂住的改动，审查花了近 40 分钟才把它退回
+    '2. 做完了（实现任务还要本任务的测试都通过）才提交（forge_submit）。没做完、测试没过就不要提交：停下，本地改动先 git commit 作为检查点。',
     `${grace} 分钟后本次运行会被结束；主会话会查看进度，决定接着做、换个思路重来，还是交给用户。`,
   ].join('\n');
 }

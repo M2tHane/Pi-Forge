@@ -227,7 +227,7 @@ const FILE_OPS = new Set(['rm', 'mv', 'cp', 'rmdir']);
 const READONLY_COMMANDS = new Set([
   'ls', 'cat', 'head', 'tail', 'wc', 'grep', 'egrep', 'fgrep', 'rg', 'find', 'git', 'pwd', 'echo', 'printf', 'tree', 'file',
   'stat', 'du', 'sort', 'uniq', 'cut', 'tr', 'diff', 'cmp', 'jq', 'which', 'basename', 'dirname', 'realpath', 'true', 'false',
-  'test', '[', 'nl', 'column', 'comm', 'shasum', 'sha256sum', 'md5', 'md5sum', 'xxd', 'hexdump', 'od', 'date', 'cd', 'paste', 'read',
+  'test', '[', 'nl', 'column', 'comm', 'shasum', 'sha256sum', 'md5', 'md5sum', 'xxd', 'hexdump', 'od', 'date', 'cd', 'paste', 'read', 'ps',
 ]);
 const GIT_READONLY = new Set([
   'log', 'show', 'diff', 'status', 'blame', 'ls-files', 'ls-tree', 'rev-parse', 'cat-file', 'grep', 'shortlog', 'describe',
@@ -487,7 +487,8 @@ class BashChecker {
       }
       const base = path.basename(name.text);
       if (!WRAPPERS.has(base)) break;
-      if (this.readonly && !['xargs', 'command', 'time'].includes(base)) {
+      // timeout 只给里面的命令限时，里面的命令照常检查（stock rework-02：reviewer 给验收测试加 timeout 被拦）
+      if (this.readonly && !['xargs', 'command', 'time', 'timeout'].includes(base)) {
         return { decision: deny('bash', `只读角色不能使用 ${base}。${this.ev.hint()}`) };
       }
       if (base === 'sudo') return { decision: deny('bash', `禁止使用 sudo：${IMPL_FORBIDDEN['sudo']}。`) };
@@ -528,7 +529,10 @@ class BashChecker {
       if (mainRef) for (const w of words) {
         if (mainRef.test(w.text)) return { decision: deny('read_paths', `不能在命令里引用主工作区的路径：${w.text.slice(0, 200)}。只在当前工作区与临时目录里工作。`) };
       }
+      // sed 的脚本（'/purchase-orders/,+5p'）不是路径（stock rework-02：stage-qa 的 sed 地址被当成工作区外的路径拦了 7 次）
+      const sedScript = name === 'sed' || name === 'gsed' ? sedScripts(args).filter((w) => !sedScriptWrites(w)) : [];
       for (const w of args) {
+        if (sedScript.includes(w)) continue;
         const d = this.ev.checkIsolatedPath(w.text.includes('=') && w.text.startsWith('-') ? w.text.slice(w.text.indexOf('=') + 1) : w.text, cwd);
         if (!d.allow) return { decision: d };
       }
@@ -825,18 +829,28 @@ export function allowedByList(words: readonly Word[], prefixes: readonly string[
 
 /** sed 的脚本只有按行号打印（sed -n '10,40p;$p' 文件）：不写文件、不执行命令；-i、w、e 等别的写法都不算 */
 /** sed 只把结果写到标准输出：没有 -i，脚本里没有 w、W（写文件）与 e（执行命令），也没有带 w、e 标志的 s 命令 */
-function sedToStdout(args: readonly Word[]): boolean {
+/** sed 的脚本：-e 的值；没有 -e 时是第一个非选项参数 */
+function sedScripts(args: readonly Word[]): Word[] {
   const scripts: Word[] = [];
   const operands: Word[] = [];
   for (let i = 0; i < args.length; i++) {
     const t = args[i]!.text;
-    if (t === '-e' || t === '--expression') { const s = args[++i]; if (!s) return false; scripts.push(s); }
-    else if (t.startsWith('-')) { if (!['-n', '--quiet', '--silent', '-E', '-r', '--regexp-extended', '-u', '--unbuffered'].includes(t)) return false; }
-    else operands.push(args[i]!);
+    if (t === '-e' || t === '--expression') { const s = args[++i]; if (s) scripts.push(s); }
+    else if (!t.startsWith('-')) operands.push(args[i]!);
   }
-  if (!scripts.length && operands[0]) scripts.push(operands[0]);
-  const writes = (t: string) => /(^|[;{}\n0-9$/])\s*[wWe](\s|$)/.test(t) || /s(.)(?:\\.|(?!\1).)*\1(?:\\.|(?!\1).)*\1[gpiImM0-9]*[we]/.test(t);
-  return scripts.length > 0 && scripts.every((s) => !s.dynamic && !writes(s.text));
+  return scripts.length || !operands[0] ? scripts : [operands[0]];
+}
+
+/** 脚本含变量，或有写文件、执行命令的 w、W、e 与 s///w、s///e */
+function sedScriptWrites(s: Word): boolean {
+  return s.dynamic || /(^|[;{}\n0-9$/])\s*[wWe](\s|$)/.test(s.text) || /s(.)(?:\\.|(?!\1).)*\1(?:\\.|(?!\1).)*\1[gpiImM0-9]*[we]/.test(s.text);
+}
+
+function sedToStdout(args: readonly Word[]): boolean {
+  const stdoutOpts = ['-n', '--quiet', '--silent', '-E', '-r', '--regexp-extended', '-u', '--unbuffered', '-e', '--expression'];
+  if (args.some((w, i) => w.text.startsWith('-') && !stdoutOpts.includes(w.text) && !['-e', '--expression'].includes(args[i - 1]?.text ?? ''))) return false;
+  const scripts = sedScripts(args);
+  return scripts.length > 0 && !scripts.some(sedScriptWrites);
 }
 
 // 内联脚本里写文件、删文件、起子进程的写法（node 的 fs 与 child_process，python 的 open(…, 'w')、os、shutil、subprocess、pathlib）
