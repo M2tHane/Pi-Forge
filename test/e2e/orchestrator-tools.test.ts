@@ -88,3 +88,12 @@ test('自动派发：ready 任务由引擎派发，依赖完成后接着派发�
     assert.ok(Date.now() - t0 < 10_000);
   } finally { p.cleanup(); }
 });
+
+test('forge_status：阶段检查中（awaiting_gate）写明结论还没出、不要请用户签收', async () => {
+  const p = await setupProject({ stages: ['S1'] });
+  try {
+    assert.doesNotMatch(statusText(p.store, null, p.flowId), /不要请用户签收/);
+    await p.store.transitionStage(p.flowId, { to: 'awaiting_gate', trigger: 'submit_gate', actor: 'engine' });
+    assert.match(statusText(p.store, null, p.flowId).split('\n')[0]!, /阶段 S1：awaiting_gate（程序在跑阶段检查与 stage-qa，结论还没出：不要请用户签收/);
+  } finally { p.cleanup(); }
+});

@@ -134,8 +134,10 @@ export function statusText(store: StateStore, engine: Engine | null, flowId: str
   const flow = store.readFlow(flowId);
   const tasks = store.listTasks(flowId);
   const count = (s: string) => tasks.filter((t) => t.status === s).length;
+  // stock rework-02：stage-qa 刚交报告、程序还没处理时主会话看到 awaiting_gate，当成验收通过叫用户签收，半分钟后验收判不通过
+  const gating = flow.stage_status === 'awaiting_gate' ? '（程序在跑阶段检查与 stage-qa，结论还没出：不要请用户签收，用 forge_wait 等结果）' : '';
   const lines = [
-    `流程 ${flow.id}「${flow.title}」（${flow.mode}）阶段 ${flow.stage}：${flow.stage_status}`,
+    `流程 ${flow.id}「${flow.title}」（${flow.mode}）阶段 ${flow.stage}：${flow.stage_status}${gating}`,
     `任务 ${tasks.length} 个：${TASK_STATUSES.filter((s) => count(s)).map((s) => `${s} ${count(s)}`).join('，') || '无'}`,
   ];
   if (isLightFlow(flow)) lines.push(fixStatusLine(flow, tasks));

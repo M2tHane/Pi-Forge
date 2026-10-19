@@ -4,14 +4,13 @@ export const ARCH_PRD = [
   '### 登录  REQ-001', '- AC1 Given 已注册 When 登录 Then 进入首页', '',
   '### 商品  REQ-002', '- AC1 Given 已登录 When 新建商品 Then 列表里出现', '',
   '### 采购单  REQ-003', '- AC1 Given 有商品 When 下采购单 Then 库存增加', '',
-  '### 报表  REQ-004', '- AC1 Given 有单据 When 打开报表 Then 看到汇总', '',
   '## 页面', '', '| 页面 | 原型文件 | 对应需求 |', '|---|---|---|',
   '| login | docs/prototype/login.html | REQ-001 |', '| products | docs/prototype/products.html | REQ-002 |', '| purchase-orders | docs/prototype/purchase-orders.html | REQ-003 |', '',
 ].join('\n');
 
 export const PLAN_MD_TEXT = [
   '# 计划', '', '## 总览', 'Node + SQLite；后端按 domain 并行，前端一个人按页面做。', '',
-  '## 风险与假设', '- 报表留到下一期（REQ-004 不在本计划里）', '- 价格按分存整数', '',
+  '## 风险与假设', '- 采购单不设审批（PRD 没写）', '- 价格按分存整数', '',
   '## 程序读取的部分', '', '```yaml',
   'max_parallel_backend: 2',
   'batches:',

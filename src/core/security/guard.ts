@@ -576,7 +576,7 @@ class BashChecker {
       if (args.some((w) => w.dynamic)) return { decision: ok };
       return { decision: this.check(args.map((w) => w.text).join(' '), cwd, depth + 1) };
     }
-    if (name === 'git') return { decision: this.checkGitImpl(args) };
+    if (name === 'git') return { decision: this.checkGitImpl(args, cwd) };
     if (name === 'find') return { decision: this.checkFind(args, cwd, depth) };
     return { decision: ok };
   }
@@ -690,16 +690,17 @@ class BashChecker {
       if (globals.length) return no(`git ${globals[0]}`);
       if (!g.sub || !GIT_READONLY.has(g.sub)) return no(`git ${g.sub ?? ''}`);
       if (g.rest.some((w) => w.text.startsWith('--output') || w.text === '-o' && g.sub !== 'log')) return no('git --output');
-      if (g.sub === 'branch' && g.rest.some((w) => !['-a', '-r', '-v', '-vv', '--list', '-l', '--show-current', '--all', '--remotes'].includes(w.text))) {
-        return no('git branch 只能列出分支');
-      }
+      if (g.sub === 'branch' && !gitBranchListsOnly(g.rest.map((w) => w.text))) return no('git branch 只能列出分支');
     }
     return ok;
   }
 
-  private checkGitImpl(args: Word[]): GuardDecision {
+  private checkGitImpl(args: Word[], cwd: string): GuardDecision {
     const g = parseGit(args);
-    if (g.globals.length) return deny('bash', `禁止使用 git ${g.globals[0]} 操作其他仓库或工作区。`);
+    // -C 指向本工作区之内的与 cd 等价（stock rework-02：backend 的 git -C . log 被拦）
+    const inWs = (w: Word | null | undefined) => !!w && !w.dynamic && !w.glob && !w.tilde && this.ev.classify(realpathDeep(path.resolve(cwd, w.text))).area === 'workspace';
+    const globals = g.globals.filter((x, i) => x !== '-C' || !inWs(g.dirs[i]));
+    if (globals.length) return deny('bash', `禁止使用 git ${globals[0]} 操作其他仓库或工作区。`);
     if (!g.sub) return ok;
     const rest = g.rest.map((w) => w.text);
     const why = GIT_IMPL_FORBIDDEN[g.sub];
@@ -728,9 +729,7 @@ class BashChecker {
         return ok;
       }
       case 'branch':
-        if (rest.some((a) => !['-a', '-r', '-v', '-vv', '--list', '-l', '--show-current', '--all', '--remotes'].includes(a))) {
-          return deny('bash', '禁止创建、删除、重命名分支；任务分支由引擎管理。');
-        }
+        if (!gitBranchListsOnly(rest)) return deny('bash', '禁止创建、删除、重命名分支；任务分支由引擎管理。');
         return ok;
       case 'config':
         if (!rest.some((a) => a === '--get' || a === '--list' || a === '-l' || a.startsWith('--get'))) {
@@ -864,17 +863,28 @@ function inlineScriptReadsOnly(name: string, args: readonly Word[]): boolean {
   return inline && !!script && !script.dynamic && !INLINE_WRITES.test(script.text) && args.slice(2).every((w) => !w.text.startsWith('-'));
 }
 
-function parseGit(args: Word[]): { globals: string[]; sub: string | null; rest: Word[] } {
+/** git 的全局选项、子命令与其余参数；dirs[i] 是 globals[i] 的值（-C 的目录） */
+function parseGit(args: Word[]): { globals: string[]; dirs: (Word | null)[]; sub: string | null; rest: Word[] } {
   const globals: string[] = [];
+  const dirs: (Word | null)[] = [];
   let k = 0;
   while (k < args.length && args[k]!.text.startsWith('-')) {
     const t = args[k]!.text;
-    if (t === '-C' || t === '--git-dir' || t === '--work-tree' || t === '--namespace') { globals.push(t); k += 2; continue; }
-    if (t.startsWith('--git-dir=') || t.startsWith('--work-tree=')) globals.push(t.split('=')[0]!);
+    if (t === '-C' || t === '--git-dir' || t === '--work-tree' || t === '--namespace') { globals.push(t); dirs.push(args[k + 1] ?? null); k += 2; continue; }
+    if (t.startsWith('--git-dir=') || t.startsWith('--work-tree=')) { globals.push(t.split('=')[0]!); dirs.push(null); }
     if (t === '-c') { k += 2; continue; }
     k++;
   }
-  return { globals, sub: args[k]?.text ?? null, rest: args.slice(k + 1) };
+  return { globals, dirs, sub: args[k]?.text ?? null, rest: args.slice(k + 1) };
+}
+
+/**
+ * git branch 只列出分支：不带分支名，或用 --list、--contains、--merged、--points-at 筛选；带 -d、-m、-c、-u 等改分支的选项不算
+ *（stock rework-02：frontend 的 git branch --contains、git branch -a --list "*integration*" 被当成建分支拦下）
+ */
+function gitBranchListsOnly(rest: readonly string[]): boolean {
+  if (rest.some((a) => /^-[^-]*[dDmMcCfut]/.test(a) || /^--(delete|move|copy|force|set-upstream|unset-upstream|edit-description|track|no-track)/.test(a))) return false;
+  return rest.every((a) => a.startsWith('-')) || rest.some((a) => a === '--list' || a === '-l' || /^--((no-)?(contains|merged)|points-at)(=|$)/.test(a));
 }
 
 function extractPaths(input: Record<string, unknown>, keys: readonly string[]): string[] {

@@ -57,7 +57,6 @@ test('S0：缺必需文件时提交被退回 → 补齐后提交 → 审查者�
     assert.equal(submits[0]!.ok, false);
     assert.match(submits[0]!.text, /架构产出还不能提交（1 处）[\s\S]*- 缺少 docs\/arch\/domains\.md/);
     assert.equal(submits[1]!.ok, true, submits[1]!.text);
-    assert.match(submits[1]!.text, /提醒[\s\S]*REQ-004/);
     const arch = p.store.readTask(p.flowId, 'T-001');
     assert.deepEqual([arch.kind, arch.role, arch.stage, arch.status], ['impl', 'architect', 'S0', 'done']);
     assert.equal(p.store.readTask(p.flowId, 'T-001.rv').status, 'done', '架构产出经过审查');
@@ -75,7 +74,7 @@ test('S0：缺必需文件时提交被退回 → 补齐后提交 → 审查者�
     // 批准页：说明部分、风险与假设、提醒
     const step = nextStep(p.store, 3, 0, p.config);
     assert.equal(step.tool, 'none');
-    assert.match(step.next, /\/forge-approve[\s\S]*2 个批次[\s\S]*## 风险与假设\n- 报表留到下一期[\s\S]*REQ-004/);
+    assert.match(step.next, /\/forge-approve[\s\S]*2 个批次[\s\S]*## 风险与假设\n- 采购单不设审批/);
     assert.match(step.next, /docs\/plan\.md 的说明部分[\s\S]*Node \+ SQLite/);
     assert.doesNotMatch(statusText(p.store, null, p.flowId), /docs\/plan\.md 的说明部分/, '批准页只随每轮的下一步注入一份');
     assert.match(renderStatus(p.store, p.config), /架构产出已合入主分支，等你在主工作区验收后批准/);
@@ -140,7 +139,7 @@ test('S0 打回：新建 architect task 接着上一个的会话，意见写进 
 
 test('S0 的门禁合入主分支失败（主工作区有未提交的改动）：记事件、自动重试，处理后合入、等验收；打回返工后再合入一次，批准落地的是新计划', async () => {
   const p = await setupProject({ stages: ['S0'], files: INPUTS });
-  const onePlan = PLAN_MD_TEXT.replace(/ {2}- id: B2[\s\S]*?(?=shared:)/, '');
+  const onePlan = PLAN_MD_TEXT.replace(/ {2}- id: B2[\s\S]*?(?=shared:)/, '').replace('reqs: [REQ-001, REQ-002]', 'reqs: [REQ-001, REQ-002, REQ-003]');
   let run = 0;
   const { engine, errors } = makeEngine(p, async (role, _nth, a) => {
     assert.equal(role, 'architect');

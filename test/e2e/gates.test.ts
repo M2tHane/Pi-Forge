@@ -82,7 +82,7 @@ test('门禁的程序步骤出错（建测试库失败）：记事件、按间�
 
 test('S0 的门禁：架构产出合入 main、在主工作区执行 install 与 env_up，集成分支移到合入后的提交；S0 一律人工签收，批准时不再合入，之后的阶段在它上面继续', async () => {
   // 计划只有一个批次、一个后端 domain：批准后生成 S1 与 T-002「后端 user」
-  const plan = PLAN_MD_TEXT.replace(/batches:[\s\S]*?(?=shared:)/, 'batches:\n  - id: B1\n    reqs: [REQ-001]\n    backend:\n      - { domain: user }\n');
+  const plan = PLAN_MD_TEXT.replace(/batches:[\s\S]*?(?=shared:)/, 'batches:\n  - id: B1\n    reqs: [REQ-001, REQ-002, REQ-003]\n    backend:\n      - { domain: user }\n');
   const log = path.join(mkdtempSync(path.join(tmpdir(), 'forge-gate-')), 'cmd.log');
   const commands = `commands:\n  test: "true"\n  install: "echo install $(pwd -P) >> ${log}"\n  env_up: "echo env_up $(pwd -P) >> ${log}"\n`;
   const p = await setupProject({ yaml: PROJECT_YAML.replace(/^  human: true/m, '  human: false'), stages: ['S0'], files: { ...ARCH_FILES, 'commands.yaml': commands, 'docs/plan.md': plan },

@@ -240,6 +240,17 @@ test('实施角色：只读的 git reflog（不带子命令、show、exists）�
   }
 });
 
+test('git branch 只列出分支时放行（--contains、--list 的模式）；git -C 指向本工作区之内放行，指向别处仍拦', () => {
+  const c = ctx('worker', { writes: ['src/server/**'] });
+  for (const cmd of ['git branch --contains flow/B-001/T-004', 'git branch -a --list "*integration*"', 'git branch -vv', 'git branch --merged main', 'git branch --show-current',
+    'git -C . log --oneline -3', 'git -C src status --short', `git -C ${wt} diff`]) allowed(checkToolCall(bash(cmd), c));
+  for (const cmd of ['git branch x', 'git branch -d x', 'git branch -D x', 'git branch -m a b', 'git branch -u origin/x', 'git branch --list x -D', 'git branch --set-upstream-to=origin/x',
+    `git -C ${main} commit -am x`, 'git -C $D log', 'git -C ~ log', 'cd .. && git -C . log']) blocked(checkToolCall(bash(cmd), c), 'bash');
+  const rv = ctx('reviewer');
+  allowed(checkToolCall(bash('git branch --contains HEAD'), rv));
+  blocked(checkToolCall(bash('git branch x'), rv), 'bash', /只能列出分支/);
+});
+
 test('实施角色：正常命令放行；禁止列表之外判断不了的（命令名、sh -c、eval、重定向目标含变量）也放行', () => {
   const c = ctx('worker', { writes: ['src/server/**'] });
   for (const cmd of ["sed -i 's/a/b/' src/server/a.ts", "sed -Ei 's/a/b/' src/server/a.ts", "perl -pi -e 's/a/b/' src/server/a.ts", 'rm src/server/*.ts',

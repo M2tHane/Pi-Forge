@@ -147,8 +147,9 @@ export function checkBatchPlan(plan: BatchPlan, prd: Prd): { errors: string[]; w
   if (cycle) errors.push(`domain 的 after 形成环：${cycle.join(' → ')}`);
   const planned = new Set(plan.batches.flatMap((b) => b.reqs));
   const known = new Set(prd.reqs.map((r) => r.id));
+  // 漏掉的需求不会生成任务（stock rework-02：plan.md 正文把 REQ-015 归给 report，yaml 漏了；提醒了，架构师与两轮审查都没改）
   const missing = prd.reqs.filter((r) => !planned.has(r.id)).map((r) => r.id);
-  if (missing.length) warnings.push(`PRD 里这些需求没有出现在任何批次：${missing.join('、')}`);
+  if (missing.length) errors.push(`PRD 里这些需求没有出现在任何批次：${missing.join('、')}。每条需求都要放进一个批次的 reqs；要不要做由用户决定，觉得不该做的先问用户`);
   const unknownReqs = [...new Set([...planned, ...plan.batches.flatMap((b) => b.backend.flatMap((d) => d.reqs))])].filter((r) => !known.has(r));
   if (unknownReqs.length && prd.reqs.length) warnings.push(`批次里这些需求编号在 PRD 里找不到：${unknownReqs.join('、')}`);
   const unknownPages = plan.batches.flatMap((b) => b.frontend).filter((p) => !pageOf(prd, p));

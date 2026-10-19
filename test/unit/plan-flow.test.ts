@@ -98,7 +98,7 @@ test('ensureArchitectTask：不在 S0、或计划已经落地时不建', async (
   } finally { p.cleanup(); }
 });
 
-test('checkArchitecture：缺必需文件、commands.yaml 没有 test、plan.md 解析不过是错误；PRD 与计划的问题只提醒', () => {
+test('checkArchitecture：缺必需文件、commands.yaml 没有 test、plan.md 解析不过、需求没进批次是错误；PRD 的其他问题只提醒', () => {
   const dir = mkdtempSync(path.join(tmpdir(), 'forge-arch-'));
   const write = (files: Record<string, string>) => {
     for (const [rel, content] of Object.entries(files)) {
@@ -112,7 +112,10 @@ test('checkArchitecture：缺必需文件、commands.yaml 没有 test、plan.md 
     const ok = checkArchitecture({ dir });
     assert.deepEqual(ok.errors, []);
     assert.equal(ok.plan?.batches.length, 2);
-    assert.deepEqual(ok.warnings, ['PRD 里这些需求没有出现在任何批次：REQ-004']);
+    assert.deepEqual(ok.warnings, []);
+    write({ 'docs/PRD.md': `${ARCH_FILES['docs/PRD.md']}\n### 报表  REQ-004\n- AC1 Given 有单据 When 打开报表 Then 看到汇总\n` });
+    assert.match(checkArchitecture({ dir }).errors.join('\n'), /PRD 里这些需求没有出现在任何批次：REQ-004/);
+    write({ 'docs/PRD.md': ARCH_FILES['docs/PRD.md']! });
     write({ 'commands.yaml': 'commands:\n  serve: "node a.js"\n', 'docs/plan.md': ARCH_FILES['docs/plan.md']!.replace('after: [catalog]', 'after: [ghost]') });
     assert.deepEqual(checkArchitecture({ dir }).errors, ['commands.yaml 缺少 test 命令（阶段门禁与合并后回归要跑全量测试）', 'domain inventory 的 after 指向不存在的 domain ghost']);
     rmSync(path.join(dir, 'docs/prototype/products.html'));

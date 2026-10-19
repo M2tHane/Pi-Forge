@@ -12,7 +12,7 @@ test('splitPlan 与 risksSection：说明部分、yaml 区块、风险与假设'
   const { prose, yaml } = splitPlan(PLAN_MD_TEXT);
   assert.match(prose, /^# 计划[\s\S]*价格按分存整数$/);
   assert.match(yaml!, /^max_parallel_backend: 2\nbatches:/);
-  assert.equal(risksSection(prose), '- 报表留到下一期（REQ-004 不在本计划里）\n- 价格按分存整数');
+  assert.equal(risksSection(prose), '- 采购单不设审批（PRD 没写）\n- 价格按分存整数');
   assert.deepEqual(splitPlan('# 没有程序读取的部分'), { prose: '# 没有程序读取的部分', yaml: null });
 });
 
@@ -41,7 +41,7 @@ test('checkBatchPlan：只拦调度做不下去的（批次与 domain 重名、a
     '    backend: [{ domain: e }]',
     '  - id: B3',
   ].join('\n')).plan!;
-  assert.deepEqual(checkBatchPlan(bad, prd).errors, [
+  assert.deepEqual(checkBatchPlan(bad, parsePrd('')).errors, [
     '批次 id B1 重复',
     'domain a 重名（批次 B1 与 B1）',
     '批次 B3 既没有 backend 也没有 frontend',
@@ -51,12 +51,11 @@ test('checkBatchPlan：只拦调度做不下去的（批次与 domain 重名、a
   ]);
 });
 
-test('checkBatchPlan：没进批次的需求、PRD 里没有的需求与页面只提醒', () => {
+test('checkBatchPlan：没进批次的需求是错误；PRD 里没有的需求与页面只提醒', () => {
   const plan = planOf('batches:\n  - id: B1\n    reqs: [REQ-001, REQ-404]\n    frontend: [login, nope]').plan!;
   const r = checkBatchPlan(plan, prd);
-  assert.deepEqual(r.errors, []);
+  assert.deepEqual(r.errors, ['PRD 里这些需求没有出现在任何批次：REQ-002、REQ-003。每条需求都要放进一个批次的 reqs；要不要做由用户决定，觉得不该做的先问用户']);
   assert.deepEqual(r.warnings, [
-    'PRD 里这些需求没有出现在任何批次：REQ-002、REQ-003、REQ-004',
     '批次里这些需求编号在 PRD 里找不到：REQ-404',
     '这些页面 id 在 PRD 的页面表里找不到对应项：nope',
   ]);
@@ -129,7 +128,7 @@ test('splitPlan：优先取标了 yaml / yml 的代码块，没有时取第一�
 
 test('checkBatchPlan：页面 id 在批次内或跨批次重复是错误', () => {
   const plan = planOf('batches:\n  - id: B1\n    frontend: [login, products, login]\n  - id: B2\n    frontend: [products]').plan!;
-  assert.deepEqual(checkBatchPlan(plan, prd).errors, ['页面 login 在批次 B1 里出现了两次', '页面 products 重复（批次 B1 与 B2）']);
+  assert.deepEqual(checkBatchPlan(plan, parsePrd('')).errors, ['页面 login 在批次 B1 里出现了两次', '页面 products 重复（批次 B1 与 B2）']);
 });
 
 test('parseBatchPlan：id、页面、domain、需求写成数字时提示应是字符串', () => {
