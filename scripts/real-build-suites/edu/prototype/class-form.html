@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>新建与编辑班级 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-021。新建与编辑班级的表单：基本信息与每周上课时间。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">李娜（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html" class="on">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+<div class="crumbs"><a href="classes.html">班级</a> / 新建班级</div>
+    <div class="page-header"><h1>新建班级</h1></div>
+    <div class="proto-note">同一个页面用于新建（<code>/classes/new</code>，标题「新建班级」）和编辑（<code>/classes/:id/edit</code>，标题「编辑班级」，面包屑是「班级 / 三年级数学提高班 / 编辑」，打开时用 <code>GET /api/classes/:id</code> 填好各项）。只有 admin、academic 能打开，其他角色显示无权限。</div>
+
+    <form class="card">
+      <div class="card-header"><h2>基本信息</h2></div>
+      <div class="card-body">
+        <div class="alert alert-error">教室不属于所选校区</div>
+        <div class="form-grid">
+          <div class="field span-2"><label class="field-label">班级名称<span class="required">*</span></label><input class="input" value="三年级数学提高班"><div class="field-hint">1–40 个字符</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">课程<span class="required">*</span></label><select class="select"><option>（请选择）</option><option selected>MATH-3A 三年级数学提高</option><option>ENG-2A 二年级英语启蒙</option></select><div class="field-hint">班课 · 每节 90 分钟 · 每班最多 24 人</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">校区<span class="required">*</span></label><select class="select"><option selected>东湖校区</option><option>光谷校区</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">教室<span class="required">*</span></label><select class="select invalid"><option>A101（容量 30）</option><option>A102（容量 20）</option><option>B203（容量 16）</option></select><div class="field-error">教室不属于所选校区</div></div>
+          <div class="field"><label class="field-label">教师<span class="required">*</span></label><select class="select"><option selected>刘建国</option><option>张伟</option></select><div class="field-hint">只列出能教「数学」的启用教师</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">学期</label><select class="select"><option>（不属于任何学期）</option><option selected>2026 秋季学期（2026-09-01 至 2027-01-31）</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">容量<span class="required">*</span></label><input class="input" type="number" value="24"><div class="field-hint">1–24（不超过课程每班最多人数 24 与教室容量 30）</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">开课日期<span class="required">*</span></label><input class="input" type="date" value="2026-09-05"><div class="field-hint">可以是过去的日期；发布时从这天起往后排课</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">总课次<span class="required">*</span></label><input class="input" type="number" value="40"><div class="field-hint">1–200</div><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="card-header"><h2>每周上课时间</h2><span class="grow"></span><button class="btn btn-sm" type="button">添加一行</button></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>星期</th><th>开始时间</th><th>结束时间</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><select class="select"><option>周一</option><option>周二</option><option selected>周三</option><option>周四</option><option>周五</option><option>周六</option><option>周日</option></select></td><td><input class="input" type="time" value="18:30"></td><td class="meta">20:00</td><td class="ops"><button class="btn-link danger" type="button">删除</button></td></tr>
+            <tr><td><select class="select"><option>周一</option><option>周二</option><option>周三</option><option>周四</option><option>周五</option><option selected>周六</option><option>周日</option></select></td><td><input class="input" type="time" value="09:00"></td><td class="meta">10:30</td><td class="ops"><button class="btn-link danger" type="button">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-body">
+        <div class="field-error">同一个星期只能有一条</div>
+        <div class="form-actions"><a class="btn" href="classes.html">取消</a><button class="btn btn-primary" type="submit">保存</button></div>
+      </div>
+    </form>
+    <div class="proto-note">
+      选项来源：课程 <code>GET /api/courses?active=true&amp;page_size=100</code>（选中后在下面显示类型、每节分钟数与每班最多人数）；校区 <code>GET /api/campuses?active=true</code>；教室 <code>GET /api/rooms?campus_id=所选校区&amp;active=true</code>（换校区后清空教室）；教师 <code>GET /api/teachers?subject_id=课程的科目&amp;active=true&amp;page_size=100</code>（换课程后清空教师）；学期 <code>GET /api/terms</code>。
+      每周上课时间 1–7 行，每行一个星期加开始时间；「结束时间」不能填，由开始时间加课程的每节分钟数算出（例如 18:30 + 90 分钟 = 20:00），超过 24:00 时这一行标红并提示「下课时间不能晚于 24:00」；同一个星期出现两次时提示「同一个星期只能有一条」；只剩一行时「删除」禁用。
+      容量的提示里的上限取 min(课程每班最多人数, 教室容量)，选了课程和教室后才显示。
+      保存：新建 <code>POST /api/classes</code>（新建的班级状态是筹备），成功后进入这个班级的详情页 <code>class-detail.html</code> 并提示「已创建，发布后生成课次」；编辑 <code>PATCH /api/classes/:id</code>，成功后回到班级详情并提示「已保存」。接口返回 400 时，能对上字段的错误显示在那个字段下（如教室不属于校区、教师不能教这门课程的科目、容量超过上限），对不上的显示在表单顶部；已填内容不清空。提交中按钮禁用并改成「保存中…」。「取消」回到上一页（新建回班级列表，编辑回班级详情）。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>编辑时加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>编辑已开课的班级（只能改名称）</h3>
+        <div class="card"><div class="card-body">
+          <div class="alert alert-info">班级已开课，只能修改班级名称；课程、教室、教师与上课时间的变动请在课次上调课或代课。</div>
+          <div class="form-grid">
+            <div class="field span-2"><label class="field-label">班级名称<span class="required">*</span></label><input class="input" value="三年级数学提高班"><div class="field-error"></div></div>
+            <div class="field"><label class="field-label">课程</label><select class="select" disabled><option>MATH-3A 三年级数学提高</option></select><div class="field-error"></div></div>
+            <div class="field"><label class="field-label">校区</label><select class="select" disabled><option>东湖校区</option></select><div class="field-error"></div></div>
+            <div class="field"><label class="field-label">教室</label><select class="select" disabled><option>A101（容量 30）</option></select><div class="field-error"></div></div>
+            <div class="field"><label class="field-label">教师</label><select class="select" disabled><option>刘建国</option></select><div class="field-error"></div></div>
+          </div>
+          <div class="form-actions"><a class="btn" href="class-detail.html">取消</a><button class="btn btn-primary">保存</button></div>
+        </div></div>
+        <div class="proto-note">开课的班级：除名称外的控件全部禁用（每周上课时间表格只读、没有「添加一行」与「删除」），提交时 PATCH 只带 <code>name</code>。</div>
+      </section>
+      <section><h3>已结课或已取消的班级</h3><div class="card state"><div class="title">这个班级已经结课，不能修改</div><a class="btn" href="class-detail.html">返回班级详情</a></div><div class="proto-note">已结课、已取消的班级打开编辑页时只显示这一块（班级详情里也不显示「编辑」）。</div></section>
+      <section><h3>班级不存在（404）</h3><div class="card state"><div class="title">这个班级不存在</div>可能已被删除，或网址有误<br><a class="btn" href="classes.html">返回班级列表</a></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能新建或编辑班级<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>通用状态 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-050。所有页面共用的状态与反馈写法；各页面底部的"其他状态"只画和这里不同的地方。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">管理员（管理员）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html" class="on">班级</a>
+    <a href="#">…</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="page-header"><h1>通用状态</h1></div>
+    <div class="proto-note">顶栏右侧依次是：通知（未读数大于 0 时显示 <code>.badge</code>，超过 99 显示 99+，点进通知中心）、当前用户的「姓名（角色的中文名）」、退出。角色中文名：admin 管理员、academic 教务、sales 课程顾问、finance 财务、teacher 教师、parent 家长。</div>
+
+    <h2>列表的四种状态</h2>
+    <div class="proto-note">和有数据时的表格在同一个位置（卡片里），页面标题、筛选条与右上角按钮照常显示。</div>
+    <section>
+      <h3>加载中</h3>
+      <div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+    </section>
+    <section>
+      <h3>空（还没有数据）</h3>
+      <div class="card state"><div class="title">还没有班级</div>新建班级并发布后，课次会出现在课表里<br><a class="btn btn-primary" href="class-form.html">新建班级</a></div>
+      <div class="proto-note">没有新建权限的角色不显示按钮，只显示说明。</div>
+    </section>
+    <section>
+      <h3>空（筛选后没有结果）</h3>
+      <div class="card state"><div class="title">没有符合条件的班级</div><button class="btn">清除筛选</button></div>
+    </section>
+    <section>
+      <h3>出错</h3>
+      <div class="card state"><div class="title">班级列表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div>
+      <div class="proto-note">第二行是接口返回的 <code>error.message</code>；网络断开或接口没有返回 JSON 时写「网络异常，请稍后重试」。</div>
+    </section>
+    <section>
+      <h3>无权限（403）</h3>
+      <div class="card state"><div class="title">没有权限查看</div>你的角色不能查看班级<br><a class="btn" href="dashboard.html">返回工作台</a></div>
+      <div class="proto-note">整页没有权限（直接打开了侧栏里没有的页面）时，内容区只显示这一块，不跳转；家长打开员工页面时按钮是「返回家长端」，链接到 <code>/parent</code>。只有未登录（401）才跳到 <code>/login?next=原地址</code>。</div>
+    </section>
+    <section>
+      <h3>对象不存在（404）</h3>
+      <div class="card state"><div class="title">这个班级不存在</div>可能已被删除，或网址有误<br><a class="btn" href="classes.html">返回班级列表</a></div>
+      <div class="proto-note">详情页的路径编号不存在（接口 404）时显示；没有对应路由的网址显示「页面不存在」与「返回工作台」。</div>
+    </section>
+
+    <h2>表单错误</h2>
+    <div class="card"><div class="card-body">
+      <div class="alert alert-error">教室「A101」在 周三 18:30–20:00 已有课次（三年级数学提高班 第 5 次课）</div>
+      <div class="form-grid">
+        <div class="field"><label class="field-label">班级名称<span class="required">*</span></label><input class="input invalid" value=""><div class="field-error">班级名称不能为空</div></div>
+        <div class="field"><label class="field-label">容量<span class="required">*</span></label><input class="input" value="20"><div class="field-error"></div></div>
+        <div class="field"><label class="field-label">学费（元）</label><input class="input invalid" value="12.345"><div class="field-hint">按元输入，最多两位小数</div><div class="field-error">金额最多两位小数</div></div>
+      </div>
+      <div class="form-actions"><button class="btn">取消</button><button class="btn btn-primary" disabled>保存中…</button></div>
+    </div></div>
+    <div class="proto-note">
+      页面自己能查出的错误（必填为空、格式不对）在提交前显示在字段下；接口返回 400 或 409 时，能判断是哪个字段的显示在那个字段下，判断不了的显示在表单顶部的 <code>alert-error</code>，内容是接口的 <code>message</code>。出错后不清空已经填的内容；提交中按钮禁用并改成「保存中…」，防止重复提交。
+    </div>
+
+    <h2>确认框</h2>
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除教室</div>
+      <div class="dialog-body">确定删除教室「A101」吗？删除后不能恢复。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">驳回请假</div>
+      <div class="dialog-body">
+        <div class="field"><label class="field-label">驳回原因<span class="required">*</span></label><textarea class="textarea"></textarea><div class="field-error"></div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">驳回</button></div>
+    </div></div>
+    <div class="proto-note">删除、取消、驳回、停课这类操作先弹确认框；要填原因的把原因框放在确认框里。确认后接口失败（例如 409「教室仍被班级引用」）时，确认框不关闭，错误显示在确认框里的 <code>alert-error</code>。</div>
+
+    <h2>轻提示</h2>
+    <div class="toast">已保存</div>
+    <div class="toast error" style="margin-top: var(--space-2)">操作失败：订单已支付，不能取消</div>
+    <div class="proto-note">操作成功或失败、但不离开当前页面时显示 2.5 秒，在页面顶部居中；失败的内容是接口的 <code>message</code>。</div>
+
+    <h2>金额与时间</h2>
+    <div class="card"><div class="card-body">
+      <dl class="desc">
+        <div class="item"><dt>应付</dt><dd class="money">¥1,280.00</dd></div>
+        <div class="item"><dt>退费</dt><dd class="money negative">-¥80.00</dd></div>
+        <div class="item"><dt>下单时间</dt><dd>2026-10-15 14:30</dd></div>
+      </dl>
+    </div></div>
+    <div class="proto-note">接口的金额是分（<code>128000</code> 显示为 <code>¥1,280.00</code>）；接口的 <code>created_at</code> 是 UTC，页面按北京时间显示（<code>2026-10-15T06:30:00.000Z</code> 显示为 <code>2026-10-15 14:30</code>）。</div>
+  </div></main>
+</div>
+</body>
+</html>

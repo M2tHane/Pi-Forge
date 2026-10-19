@@ -1,0 +1,197 @@
+// 阶段验收发现的问题交给负责的 task 修复：门禁失败、stage-qa 的 must 共用。
+// 归属按 task：文件依次看实际改过它的、writes（plan 的 paths）覆盖它的、页面文件对应页面的已 done impl task。
+// 一条问题只交给一个 task；涉及多个 task 或找不到负责者时交给架构阶段的 architect（没有 architect 的旧流程归本阶段最后合入的 impl）。
+// stage-qa 写了归属（frontend、domain 名）时先按它找负责的 task。
+import type { TaskFile } from '../state/schemas.ts';
+import type { StateStore, TaskInput } from '../state/state-store.ts';
+import { matchesAny, ownAcceptanceGlob } from '../state/paths.ts';
+import { git } from '../state/git.ts';
+import { nextFixId } from './acceptance-flow.ts';
+
+export type StageFixSource = 'gate' | 'qa' | 'post_merge' | 'signoff' | 'backend_issue';
+/**
+ * 一个问题：涉及的文件与给 worker 的说明。
+ * owner：直接指定负责的 impl task（跳过 ownerOf 查找，例如验收测试目录 tests/acceptance/<T-xxx>/ 的失败，worker 不能写测试）；
+ * writes：指定时，该组的可写范围用它代替 files（owner 的 writes）。
+ * candidates：和文件归属一起参与判断的负责者（门禁日志里验收目录 tests/acceptance/<T-xxx>/ 对应的 task）；
+ * 整条交给其中一个时，可写范围是问题文件加它的 writes（worker 不能写测试，只能改实现）。
+ * claim：stage-qa 判断的归属（frontend、domain 名或 unknown），见 claimedOwner。
+ */
+export interface StageIssue { files: readonly string[]; text: string; owner?: string; writes?: readonly string[]; candidates?: readonly string[]; claim?: string }
+
+const SOURCE_LABEL: Record<StageFixSource, string> = { gate: '阶段门禁', qa: 'stage-qa', post_merge: '合并后回归测试', signoff: '用户签收', backend_issue: '接入真实接口' };
+
+/** task 没有时间戳：按编号排序（T-003 < T-010；T-003.fx-2 < T-003.fx-10） */
+const idKey = (id: string) => [Number(/^T-(\d+)/.exec(id)?.[1] ?? 0), Number(/\.fx-(\d+)$/.exec(id)?.[1] ?? 0)] as const;
+const createdOrder = (a: Pick<TaskFile, 'id'>, b: Pick<TaskFile, 'id'>) => { const [x, y] = [idKey(a.id), idKey(b.id)]; return x[0] - y[0] || x[1] - y[1]; };
+
+/**
+ * fix 额外带上的、原 impl task 自己的测试写权限（纯函数）：writes 里 tests/ 下非验收的 glob（单元、e2e、契约测试等）
+ * 与它自己的验收目录，审查要求补回归测试时 worker 才写得进去。别的 task 的 tests/acceptance/** 永远不带。
+ */
+export function testWritesOf(impl: Pick<TaskFile, 'id' | 'writes'>): string[] {
+  const own = ownAcceptanceGlob(impl.id);
+  return impl.writes.filter((g) => g === own || (g.startsWith('tests/') && !g.startsWith('tests/acceptance')));
+}
+
+type OwnerTask = Pick<TaskFile, 'id' | 'kind' | 'status' | 'writes'> & { pages?: readonly string[] | undefined; role?: string; stage?: string; domain?: string | undefined };
+const pageKey = (s: string) => s.toLowerCase().replace(/[-_]/g, '');
+/** 文件路径里有一段（或去掉扩展名的文件名）就是页面 id（大小写、- 与 _ 不计）：src/pages/purchase-orders/index.tsx、src/web/PurchaseOrders.tsx */
+const isPageFile = (file: string, page: string) => file.split('/').some((seg) => pageKey(seg.replace(/\.[^.]+$/, '')) === pageKey(page));
+
+/**
+ * 文件的负责 task（纯函数），已经 done 的 impl 中按顺序找，每一步取编号最大的一个：
+ * 1. 合入时实际改过它（changed）；2. writes（plan 的 paths）覆盖它；3. 页面文件归含这一页的页面任务。找不到时为 undefined。
+ * 第 2 步不看 architect：它的 writes 含 `**`，会盖住第 3 步；architect 只作为 groupIssuesByOwner 的兜底。
+ */
+export function ownerOf<T extends OwnerTask>(file: string, tasks: readonly T[], changed?: ReadonlyMap<string, readonly string[]>): T | undefined {
+  const done = tasks.filter((t) => t.kind === 'impl' && t.status === 'done').sort(createdOrder);
+  return done.filter((t) => changed?.get(t.id)?.includes(file)).at(-1)
+    ?? done.filter((t) => t.role !== 'architect' && matchesAny(file, t.writes)).at(-1)
+    ?? done.filter((t) => t.pages?.some((p) => isPageFile(file, p))).at(-1);
+}
+
+export interface OwnerOptions {
+  /** 每个 task 合入集成分支时实际改动的文件 */
+  changed?: ReadonlyMap<string, readonly string[]>;
+  /** 找不到负责者时兜底的 impl task（没有 architect 时用） */
+  fallback?: string;
+  /** 涉及多个 task 或找不到负责者的问题整条交给它（架构阶段 architect 的 impl task） */
+  architect?: string;
+  /** 当前阶段与阶段顺序：按 stage-qa 写的归属找本阶段（没有就往前）的 domain 任务、本批的页面任务 */
+  stage?: string;
+  stages?: readonly string[];
+}
+
+/**
+ * stage-qa 写的归属对应的 task（纯函数）：domain 名 → 该 domain 最近完成的后端任务（domainOwner）；
+ * frontend → 问题的文件只归一个前端任务时归它，否则交给本批的页面任务；unknown、没写、domain 不存在或本批没有页面任务时为 undefined，按文件归属。
+ */
+export function claimedOwner<T extends OwnerTask>(issue: Pick<StageIssue, 'claim' | 'files'>, tasks: readonly T[], opts: OwnerOptions = {}): T | undefined {
+  const claim = issue.claim?.trim();
+  if (!claim || claim.toLowerCase() === 'unknown' || !opts.stage) return undefined;
+  if (claim.toLowerCase() !== 'frontend') return domainOwner(claim, tasks, opts.stages ?? [opts.stage], opts.stage);
+  const front = tasks.filter((t) => t.role === 'frontend');
+  const byFile = new Set(issue.files.map((f) => ownerOf(f, front, opts.changed)).filter((t): t is T => !!t));
+  if (byFile.size === 1) return [...byFile][0];
+  return front.filter((t) => t.kind === 'impl' && t.status === 'done' && t.stage === opts.stage && t.pages?.length).sort(createdOrder).at(-1);
+}
+
+/** 各 task 合入时实际改动的文件（按 merge 事件的 from..to 问 git；读不到的跳过） */
+export function mergedFilesByTask(store: StateStore, flowId: string): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const e of store.readEvents()) {
+    if (e.flow !== flowId || e.type !== 'merge' || !e.task || typeof e.data?.['from'] !== 'string' || typeof e.data?.['to'] !== 'string') continue;
+    try {
+      const files = git(store.root, ['diff', '--name-only', String(e.data['from']), String(e.data['to'])]).split('\n').filter(Boolean);
+      out.set(e.task, [...(out.get(e.task) ?? []), ...files]);
+    } catch { /* 提交已不可读：只按 writes 归属 */ }
+  }
+  return out;
+}
+
+/** 修复要接着的会话：该 impl 最近一个已 done 的 .fx-n，没有时是 impl 本身（纯函数） */
+export function lastWorkerTask<T extends Pick<TaskFile, 'id' | 'kind' | 'status' | 'for_task'>>(impl: string, tasks: readonly T[]): string {
+  return tasks.filter((t) => t.kind === 'fix' && t.for_task === impl && t.status === 'done').sort(createdOrder).at(-1)?.id ?? impl;
+}
+
+/**
+ * 按负责的 task 分组（纯函数）。一条问题只交给一个 task：涉及的文件与 candidates 都归同一个 task（找不到负责者的文件不算）时归它；
+ * 涉及多个 task 或一个都找不到时，有 architect 就整条交给 architect，没有时按文件拆到各自的组（找不到的归 fallback）。
+ * unowned：最终没人负责的文件（调用方提示用户）。
+ */
+export function groupIssuesByOwner<T extends OwnerTask>(issues: readonly StageIssue[], tasks: readonly T[], opts: OwnerOptions = {}): { groups: Map<string, { files: Set<string>; texts: string[] }>; unowned: string[] } {
+  const isDoneImpl = (id?: string) => !!id && tasks.some((t) => t.id === id && t.kind === 'impl' && t.status === 'done');
+  const fallback = isDoneImpl(opts.fallback) ? opts.fallback : undefined;
+  const architect = isDoneImpl(opts.architect) ? opts.architect : undefined;
+  const groups = new Map<string, { files: Set<string>; texts: string[] }>();
+  const unowned = new Set<string>();
+  for (const issue of issues) {
+    const byOwner = new Map<string, string[]>();
+    const claimed = claimedOwner(issue, tasks, opts);
+    if (claimed) byOwner.set(claimed.id, [...issue.files]);
+    else if (issue.owner) {
+      if (tasks.some((t) => t.id === issue.owner && t.kind === 'impl')) byOwner.set(issue.owner, [...(issue.writes ?? issue.files)]);
+      else for (const f of issue.files) unowned.add(f);
+    } else {
+      // 同一次失败只交给一个 task：验收目录的 task 与源文件的负责者一起算，不同时整条交给 architect（stock run-04：拆成两个修复并行改）
+      const writesOf = new Map(tasks.filter((t) => t.kind === 'impl' && issue.candidates?.includes(t.id)).map((t) => [t.id, t.writes]));
+      const owners = new Set([...writesOf.keys(), ...issue.files.map((f) => ownerOf(f, tasks, opts.changed)?.id).filter((x): x is string => !!x)]);
+      const whole = owners.size === 1 ? [...owners][0] : architect;
+      if (whole) byOwner.set(whole, [...issue.files, ...(writesOf.get(whole) ?? [])]);
+      else for (const [id, writes] of writesOf) byOwner.set(id, [...writes]);
+      if (!whole) for (const f of issue.files) {
+        const owner = ownerOf(f, tasks, opts.changed)?.id ?? fallback;
+        if (!owner) { unowned.add(f); continue; }
+        byOwner.set(owner, [...(byOwner.get(owner) ?? []), f]);
+      }
+    }
+    for (const [id, files] of byOwner) {
+      const g = groups.get(id) ?? { files: new Set<string>(), texts: [] };
+      files.forEach((f) => g.files.add(f));
+      g.texts.push(issue.text);
+      groups.set(id, g);
+    }
+  }
+  return { groups, unowned: [...unowned] };
+}
+
+/**
+ * 为阶段验收发现的问题创建 fix task（T-003.fx-n）：kind fix、角色同原 task（worker）、writes 是问题涉及的文件加原 task 的非验收测试目录、
+ * fork 原 task 最后一次 worker 会话。worktree 在派发时从集成分支新建。没有新的 .at，不做逐任务审查，合并不跑命令。
+ */
+export async function createStageFixTasks(store: StateStore, flowId: string, source: StageFixSource, issues: readonly StageIssue[], round: string, actor = 'engine', sourceRound?: { task: string; round: number }): Promise<{ tasks: string[]; unowned: string[] }> {
+  const { inputs, briefs, unowned } = planStageFixTasks(store, flowId, source, issues, round, sourceRound);
+  if (inputs.length) await store.addTasks(flowId, inputs, actor, briefs);
+  return { tasks: inputs.map((t) => t.id), unowned };
+}
+
+/** createStageFixTasks 要写入的任务与说明（不写状态）：门禁把它们和轮次记录放进同一个事务 */
+export function planStageFixTasks(store: StateStore, flowId: string, source: StageFixSource, issues: readonly StageIssue[], round: string, sourceRound?: { task: string; round: number }): { inputs: TaskInput[]; briefs: Record<string, string>; unowned: string[] } {
+  const flow = store.readFlow(flowId);
+  const tasks = store.listTasks(flowId);
+  const changed = mergedFilesByTask(store, flowId);
+  // 兜底：本阶段最后合入的 impl
+  const merged = store.readEvents().filter((e) => e.flow === flowId && e.type === 'merge' && e.task && tasks.some((t) => t.id === e.task && t.kind === 'impl' && t.stage === flow.stage && t.status === 'done'));
+  const fallback = merged.at(-1)?.task;
+  // 涉及多个 task 或找不到负责者的问题交给架构阶段的 architect（接着它最后一次会话）；没有架构阶段（旧流程）时用兜底
+  const architect = tasks.filter((t) => t.kind === 'impl' && t.role === 'architect' && t.status === 'done').sort(createdOrder).at(-1)?.id;
+  const { groups, unowned } = groupIssuesByOwner(issues, tasks, { changed, stage: flow.stage, stages: flow.stages, ...(fallback ? { fallback } : {}), ...(architect ? { architect } : {}) });
+  const inputs: TaskInput[] = [];
+  const briefs: Record<string, string> = {};
+  const taken: Pick<TaskFile, 'id'>[] = [...tasks];
+  for (const [implId, g] of groups) {
+    const impl = tasks.find((t) => t.id === implId)!;
+    const id = nextFixId(taken, implId);
+    taken.push({ id });
+    const files = [...g.files].sort();
+    const writes = [...new Set([...files, ...testWritesOf(impl)])];
+    inputs.push({
+      id, stage: flow.stage, kind: 'fix', role: impl.role, scopes: [...impl.scopes], depends_on: [], inputs: [],
+      writes, verify: [...impl.verify], for_task: implId, fork_from_task: lastWorkerTask(implId, tasks),
+      title: `修复${SOURCE_LABEL[source]}的问题（${round}）${files.length ? `：${files.slice(0, 3).join('、')}` : ''}`.slice(0, 200),
+      ac: [`修复${SOURCE_LABEL[source]}指出的问题，修好后原 task 的验收测试与单元测试通过`],
+      ...(impl.module ? { module: impl.module } : {}),
+      ...(impl.layers?.length ? { layers: [...impl.layers] } : {}),
+      ...(sourceRound ? { source_round: { ...sourceRound } } : {}),
+    });
+    const toArchitect = implId === architect && impl.role === 'architect';
+    briefs[id] = [`## ${SOURCE_LABEL[source]}发现的问题（程序生成，${round}）`,
+      ...(toArchitect ? ['这些问题涉及多个任务，或找不到负责的任务，交给你（架构师）修。'] : []),
+      `问题涉及的文件${writes.length > files.length ? '与原 task 的测试目录' : ''}：${writes.join('、')}（需要时也可以改其他文件）`, '', ...g.texts.map((x) => x.trim())].join('\n').slice(0, 12000);
+  }
+  return { inputs, briefs, unowned };
+}
+
+/**
+ * domain 的负责任务（纯函数）：该 domain 在本阶段最近完成的后端 impl，本阶段没有就按 stages 的顺序往前面的阶段找。
+ * 取编号最大的一个；找不到（domain 不存在或还没完成）时为 undefined。
+ */
+export function domainOwner<T extends Pick<TaskFile, 'id' | 'kind' | 'status'> & { role?: string; stage?: string; domain?: string | undefined }>(domain: string, tasks: readonly T[], stages: readonly string[], stage: string): T | undefined {
+  const done = tasks.filter((t) => t.kind === 'impl' && t.role === 'backend' && t.status === 'done' && t.domain === domain).sort(createdOrder);
+  for (let i = stages.indexOf(stage); i >= 0; i--) {
+    const hit = done.filter((t) => t.stage === stages[i]).at(-1);
+    if (hit) return hit;
+  }
+  return undefined;
+}

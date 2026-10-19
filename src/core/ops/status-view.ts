@@ -1,0 +1,298 @@
+// 用户界面只显示架构、开发、交付三个高层阶段；内部状态保留在 --detail。
+import { actionableStalls } from '../state/waits.ts';
+import { isArchitectStage, planStatus } from '../plan/plan-flow.ts';
+import type { FlowConfig } from '../state/config.ts';
+import { isFinished, type StateStore } from '../state/state-store.ts';
+import { budgetState, formatBudget } from '../insight/cost-control.ts';
+import { activePauses, describePause } from '../engine/model-pause.ts';
+import { isLightFlow, type FlowFile, type TaskFile } from '../state/schemas.ts';
+import { stallOf, stuckTasks } from '../insight/forge-watch.ts';
+import { IN_FLIGHT } from '../state/state-machine.ts';
+import { awaitingReview } from '../engine/run-budget.ts';
+import { stageDelegated } from '../engine/decisions.ts';
+import { stalledConsultOf, stalledText, userCanAnswer, waitingOnArchitect } from '../engine/consult.ts';
+import { isStageLevelTask } from '../workspace/stage-worktree.ts';
+import { stopWithoutChange } from '../stage/gates.ts';
+import { fixStatusLine, fixPhase, phaseLabelOf } from '../../modes/fix.ts';
+
+/** 高层阶段：架构（S0）→ 开发（批次 S1…Sn）；交付由最后一批的签收表示 */
+export type Phase = 'arch' | 'dev';
+export type PhaseOrDone = Phase | 'done';
+export const PHASE_LABEL: Record<PhaseOrDone, string> = { arch: '架构', dev: '开发', done: '交付' };
+/** 最后一个阶段等你批准 = 等你批准合入主分支。架构阶段批准前批次阶段还没生成，S0 也是"最后一个阶段"，但批准的是架构产出 */
+export const awaitingMerge = (flow: Pick<FlowFile, 'stage' | 'stages' | 'stage_status'>) => flow.stage === flow.stages.at(-1) && flow.stage_status === 'awaiting_human' && !isArchitectStage(flow.stage);
+export const phaseLabel = (flow: Pick<FlowFile, 'stage' | 'stages' | 'stage_status'>, p: PhaseOrDone) => awaitingMerge(flow) ? '交付（待合入）' : PHASE_LABEL[p];
+const INFLIGHT = new Set<string>(IN_FLIGHT);
+const short = (s: string, n = 120) => (s.length > n ? `${s.slice(0, n)}…` : s).replace(/\s+/g, ' ');
+export const phaseOfStage = (stage: string): Phase => (isArchitectStage(stage) ? 'arch' : 'dev');
+export function currentPhase(flow: FlowFile): PhaseOrDone {
+  return isFinished(flow) && flow.stage_status === 'done' ? 'done' : isLightFlow(flow) ? 'dev' : phaseOfStage(flow.stage);
+}
+const FAILURE_KIND: Record<string, string> = { merge_verify_fail: '合并时全量测试失败', merge_conflict: '合并冲突', run_failed: '运行中断', run_timeout: '运行超时', lease_expired: '租约过期' };
+export function lastFailureKind(store: StateStore, flowId: string, taskId: string): string | null {
+  const ev = [...store.readEvents()].reverse().find((e) => e.flow === flowId && e.task === taskId && e.type === 'transition' && e.trigger && e.trigger in FAILURE_KIND);
+  return ev ? FAILURE_KIND[ev.trigger!]! : null;
+}
+export function taskActivity(t: TaskFile, failureKind: string | null): string {
+  const working = t.kind === 'fix' ? '修复中' : t.kind === 'merge-fix' ? '解决合并冲突' : t.kind === 'doc' ? '撰写中' : t.kind === 'review' ? '代码审查中' : t.kind === 'qa' ? '阶段验收中' : t.kind === 'consult' ? '架构师回答中' : '实现中';
+  const states: Record<string, string> = { in_review: '审查中', queued_merge: '合入中', merging: '合入中', ready: '待派发', pending: '等待前置任务', blocked: '阻塞', cancelled: '已取消', done: '已完成' };
+  const base = t.status === 'in_progress' ? t.lease ? working : '等待重新派发' : states[t.status]!;
+  return base + (t.attempts > 0 && !['done', 'blocked'].includes(t.status) ? `（第 ${t.attempts + 1} 次${failureKind ? `，上次：${failureKind}` : ''}）` : '');
+}
+const BLOCKED_LABEL: Record<string, string> = {
+  review_exhausted: '审查多轮仍有问题，等你决定', merge_exhausted: '合并验证多次失败',
+  attempts: '多次尝试仍失败', integration_broken: '集成分支已坏', agent: '有问题要问你', user: '有问题要问你', dispatcher: '无法继续',
+  no_changes: '合并时没有改动（多半已被别的任务做了）', architect: '等架构师回答',
+};
+/** 阻塞任务对应的解除命令：按 blocked_by 区分，写出可以直接执行的命令 */
+export function blockedCommand(t: Pick<TaskFile, 'id' | 'kind' | 'status' | 'blocked_by'>): string {
+  if (userCanAnswer(t)) return `/forge unblock ${t.id} "<回答>"（你代替架构师回答，咨询结束）或 /forge unblock ${t.id} --reset（重新交给架构师）`;
+  switch (t.blocked_by) {
+    case 'review_exhausted': return `/forge accept ${t.id} --note "<说明>"（接受现状，程序继续合并验证）或 /forge unblock ${t.id} "<意见>" --reset（清零后重新审查）`;
+    case 'merge_exhausted': case 'attempts': return `/forge unblock ${t.id} "<提示>" --reset（计数清零后重试）`;
+    case 'integration_broken': return `集成分支本身已坏：修好后 /forge unblock ${t.id}`;
+    case 'no_changes': return `/forge accept ${t.id} --note "<说明>"（确认要做的已在集成分支上，视为完成）或 /forge unblock ${t.id} "<意见>"（重新做）`;
+    case 'dispatcher': return `/forge unblock ${t.id}`;
+    default: return `/forge answer ${t.id}`;
+  }
+}
+/** owner = orchestrator：先由主会话决定（forge_decide），用户也可以直接处理；显示在"主会话处理中" */
+export interface Action { key: string; text: string; command: string; owner?: 'orchestrator' }
+export function actionsNeeded(store: StateStore, config: FlowConfig, now = new Date()): Action[] {
+  const out: Action[] = [];
+  for (const flow of visibleFlows(store)) {
+    const tasks = store.listTasks(flow.id);
+    const isS = (flow.s_stages ?? []).some((x) => x.id === flow.stage);
+    if (flow.stage_status === 'awaiting_human') out.push({ key: `${flow.id}:gate:${flow.stage}`, text: awaitingMerge(flow) ? '全部任务已完成，等你批准合入主分支' : isS ? `${flow.stage} 阶段已通过检查，等你签收后进入下一阶段` : phaseOfStage(flow.stage) === 'arch' ? '架构产出已合入主分支，等你在主工作区验收后批准（材料：forge_status）' : `${phaseLabel(flow, currentPhase(flow))}阶段的产出等待你审批`, command: `/forge-approve stage:${flow.stage} 或 /forge-reject stage:${flow.stage} "<意见>"${isS ? '；签收材料：/forge report' : ''}` });
+    if (flow.stage_status === 'needs_human') {
+      const why = needsHumanReason(store, flow);
+      if (isLightFlow(flow)) out.push({ key: `${flow.id}:fixhelp`, text: `${flow.mode === 'change' ? '小改动' : '修复'}需要你处理${why ? `：${short(why, 200)}` : ''}`, command: '/forge accept --note "<说明>"（放行并结束）或 /forge abort（放弃）' });
+      else {
+        const cmd = `/forge accept ${flow.stage} --note "<说明>"（人工放行进入签收）、/forge gate（重跑门禁）或 /forge-reject "<意见>"（打回）`;
+        if (stageDelegated(store, flow)) out.push({ key: `${flow.id}:gatefail:${flow.stage}`, text: `阶段门禁修复轮数用尽${why ? `：${short(why, 200)}` : ''}`, command: `也可以直接 ${cmd}`, owner: 'orchestrator' });
+        else out.push({ key: `${flow.id}:gatefail:${flow.stage}:user`, text: `阶段门禁修复轮数用尽，需要你处理${why ? `：${short(why, 200)}` : ''}`, command: cmd });
+      }
+    }
+    // 门禁失败或打回之后本阶段没有新的变化：流程不会自己重新验收，只有 /forge gate 能让它继续
+    const stopped = flow.stage_status === 'active' && !isLightFlow(flow) && !tasks.some((t) => t.stage === flow.stage && !['done', 'cancelled'].includes(t.status)) ? stopWithoutChange(store, flow.id, flow.stage) : null;
+    if (stopped) out.push(stopped.trigger === 'reject'
+      ? { key: `${flow.id}:rejected:${stopped.seq}`, text: `${flow.stage} 已打回，之后还没有新的修改，流程停在这里`, command: '主会话按打回意见交修复（forge_decide 或 forge_ask_architect）；不用改时执行 /forge gate 重新验收' }
+      : { key: `${flow.id}:gatefail:${stopped.seq}`, text: `阶段检查未通过：${short(stopped.reason ?? '')}`, command: '处理后执行 /forge gate 重跑' });
+    for (const t of tasks.filter(awaitingReview)) out.push({ key: `${flow.id}:timeout:${t.id}:${t.timeout_review!.run}`, text: `${t.id} 运行超时，等主会话复核`, command: '主会话调用 forge_resolve_timeout；查看材料：/forge-status --detail' });
+    // 等架构师回答的任务由程序在回答后恢复，不需要人处理；它的咨询阻塞并转交给用户后，提问的任务一起列出（咨询本身在下面也有一项）
+    for (const t of tasks) {
+      const c = stalledConsultOf(tasks, t);
+      if (c && c.blocked_owner !== 'orchestrator') out.push({ key: `${flow.id}:asker:${t.id}:${c.id}@${c.version}`, text: `${t.id}「${short(t.title, 40)}」在等的${stalledText(c, 120)}`, command: `先处理咨询 ${c.id}：${blockedCommand(c)}；咨询结束后 ${t.id} 自动接着做` });
+    }
+    for (const t of tasks.filter((x) => x.status === 'blocked' && x.blocked_by !== 'architect')) {
+      const label = `${t.id}「${short(t.title, 40)}」${BLOCKED_LABEL[t.blocked_by ?? ''] ?? '阻塞'}`;
+      if (t.blocked_owner === 'orchestrator') out.push({ key: `${flow.id}:blocked:${t.id}:${t.version}`, text: `${label}：${short(t.blocked_reason ?? '')}`, command: `也可以直接 ${blockedCommand(t)}`, owner: 'orchestrator' });
+      else out.push({ key: `${flow.id}:blocked:${t.id}:${t.version}`, text: `${label}：${short(t.blocked_reason ?? '')}`, command: blockedCommand(t) });
+    }
+    const stuck = stuckTasks(flow, tasks);
+    // 停滞（waits.ts 的等待图）：每条一项。pending 的 task 等在 blocked 的硬依赖上不另报：那是排队的常态，blocked 的 task 自己有一条带解除命令的项，
+    // 全都被挡住时还有下面的"流程卡住"；其余——环、等到已取消——只有这里会报
+    for (const s of actionableStalls(tasks)) {
+      const target = s.target ? tasks.find((x) => x.id === s.target) : undefined;
+      out.push({ key: `${flow.id}:stall-wait:${s.kind}:${s.tasks.join(',')}${s.target ? `:${s.target}@${target?.version ?? 0}` : ''}`, text: s.reason,
+        command: s.kind === 'blocked' ? `/forge unblock ${s.target}` : '/forge-status --detail 查看等待关系；无法自行恢复时 /forge abort' });
+    }
+    if (stuck?.length) out.push({ key: `${flow.id}:stuck:${stuck.map((t) => `${t.id}@${t.version}`).join(',')}`, text: `流程卡住：剩下的任务都被 ${stuck.map((t) => t.id).join('、')} 挡住`, command: '/forge unblock <任务>' });
+    // 命令因工具不存在被跳过：每个 (流程, 命令) 一项，commands.yaml 里删掉或装上之后自然消失
+    const missing = new Map<string, string>();
+    for (const e of store.readEvents()) if (e.flow === flow.id && e.type === 'note' && typeof e.data?.['tool_missing'] === 'string') missing.set(e.data['tool_missing'], String(e.data['tool'] ?? ''));
+    for (const [name, tool] of missing) {
+      if (config.commands[name] === undefined) continue;
+      out.push({ key: `${flow.id}:tool-missing:${name}`, text: `命令 ${name} 的工具${tool && tool !== '未知' ? `（${tool}）` : ''}未安装，已跳过（不计失败）`, command: `在 workflow.yaml 的 commands 里删掉 ${name}，或安装该工具` });
+    }
+    const budget = budgetState(store, config, flow, now);
+    // 预算用尽、同步冲突本身就是停下来的原因，下面各有一条；不再重复报"停滞"
+    const stall = budget?.exceeded || flow.sync?.status === 'conflict' ? null : stallOf(store, config, flow, now);
+    if (stall) out.push({ key: `${flow.id}:stall:${stall.seq}`, text: `流程停滞：${stall.minutes} 分钟没有进展`, command: stopped ? '/forge gate（打回或检查失败之后没有新的修改，/forge-resume 不会让它重新验收）' : '/forge-status --detail；/forge-resume' });
+    if (budget?.warn) out.push({ key: `${flow.id}:budget:${budget.exceeded ? 'over' : 'warn'}`, text: formatBudget(budget), command: '/forge budget tokens|cost|minutes <数值>' });
+    if (flow.sync?.status === 'conflict') out.push({ key: `${flow.id}:sync:${flow.sync.main_sha}`, text: `把 ${config.raw.main_branch} 同步进集成分支时冲突，已暂停派发新任务：${short(flow.sync.reason ?? '')}`, command: '/forge sync' });
+  }
+  for (const p of activePauses(store, now)) out.push({ key: `model-pause:${p.model}@${p.since}`, text: describePause(p, now), command: `/forge models resume ${p.model} 或 /forge-config 换模型` });
+  const cand = store.readKnowledge().entries.filter((e) => e.status === 'candidate');
+  if (cand.length) out.push({ key: `knowledge:candidates:${cand.at(-1)!.id}`, text: `${cand.length} 条知识候选待确认`, command: '/forge knowledge accept <K-编号> 或 retire <K-编号>' });
+  return out;
+}
+/** 阶段进入 needs_human 的原因（最近一次转入 needs_human 的事件的 reason） */
+export function needsHumanReason(store: StateStore, flow: Pick<FlowFile, 'id' | 'stage'>): string | null {
+  const ev = [...store.readEvents()].reverse().find((e) => e.flow === flow.id && e.data?.['entity'] === 'stage' && e.data['stage'] === flow.stage && e.to === 'needs_human');
+  return ev?.reason ?? null;
+}
+export function visibleFlows(store: StateStore): FlowFile[] {
+  const active = store.readState().active_flow;
+  return [...(active ? [store.readFlow(active)] : []), ...(store.openLightFlow() ? [store.openLightFlow()!] : [])];
+}
+function phaseBar(flow: FlowFile, cur: PhaseOrDone): string {
+  const phases: PhaseOrDone[] = ['arch', 'dev', 'done'];
+  // 最后一个阶段通过检查、等你批准合入时，已经走到"交付"：前面的阶段都打勾
+  if (awaitingMerge(flow)) return phases.map((p, i) => i < phases.length - 1 ? `${PHASE_LABEL[p]} ✓` : '[交付（待合入）]').join(' → ');
+  const index = phases.indexOf(cur);
+  return phases.map((p, i) => i < index ? `${PHASE_LABEL[p]} ✓` : i === index ? `[${PHASE_LABEL[p]}]` : PHASE_LABEL[p]).join(' → ');
+}
+const MODE_LABEL: Record<FlowFile['mode'], string> = { build: '新项目', fix: '修复', change: '小改动' };
+/** S0 是架构阶段，其余直接用编号 */
+const stageName = (id: string) => (id === 'S0' ? 'S0 架构' : id);
+
+/** 开发阶段的批次条：S1 ✓ → [S2] → S3 */
+function stageBar(flow: FlowFile): string {
+  const ss = flow.s_stages ?? [];
+  const idx = ss.findIndex((s) => s.id === flow.stage);
+  return ss.map((s, i) => i < idx || (i === idx && flow.stage_status === 'done') ? `${stageName(s.id)} ✓` : i === idx ? `[${stageName(s.id)}]` : stageName(s.id)).join(' → ');
+}
+function stageStateText(flow: FlowFile, tasks: readonly TaskFile[], delegated = false): string {
+  const qaRunning = tasks.some((t) => t.kind === 'qa' && t.stage === flow.stage && !['done', 'cancelled'].includes(t.status));
+  switch (flow.stage_status) {
+    case 'awaiting_gate': return qaRunning ? '阶段验收中' : '阶段检查中（全量测试与合规检查）';
+    case 'needs_human': return delegated ? '阶段检查未通过，主会话决定中' : '阶段检查未通过，等你处理';
+    case 'awaiting_human': return awaitingMerge(flow) ? '全部完成，等你批准交付' : '已通过检查，等你签收';
+    case 'done': return '已完成';
+    case 'aborted': return '已中止';
+    default: return '进行中';
+  }
+}
+/** 当前阶段的一行说明：架构阶段说明在做什么；开发阶段给出批次名、目标与状态 */
+function phaseLine(flow: FlowFile, tasks: readonly TaskFile[], cur: PhaseOrDone, main: string, delegated = false): string[] {
+  if (isLightFlow(flow)) return [fixStatusLine(flow, tasks)];
+  if (cur === 'done') return ['交付：已合入主分支'];
+  if (awaitingMerge(flow)) {
+    const def = flow.s_stages?.find((s) => s.id === flow.stage);
+    return [`交付阶段：${def ? `${stageName(def.id)}「${short(def.goal, 80)}」` : '全部任务'}已通过检查，等你批准合入 ${main}`];
+  }
+  const st = flow.stage_status;
+  if (cur === 'arch') {
+    const state = st === 'awaiting_human' ? '架构产出已通过检查，等你批准' : st === 'awaiting_gate' ? '架构产出检查中' : st === 'needs_human' ? '架构产出检查多次未通过，等你处理' : 'architect 按你的技术栈搭骨架、定契约与计划';
+    return [`架构阶段：${state}`];
+  }
+  const def = flow.s_stages?.find((s) => s.id === flow.stage);
+  if (!def) return ['开发阶段：按任务实施并运行全量验证'];
+  return [`开发阶段：${stageBar(flow)}`, `当前阶段 ${stageName(def.id)}：${short(def.goal, 80)}（${stageStateText(flow, tasks, delegated)}）`];
+}
+function idleText(flow: FlowFile, tasks: readonly TaskFile[], delegated = false): string {
+  if (flow.stage_status === 'awaiting_human') return `无（等待你审批${(flow.s_stages ?? []).some((x) => x.id === flow.stage) ? '，签收材料：/forge report' : ''}）`;
+  if (flow.stage_status === 'needs_human') return delegated ? '无（阶段检查未通过，主会话决定中）' : '无（阶段检查未通过，等你决定）';
+  if (flow.stage_status === 'awaiting_gate') return '阶段检查中';
+  if (tasks.some((t) => t.status === 'blocked' && t.blocked_owner !== 'orchestrator' && t.blocked_by !== 'architect')) return '无（有任务在等你处理，见上）';
+  if (tasks.some((t) => waitingOnArchitect(tasks, t))) return '无（有任务在等架构师回答）';
+  if (tasks.some((t) => t.status === 'blocked')) return '无（有任务等主会话决定，见上）';
+  return '无';
+}
+export function renderFlow(store: StateStore, config: FlowConfig, flow: FlowFile, now = new Date()): string {
+  const tasks = store.listTasks(flow.id);
+  const cur = currentPhase(flow);
+  // 咨询任务不是计划里的任务，算进去进度就和计划对不上
+  const counted = tasks.filter((t) => t.status !== 'cancelled' && !isStageLevelTask(t) && t.kind !== 'consult' && (isLightFlow(flow) || cur === 'done' || phaseOfStage(t.stage) === cur));
+  const doneN = (xs: readonly TaskFile[]) => xs.filter((t) => t.status === 'done').length;
+  const stageTasks = counted.filter((t) => t.stage === flow.stage);
+  const hasStages = cur === 'dev' && !isLightFlow(flow) && !!flow.s_stages?.some((s) => s.id === flow.stage);
+  const progress = hasStages ? `进度：${flow.stage} ${doneN(stageTasks)} / ${stageTasks.length} 个任务完成（全部批次 ${doneN(counted)} / ${counted.length}）` : `进度：${doneN(counted)} / ${counted.length} 个任务完成`;
+  const active = tasks.filter((t) => INFLIGHT.has(t.status));
+  const budget = budgetState(store, config, flow, now);
+  return [
+    `${flow.id}「${short(flow.title, 60)}」（${MODE_LABEL[flow.mode]}）`,
+    ...(isLightFlow(flow) ? [] : [phaseBar(flow, cur)]),
+    ...phaseLine(flow, tasks, cur, config.raw.main_branch, stageDelegated(store, flow)),
+    ...(cur === 'done' && !isLightFlow(flow) || (cur === 'arch' && !counted.length) ? [] : [progress]),
+    ...(cur === 'arch' ? [planStatus(store, flow.id)].filter(Boolean) : []),
+    active.length ? `正在进行：\n${active.map((t) => `- ${t.id} ${short(t.title, 40)}（${t.lease?.role ?? t.role}）${isLightFlow(flow) && t.kind === 'qa' ? (flow.mode === 'change' ? '变更确认中' : '复现确认中') : taskActivity(t, lastFailureKind(store, flow.id, t.id))}`).join('\n')}` : `正在进行：${idleText(flow, tasks, stageDelegated(store, flow))}`,
+    ...(tasks.some((t) => t.status === 'blocked' && !waitingOnArchitect(tasks, t)) ? [`阻塞：${tasks.filter((t) => t.status === 'blocked' && !waitingOnArchitect(tasks, t)).map((t) => { const c = stalledConsultOf(tasks, t); return c ? `${t.id}（在等的咨询 ${c.id} 已阻塞）` : t.id; }).join('、')}`] : []),
+    ...(tasks.some((t) => waitingOnArchitect(tasks, t)) ? [`等架构师回答：${tasks.filter((t) => waitingOnArchitect(tasks, t)).map((t) => t.id).join('、')}`] : []),
+    ...(flow.sync?.status === 'fixing' ? [`主分支同步：有冲突，正在自动解决`] : []),
+    ...(budget && !budget.warn ? [formatBudget(budget)] : []),
+  ].join('\n');
+}
+/** 没有进行中的流程时：最近结束的那个流程（完成或中止）及下一步 */
+function lastEnded(store: StateStore): FlowFile | null {
+  const ended = store.listFlows().map((id) => store.readFlow(id)).filter((f) => f.stage_status === 'done' || f.stage_status === 'aborted');
+  return ended.at(-1) ?? null;
+}
+const START_HINT = '开始：写好 docs/PRD.md、docs/ARCHITECTURE.md 与 docs/prototype/ 后 /forge-build、/forge-fix "<问题>" 或 /forge-change --from <yaml>（build 完成后的小改动）。';
+/** "需要你处理"与"主会话处理中"两段（后者没有时不显示） */
+export function actionsBlock(actions: readonly Action[]): string {
+  const list = (xs: readonly Action[]) => xs.map((a) => `- ${a.text}\n  → ${a.command}`).join('\n');
+  const mine = actions.filter((a) => a.owner !== 'orchestrator');
+  const theirs = actions.filter((a) => a.owner === 'orchestrator');
+  return [mine.length ? `需要你处理：\n${list(mine)}` : '需要你处理：无', ...(theirs.length ? [`主会话处理中（forge_decide）：\n${list(theirs)}`] : [])].join('\n');
+}
+export function renderStatus(store: StateStore, config: FlowConfig, now = new Date()): string {
+  const flows = visibleFlows(store);
+  if (!flows.length) {
+    const last = lastEnded(store);
+    if (!last) return `当前没有进行中的流程。${START_HINT}`;
+    const done = last.stage_status === 'done';
+    return `当前没有进行中的流程。\n最近的流程 ${last.id}「${short(last.title, 60)}」（${MODE_LABEL[last.mode]}）${done ? isLightFlow(last) ? `已结束，${last.mode === 'change' ? '变更' : '修复'}日志：/forge-status --detail` : `已完成，交付到 ${config.raw.main_branch}` : '已中止（集成分支与 worktree 保留）'}。\n${START_HINT}`;
+  }
+  return [actionsBlock(actionsNeeded(store, config, now)), ...flows.map((f) => renderFlow(store, config, f, now)), '（完整任务表与最近事件：/forge-status --detail；成本：/forge-status --cost；度量：/forge-status --metrics）'].join('\n\n');
+}
+
+export interface StatusSnapshot {
+  phases: Record<string, PhaseOrDone>;
+  actions: Record<string, string>;
+  attempts: Record<string, number>;
+}
+
+export function snapshotOf(store: StateStore, config: FlowConfig): StatusSnapshot {
+  const snap: StatusSnapshot = { phases: {}, actions: {}, attempts: {} };
+  const flows = visibleFlows(store);
+  for (const f of flows) {
+    const tasks = store.listTasks(f.id);
+    snap.phases[f.id] = currentPhase(f);
+    for (const t of tasks) snap.attempts[`${f.id}/${t.id}`] = t.attempts;
+  }
+  for (const a of actionsNeeded(store, config)) snap.actions[a.key] = `${a.owner === 'orchestrator' ? '［主会话处理中］' : ''}${a.text} → ${a.command}`;
+  return snap;
+}
+
+export function notices(prev: StatusSnapshot, next: StatusSnapshot, failureKind?: (flow: string, task: string) => string | null): string[] {
+  const out: string[] = [];
+  for (const [flow, phase] of Object.entries(next.phases)) {
+    const before = prev.phases[flow];
+    if (before && before !== phase) out.push(phase === 'done' ? `pi-forge：${flow} 已完成。` : `pi-forge：${flow} 进入${PHASE_LABEL[phase]}阶段。`);
+  }
+  for (const flow of Object.keys(prev.phases)) {
+    if (!(flow in next.phases)) out.push(`pi-forge：${flow} 已结束${/^[XC]-/.test(flow) ? '，修复或小改动已合入主分支或已中止，详见 /forge-status --cost 中的修复日志' : ''}。`);
+  }
+  for (const [key, text] of Object.entries(next.actions)) {
+    if (!(key in prev.actions)) out.push(text.startsWith('［主会话处理中］') ? `pi-forge：交给主会话决定：${text.slice('［主会话处理中］'.length)}` : `pi-forge 需要你处理：${text}`);
+  }
+  for (const key of Object.keys(prev.actions)) {
+    if (key.startsWith('model-pause:') && !(key in next.actions)) out.push(`pi-forge：模型 ${key.slice('model-pause:'.length, key.lastIndexOf('@'))} 已恢复派发。`);
+  }
+  for (const [key, n] of Object.entries(next.attempts)) {
+    if (n === 1 && (prev.attempts[key] ?? 0) === 0) {
+      const [flow, task] = key.split('/') as [string, string];
+      const kind = failureKind?.(flow, task);
+      out.push(`pi-forge：${task} 第一次未通过${kind ? `（${kind}）` : ''}，程序已自动重试。`);
+    }
+  }
+  return out;
+}
+
+/**
+ * 状态栏一行（调度模式、终端界面）：流程、高层阶段（实施时带 S 阶段）、本阶段进度、一句话状态、需要用户处理的事项数。
+ * 保持短：不列任务编号。没有可见流程时返回 null（清除状态栏）。
+ */
+export function statusLine(store: StateStore, config: FlowConfig, now = new Date()): string | null {
+  const flows = visibleFlows(store);
+  if (!flows.length) return null;
+  const all = actionsNeeded(store, config, now);
+  const actions = all.filter((a) => a.owner !== 'orchestrator').length;
+  const delegated = all.length - actions;
+  const parts = flows.map((flow) => {
+    const tasks = store.listTasks(flow.id);
+    const cur = currentPhase(flow);
+    const live = tasks.filter((t) => t.status !== 'cancelled' && !isStageLevelTask(t));
+    const inPhase = (isLightFlow(flow) || cur === 'done' ? live : live.filter((t) => phaseOfStage(t.stage) === cur))
+      .filter((t) => isLightFlow(flow) || cur !== 'dev' || !flow.s_stages?.length || t.stage === flow.stage);
+    const active = tasks.filter((t) => INFLIGHT.has(t.status));
+    const head = isLightFlow(flow) ? `${flow.id} ${flow.mode === 'change' ? '小改动' : '修复'}·${phaseLabelOf(flow, fixPhase(flow, tasks))}` : awaitingMerge(flow) ? `${flow.id} 交付`
+      : `${flow.id} ${phaseLabel(flow, cur)}${cur === 'dev' && flow.s_stages?.some((s) => s.id === flow.stage) ? ` ${flow.stage}` : ''}`;
+    const state = awaitingMerge(flow) ? '等你批准合入' : flow.stage_status === 'awaiting_human' ? '等你审批' : flow.stage_status === 'needs_human' ? (stageDelegated(store, flow) ? '主会话决定中' : '等你处理')
+      : flow.stage_status === 'awaiting_gate' ? (tasks.some((t) => t.kind === 'qa' && INFLIGHT.has(t.status)) ? '阶段验收中' : '阶段检查中') : active.length ? `${active.length} 个任务进行中` : '';
+    return [head, isLightFlow(flow) ? '' : inPhase.length ? `${inPhase.filter((t) => t.status === 'done').length}/${inPhase.length}` : '', state].filter(Boolean).join(' · ');
+  });
+  return `pi-forge ${parts.join(' ｜ ')}${actions ? ` · 需要你处理 ${actions} 项` : ''}${delegated ? ` · 主会话处理 ${delegated} 项` : ''}`;
+}

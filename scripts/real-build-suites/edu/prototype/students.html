@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>学员 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-012。列表页的标准写法，其他列表页照这个结构：page-header → toolbar → card（表格 + 分页条）→ 弹窗 → 其他状态。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">王芳（课程顾问）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html" class="on">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的（PRD 的权限表）。例如课程顾问看不到「财务」组里的收款流水、收入确认、课酬与工资单，也看不到「系统」组。</div>
+
+    <div class="page-header">
+      <h1>学员</h1>
+      <span class="grow"></span>
+      <a class="btn" href="#">导出 CSV</a>
+      <button class="btn btn-primary">新建学员</button>
+    </div>
+
+    <form class="toolbar">
+      <input class="input search" placeholder="姓名、学号或手机号">
+      <select class="select"><option>全部校区</option><option>东湖校区</option><option>光谷校区</option></select>
+      <select class="select"><option>全部年级</option><option>一年级</option><option>…</option><option>十二年级</option></select>
+      <select class="select"><option>全部状态</option><option>在读</option><option>停读</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>学号</th><th>姓名</th><th>性别</th><th>年级</th><th>学校</th><th>手机</th><th>校区</th><th>状态</th><th>建档日期</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>S000128</td><td><a href="student-detail.html">李子涵</a></td><td>女</td><td>四年级</td><td>东湖小学</td><td>138 0000 1234</td><td>东湖校区</td><td><span class="tag tag-success">在读</span></td><td>2026-09-02</td><td class="ops"><a class="btn-link" href="student-detail.html">查看</a><a class="btn-link" href="order-new.html">报名</a></td></tr>
+            <tr><td>S000127</td><td><a href="student-detail.html">张一鸣</a></td><td>男</td><td>六年级</td><td>实验小学</td><td></td><td>光谷校区</td><td><span class="tag tag-success">在读</span></td><td>2026-09-01</td><td class="ops"><a class="btn-link" href="student-detail.html">查看</a><a class="btn-link" href="order-new.html">报名</a></td></tr>
+            <tr class="muted"><td>S000098</td><td><a href="student-detail.html">陈思</a></td><td>未知</td><td>—</td><td></td><td>139 1111 2222</td><td>东湖校区</td><td><span class="tag tag-danger">停读</span></td><td>2026-03-15</td><td class="ops"><a class="btn-link" href="student-detail.html">查看</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 128 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 7 页</span><button class="btn btn-sm">下一页</button></div>
+    </div>
+    <div class="proto-note">按 <code>id</code> 降序（新建的在前）。页码与筛选写进网址参数（<code>?page=2&amp;campus_id=1&amp;status=active</code>），刷新后不变。搜索框去掉首尾空白后为空时不带 <code>q</code>。点姓名或「查看」进学员详情；「报名」进报名下单页并带上这个学员。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">新建学员</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">所属校区已停用</div>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">姓名<span class="required">*</span></label><input class="input invalid"><div class="field-error">姓名不能为空</div></div>
+          <div class="field"><label class="field-label">性别</label><select class="select"><option>未知</option><option>男</option><option>女</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">出生日期</label><input class="input" type="date"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">年级</label><select class="select"><option>（不填）</option><option>一年级</option><option>…</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">学校</label><input class="input"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">手机</label><input class="input"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">所属校区<span class="required">*</span></label><select class="select"><option>东湖校区</option><option>光谷校区</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">状态</label><select class="select"><option>在读</option><option>停读</option></select><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">备注</label><textarea class="textarea"></textarea><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">新建与编辑用同一个弹窗（编辑在学员详情页）。保存成功后关闭弹窗、刷新列表并提示「已保存」；新建成功后直接进入这个学员的详情页。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有学员）</h3><div class="card state"><div class="title">还没有学员</div>线索转化或直接新建学员后会出现在这里<br><button class="btn btn-primary">新建学员</button></div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">没有符合条件的学员</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">学员列表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看学员<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

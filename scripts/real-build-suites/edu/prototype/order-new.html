@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>报名下单 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-019（含 REQ-018 的优惠与 REQ-020 的课时包）。选学员、选课程与课时数、选优惠，预览金额与优惠分摊后提交订单。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">王芳（课程顾问）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html" class="on">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="crumbs"><a href="orders.html">订单</a> / 报名下单</div>
+    <div class="page-header">
+      <h1>报名下单</h1>
+    </div>
+    <div class="proto-note">只有 admin、sales 能下单（订单读写）；其他角色看不到入口，直接打开显示无权限。从学员列表或学员详情的「报名」进来时网址带 <code>?student_id=128</code>，学员已选好；直接打开时学员为空。</div>
+
+    <div class="alert alert-error">学员已停读，不能下单</div>
+    <div class="proto-note">提交时接口返回的、判断不了是哪个字段的错误（例如 409 学员已停读）显示在页面顶部这里；已经填的内容不清空。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>学员</h2></div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">学员<span class="required">*</span></label><input class="input" placeholder="输入姓名、学号或手机号搜索" value="李子涵"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">已选</label><div>李子涵 · S000128 · 四年级 · 东湖校区</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="proto-note">学员候选取 <code>GET /api/students?status=active&amp;q=</code>（输入时搜索，只列在读学员），下拉显示「姓名 · 学号 · 手机」。选定后可以点输入框重新搜索换人。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>课程</h2><span class="grow"></span><button class="btn btn-sm">添加课程</button></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>课程</th><th class="num">单价（每节）</th><th class="num">课时数</th><th class="num">金额</th><th class="num">优惠分摊</th><th class="num">实付</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><select class="select"><option>四年级数学提高（MATH-4A）</option></select></td><td class="num">¥120.00</td><td class="num"><input class="input" value="20"></td><td class="num">¥2,400.00</td><td class="num negative">-¥114.28</td><td class="num">¥2,285.72</td><td class="ops"><button class="btn-link danger">删除</button></td></tr>
+            <tr><td><select class="select"><option>少儿英语（ENG-K3）</option></select></td><td class="num">¥150.00</td><td class="num"><input class="input" value="12"></td><td class="num">¥1,800.00</td><td class="num negative">-¥85.72</td><td class="num">¥1,714.28</td><td class="ops"><button class="btn-link danger">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      课程下拉取 <code>GET /api/courses?active=true&amp;page_size=100</code>，显示「名称（编号）」；已经在别的行选过的课程不出现在下拉里（同一课程只能出现一次）。选好课程后单价取课程的每节单价，课时数默认填课程的「报名默认课时数」，可以改成 1–200 的整数。
+      至少 1 行、最多 10 行：到 10 行时「添加课程」禁用；只剩 1 行时这一行的「删除」不显示。行的顺序就是添加的顺序，提交时按这个顺序发给接口（分摊的零头算在最后一行，见下）。
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>优惠与金额</h2></div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">优惠</label>
+            <select class="select"><option>不使用优惠</option><option selected>秋季报名立减 · 减 ¥200.00 · 原价满 ¥2,000.00</option><option>老带新九折 · 减 10%</option><option disabled>寒假大课包 · 减 ¥500.00 · 原价满 ¥5,000.00（未达门槛）</option></select>
+            <div class="field-error"></div></div>
+          <div class="field"><label class="field-label">备注</label><input class="input" placeholder="最多 200 字"><div class="field-error"></div></div>
+        </div>
+        <dl class="desc" style="margin-top: var(--space-4)">
+          <div class="item"><dt>原价</dt><dd class="money">¥4,200.00</dd></div>
+          <div class="item"><dt>优惠</dt><dd class="money negative">-¥200.00</dd></div>
+          <div class="item"><dt>应付</dt><dd class="money" style="font-size: var(--text-xl); font-weight: var(--weight-bold)">¥4,000.00</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="proto-note">
+      优惠下拉取 <code>GET /api/discounts?usable=true&amp;page_size=100</code>（启用且今天在有效期内），默认「不使用优惠」；原价没达到使用门槛的选项置灰并注明「未达门槛」，原价变化后重新判断，已选的优惠变得不满足门槛时自动改回「不使用优惠」并在下面提示「原价未达到这个优惠的门槛」。
+      <b>金额预览</b>（页面按 REQ-019 AC2、AC3 的公式自己算，提交后以接口返回为准）：每行金额 = 课时数 × 单价；原价 = 各行之和；优惠：立减型是 min(减免金额, 原价)，按比例减是 原价 × 比例 ÷ 100 向下取整到分；应付 = 原价 − 优惠。
+      <b>优惠分摊</b>：除最后一行外，每行分摊 = 优惠 × 这行金额 ÷ 原价，向下取整到分；最后一行分摊 = 优惠 − 前面各行分摊之和；每行实付 = 金额 − 分摊。上图：¥200.00 × 2,400 ÷ 4,200 = ¥114.285… 取 ¥114.28，最后一行是 ¥200.00 − ¥114.28 = ¥85.72。
+      每行的「实付」就是支付后这门课课时包的实付金额（以后按它算消课确认收入与退费金额），所以分摊要按行显示出来；不选优惠时「优惠分摊」列显示 ¥0.00。
+    </div>
+
+    <div class="form-actions"><a class="btn" href="orders.html">取消</a><button class="btn btn-primary">提交订单</button></div>
+    <div class="proto-note">
+      <code>POST /api/orders</code>，请求体 <code>{"student_id", "items": [{"course_id", "lessons"}], "discount_id", "note"}</code>（不用优惠时 <code>discount_id</code> 为 <code>null</code>）。提交中按钮禁用并显示「提交中…」。
+      成功（201）后进入这张订单的详情页（<code>order-detail.html</code>），订单是「待支付」，在那里收款；提交时课程已停用、优惠已不可用（400）的错误显示在对应的行或优惠下面，学员停读（409）显示在页面顶部。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中（带了 student_id，正在取学员与课程）</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>还没选学员、还没加课程</h3>
+        <div class="card"><div class="card-body state"><div class="title">还没有添加课程</div>先选学员，再点「添加课程」<br><button class="btn">添加课程</button></div></div>
+        <div class="form-actions"><a class="btn" href="orders.html">取消</a><button class="btn btn-primary" disabled>提交订单</button></div>
+        <div class="proto-note">没选学员或没有课程行时「提交订单」禁用。</div>
+      </section>
+      <section><h3>今天没有可用的优惠</h3><div class="card"><div class="card-body"><div class="field"><label class="field-label">优惠</label><select class="select"><option>不使用优惠</option></select><div class="field-hint">今天没有可用的优惠</div></div></div></div></section>
+      <section><h3>网址里的学员已停读</h3><div class="alert alert-warning">陈思（S000098）已停读，不能下单。请先在学员详情里改回在读，或换一个学员。</div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能报名下单<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

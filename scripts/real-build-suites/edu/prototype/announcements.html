@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>公告管理 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-044。公告管理：全部公告（含草稿），新建、编辑草稿、发布、删除；受众、校区、置顶。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">孙丽（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html" class="on">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">只有 admin、academic 能用，侧栏「系统」组里的「公告」只对这两个角色显示（academic 的「系统」组只有「公告」一项）；其他角色直接打开显示无权限。</div>
+
+    <div class="page-header">
+      <h1>公告</h1>
+      <span class="grow"></span>
+      <button class="btn btn-primary">新建公告</button>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>标题</th><th>受众</th><th>校区</th><th>置顶</th><th>状态</th><th>发布时间</th><th>创建人</th><th>创建时间</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>国庆后课表调整说明（草稿）</td><td>全部</td><td>东湖校区</td><td></td><td><span class="tag tag-warning">草稿</span></td><td>—</td><td>孙丽</td><td>2026-10-17 09:30</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link">发布</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>期中家长会通知</td><td>家长</td><td>全校</td><td><span class="tag tag-info">置顶</span></td><td><span class="tag tag-success">已发布</span></td><td>2026-10-15 14:30</td><td>管理员</td><td>2026-10-15 14:10</td><td class="ops"><button class="btn-link">查看</button><button class="btn-link">取消置顶</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>10 月教研会安排</td><td>员工</td><td>全校</td><td></td><td><span class="tag tag-success">已发布</span></td><td>2026-10-09 18:00</td><td>孙丽</td><td>2026-10-09 17:45</td><td class="ops"><button class="btn-link">查看</button><button class="btn-link">置顶</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>光谷校区停车说明</td><td>全部</td><td>光谷校区</td><td></td><td><span class="tag tag-success">已发布</span></td><td>2026-09-28 10:00</td><td>孙丽</td><td>2026-09-28 09:50</td><td class="ops"><button class="btn-link">查看</button><button class="btn-link">置顶</button><button class="btn-link danger">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 12 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 1 页</span><button class="btn btn-sm" disabled>下一页</button></div>
+    </div>
+    <div class="proto-note">
+      数据来自 <code>GET /api/announcements</code>（管理用，含草稿；分页，按 <code>id</code> 降序）。页码写进网址参数（<code>?page=2</code>）；PRD 没有给筛选参数，所以没有筛选条。<br>
+      受众：<code>all</code> 全部、<code>staff</code> 员工、<code>parents</code> 家长。校区为空（<code>campus_id</code> 为 <code>null</code>）显示「全校」，否则显示校区名称（按 <code>GET /api/campuses</code> 对照）。状态由 <code>published_at</code> 判断：为空是「草稿」，否则「已发布」。「创建人」是 <code>created_by_name</code>。<br>
+      操作：草稿有「编辑」「发布」「删除」；已发布的只能改置顶：「查看」（只读弹窗，显示标题、内容与各字段）、「置顶」或「取消置顶」、「删除」。「置顶」「取消置顶」直接调用 <code>PATCH /api/announcements/:id</code>，请求体 <code>{"pinned": true}</code> 或 <code>{"pinned": false}</code>，不用确认，成功后刷新列表并提示「已置顶」或「已取消置顶」。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog wide">
+      <div class="dialog-header">新建公告</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">已发布的公告只能修改置顶</div>
+        <div class="form-grid">
+          <div class="field span-2"><label class="field-label">标题<span class="required">*</span></label><input class="input invalid" value=""><div class="field-hint">1–60 个字</div><div class="field-error">标题不能为空</div></div>
+          <div class="field span-2"><label class="field-label">内容<span class="required">*</span></label><textarea class="textarea">10 月 8 日起，东湖校区周三晚上的课改到 A102 教室……</textarea><div class="field-hint">1–5000 个字</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">受众<span class="required">*</span></label><select class="select"><option>全部（员工和家长）</option><option>员工</option><option>家长</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">校区</label><select class="select"><option>全校</option><option>东湖校区</option><option>光谷校区</option></select><div class="field-hint">选了校区，只有这个校区的家长和教师能看到（其他员工都能看到）</div><div class="field-error"></div></div>
+          <div class="field span-2"><label class="checkbox"><input type="checkbox"> 置顶</label><div class="field-hint">置顶的公告排在最前面；发布后也可以在列表里置顶或取消置顶</div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存草稿</button></div>
+    </div></div>
+    <div class="proto-note">
+      新建：<code>POST /api/announcements</code>，请求体 <code>{"title", "content", "audience", "campus_id", "pinned"}</code>，受众默认「全部」、校区默认「全校」（传 <code>null</code>）、置顶默认不勾。保存后是草稿，不会被任何人看到。<br>
+      编辑草稿用同一个弹窗（标题「编辑公告」，带出原来的值）：<code>PATCH /api/announcements/:id</code>，只传改过的字段；返回 409（别人已经发布了，只能改置顶）时显示在顶部 <code>alert-error</code>，关闭后刷新列表。<br>
+      保存成功后关闭弹窗、刷新列表并提示「已保存」。校区下拉来自 <code>GET /api/campuses</code>。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">发布公告</div>
+      <div class="dialog-body">确定发布公告「国庆后课表调整说明」吗？发布后受众（全部 · 东湖校区）立即能看到，之后只能改置顶，不能改别的；可以删除。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">发布</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/announcements/:id/publish</code> 成功后关闭确认框、刷新列表并提示「已发布」；返回 409（已发布）时确认框不关，显示接口的 <code>message</code>。发布后的公告通过 <code>GET /api/announcements/visible</code> 给受众看（置顶的在前）：员工在工作台 dashboard.html、家长在家长端首页 parent-home.html 看到。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除公告</div>
+      <div class="dialog-body">确定删除公告「光谷校区停车说明」吗？已发布的公告删除后，员工和家长都看不到了。删除后不能恢复。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/announcements/:id</code> 返回 204 后关闭确认框、刷新列表并提示「已删除」。草稿和已发布的都可以删除。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有公告）</h3><div class="card state"><div class="title">还没有公告</div>新建并发布后，员工和家长会看到<br><button class="btn btn-primary">新建公告</button></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">公告列表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能管理公告<br><a class="btn" href="dashboard.html">返回工作台</a></div><div class="proto-note">sales、finance、teacher 直接打开这个页面时显示。</div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

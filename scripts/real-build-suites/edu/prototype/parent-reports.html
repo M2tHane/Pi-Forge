@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>家长端成绩与反馈 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-042 AC4。三个页签：考试成绩（/api/parent/students/:id/scores）、课堂反馈（…/feedback）、考勤（…/attendance）。只读。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="parent-header">
+  <b>小树培训学校</b>
+  <span class="grow"></span>
+  <a href="parent-notifications.html">通知 <span class="badge">2</span></a>
+  <span>李建华</span>
+  <a href="login.html">退出</a>
+</header>
+<nav class="parent-nav">
+  <a href="parent-home.html">首页</a>
+  <a href="parent-schedule.html">课表</a>
+  <a href="parent-homeworks.html">作业</a>
+  <a href="parent-reports.html" class="on">成绩</a>
+  <a href="parent-notifications.html">通知</a>
+</nav>
+<main class="parent-page">
+  <div class="child-switch">
+    <a class="btn on" href="parent-reports.html" aria-current="true">李子涵</a>
+    <a class="btn" href="parent-reports.html">李子轩</a>
+  </div>
+
+  <div class="tabs">
+    <a href="parent-reports.html" class="on">考试成绩</a>
+    <a href="parent-reports.html">课堂反馈</a>
+    <a href="parent-reports.html">考勤</a>
+  </div>
+  <div class="proto-note">当前页签写进网址参数 <code>?student_id=128&amp;tab=scores</code>（<code>scores</code> 默认、<code>feedback</code>、<code>attendance</code>）。下面依次画三个页签的内容。三个列表都不分页，照接口顺序显示。</div>
+
+  <!-- 页签：考试成绩 -->
+  <div class="card">
+    <div class="list-item">
+      <div class="grow">
+        <div><b>十月月考</b></div>
+        <div class="meta">四年级数学提高班 · 2026-10-14</div>
+      </div>
+      <div style="text-align: right">
+        <div class="money"><b>92</b> / 100</div>
+        <div class="meta">第 3 名</div>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>Unit 1–4 阶段测试</b></div>
+        <div class="meta">四年级英语阅读班 · 2026-10-10</div>
+      </div>
+      <div style="text-align: right">
+        <div class="money"><b>86.5</b> / 120</div>
+        <div class="meta">第 7 名</div>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>开学摸底测试</b></div>
+        <div class="meta">四年级数学提高班 · 2026-09-06</div>
+      </div>
+      <span class="tag tag-danger">缺考</span>
+    </div>
+  </div>
+  <div class="proto-note">
+    来自 <code>GET /api/parent/students/128/scores</code>，按考试日期降序。每行：考试名称 <code>exam_name</code>、班级名、日期，右边是 分数 / 满分（<code>score</code>、<code>full_score</code>，分数最多一位小数，原样显示）与名次 <code>rank</code>（「第 N 名」）。<code>score</code> 为空时显示 <code>tag-danger</code>「缺考」，不显示名次。接口只列这个孩子有成绩记录（含缺考）的考试，还没录成绩的考试不出现。
+  </div>
+
+  <!-- 页签：课堂反馈 -->
+  <h2 style="margin: var(--space-6) 0 var(--space-3)">页签「课堂反馈」（<code>?tab=feedback</code>）</h2>
+  <div class="card">
+    <div class="list-item">
+      <div class="grow">
+        <div><b>2026-10-12</b> · 四年级数学提高班</div>
+        <div>评分 <b>5</b> / 5</div>
+        <div class="meta">课堂上主动回答问题，分数通分掌握得很好。</div>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>2026-10-11</b> · 四年级英语阅读班</div>
+        <div>评分 <b>3</b> / 5</div>
+        <div class="meta">朗读有进步，单词默写错了 4 个，回家请再复习 Unit 4 的单词。</div>
+      </div>
+    </div>
+  </div>
+  <div class="proto-note">来自 <code>GET /api/parent/students/128/feedback</code>，按课次日期降序。每条：课次日期 <code>date</code>、班级名 <code>class_name</code>、评分 <code>rating</code>（1–5，显示「评分 N / 5」）、评语 <code>comment</code>（为空时不显示这一行）。</div>
+
+  <!-- 页签：考勤 -->
+  <h2 style="margin: var(--space-6) 0 var(--space-3)">页签「考勤」（<code>?tab=attendance</code>）</h2>
+  <form class="toolbar">
+    <input class="input" type="date" value="2026-09-01" aria-label="开始日期">
+    <span class="meta">至</span>
+    <input class="input" type="date" value="2026-10-15" aria-label="结束日期">
+    <button class="btn" type="submit">查询</button>
+  </form>
+  <div class="stats">
+    <div class="stat"><div class="label">出勤率</div><div class="value">95%</div></div>
+    <div class="stat"><div class="label">出勤 / 迟到</div><div class="value">17 / 1</div></div>
+    <div class="stat"><div class="label">缺勤 / 请假</div><div class="value">1 / 2</div></div>
+  </div>
+  <div class="card">
+    <div class="list-item">
+      <div class="grow"><div><b>10-14 周三</b> 18:30</div><div class="meta">四年级数学提高班 · 小学数学（四年级）</div></div>
+      <span class="tag tag-success">出勤</span>
+    </div>
+    <div class="list-item">
+      <div class="grow"><div><b>10-12 周一</b> 18:30</div><div class="meta">四年级数学提高班 · 小学数学（四年级）</div></div>
+      <span class="tag tag-info">迟到</span>
+    </div>
+    <div class="list-item">
+      <div class="grow"><div><b>10-11 周日</b> 09:00</div><div class="meta">四年级英语阅读班 · 少儿英语阅读</div></div>
+      <span class="tag tag-warning">请假</span>
+    </div>
+    <div class="list-item">
+      <div class="grow"><div><b>10-04 周日</b> 09:00</div><div class="meta">四年级英语阅读班 · 少儿英语阅读</div></div>
+      <span class="tag tag-danger">缺勤</span>
+    </div>
+  </div>
+  <div class="proto-note">
+    日期写进网址参数 <code>?tab=attendance&amp;from=2026-09-01&amp;to=2026-10-15</code>（课次日期，默认近 30 天）；记录来自 <code>GET /api/parent/students/128/attendance?from=…&amp;to=…</code>，上方数字来自 <code>GET /api/students/128/attendance/summary?from=…&amp;to=…</code>。接口按日期、开始时间<b>升序</b>返回，页面倒过来显示（最近的在前）。
+    每行：日期与星期、开始时间、班级名、课程名，右边是点名状态：出勤 <code>tag-success</code>、迟到 <code>tag-info</code>、缺勤 <code>tag-danger</code>、请假 <code>tag-warning</code>。
+    上方三个数字是 summary 的 <code>rate</code>、<code>present</code> / <code>late</code>、<code>absent</code> / <code>leave</code>；<code>rate</code> 为 <code>null</code> 时显示「—」。
+  </div>
+
+  <div class="proto-states">
+    <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+    <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+    <section><h3>还没有考试成绩</h3><div class="card state"><div class="title">还没有考试成绩</div>老师录入成绩后会出现在这里</div></section>
+    <section><h3>还没有课堂反馈</h3><div class="card state"><div class="title">还没有课堂反馈</div>老师在课后写的反馈会出现在这里</div></section>
+    <section><h3>这段时间没有考勤记录</h3><div class="card state"><div class="title">这段时间没有点名记录</div>换一个日期范围试试</div></section>
+    <section><h3>还没有绑定孩子</h3><div class="card state"><div class="title">还没有绑定孩子</div>请联系学校的课程顾问，把你的账号绑定到孩子名下</div></section>
+    <section><h3>出错</h3><div class="card state"><div class="title">成绩加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+    <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>家长端只给家长账号使用<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+  </div>
+</main>
+</body>
+</html>

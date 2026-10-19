@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>收入确认 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-035。按课次日期统计已确认的收入，按课程与校区分列。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">赵敏（财务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html" class="on">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的。能看到「收入确认」的只有 admin 与 finance（只读）。</div>
+
+    <div class="page-header">
+      <h1>收入确认</h1>
+    </div>
+
+    <form class="toolbar">
+      <input class="input" type="date" value="2026-10-01" aria-label="开始日期">
+      <span>至</span>
+      <input class="input" type="date" value="2026-10-18" aria-label="结束日期">
+      <select class="select"><option>全部校区</option><option>东湖校区</option><option>光谷校区</option></select>
+      <button class="btn" type="submit">查询</button>
+    </form>
+    <div class="proto-note">日期是课次日期（含两端），两个都必填；网址参数 <code>from</code>、<code>to</code>、<code>campus_id</code>（按班级所在校区，不选时不带）。第一次打开默认本月 1 日到今天，并写进网址。<code>from</code> 晚于 <code>to</code> 或有一个为空时不查询，在日期框下提示。校区下拉来自 <code>GET /api/campuses</code>，停用的校区也列出（历史收入仍要能查）。</div>
+
+    <div class="alert alert-info">确认收入 = 这段时间里已点名的课次中，出勤、迟到、缺勤的学员每人扣 1 节课时时确认的金额之和（请假不扣课时，不确认收入）。点名更正后按更正后的结果计算。</div>
+
+    <div class="stats">
+      <div class="stat"><div class="label">确认收入</div><div class="value">¥52,365.00</div><div class="sub">2026-10-01 至 2026-10-18</div></div>
+      <div class="stat"><div class="label">消课人次</div><div class="value">386</div><div class="sub">扣课时的人次</div></div>
+    </div>
+
+    <div class="grid-2" style="margin-top: var(--space-4)">
+      <div class="card">
+        <div class="card-header"><h2>按课程</h2></div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>课程</th><th class="num">消课人次</th><th class="num">确认收入</th></tr></thead>
+            <tbody>
+              <tr><td>四年级数学提高</td><td class="num">168</td><td class="num">¥22,680.00</td></tr>
+              <tr><td>小学英语阅读</td><td class="num">142</td><td class="num">¥16,188.00</td></tr>
+              <tr><td>小学语文写作</td><td class="num">54</td><td class="num">¥6,297.00</td></tr>
+              <tr><td>初中物理一对一</td><td class="num">22</td><td class="num">¥7,200.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>按校区</h2></div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>校区</th><th class="num">消课人次</th><th class="num">确认收入</th></tr></thead>
+            <tbody>
+              <tr><td>东湖校区</td><td class="num">231</td><td class="num">¥31,905.00</td></tr>
+              <tr><td>光谷校区</td><td class="num">155</td><td class="num">¥20,460.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="proto-note">数据来自 <code>GET /api/reports/revenue?from=…&amp;to=…&amp;campus_id=…</code>：大数字是 <code>total</code> 与 <code>lessons</code>；两张表是 <code>by_course</code>、<code>by_campus</code>，顺序同接口（按课程、校区编号升序），没有数据的课程与校区不列。选了校区时「按校区」只有一行。窄屏时两张表上下排。不分页，没有导出。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="stats"><div class="stat"><div class="skeleton-row"></div></div><div class="stat"><div class="skeleton-row"></div></div></div><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>这段时间没有确认收入</h3><div class="stats"><div class="stat"><div class="label">确认收入</div><div class="value">¥0.00</div></div><div class="stat"><div class="label">消课人次</div><div class="value">0</div></div></div><div class="card state"><div class="title">这段时间没有确认的收入</div>课次点名后，出勤、迟到、缺勤的学员扣课时时确认收入</div><div class="proto-note">两张明细表为空时都换成这一块。</div></section>
+      <section><h3>日期不合法</h3><div class="toolbar"><input class="input invalid" type="date" value=""><span>至</span><input class="input" type="date" value="2026-10-18"></div><div class="field-error">请选择开始日期</div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">收入确认加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看收入确认<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

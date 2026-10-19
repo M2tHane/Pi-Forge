@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>作业详情 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-038、REQ-039。作业详情：作业信息、编辑与删除，班里每个学员的提交情况，查看提交内容并批改。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">周敏（教师）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html" class="on">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">示例是教师「周敏」打开自己班级的作业。侧栏照 admin 画全部入口，实际按角色只显示有权限的（teacher 的侧栏见 my-schedule.html）。</div>
+
+    <div class="crumbs"><a href="homeworks.html">作业</a> / 第 3 单元 分数加减法练习</div>
+    <div class="page-header">
+      <h1>第 3 单元 分数加减法练习</h1>
+      <span class="grow"></span>
+      <button class="btn">编辑</button>
+      <button class="btn btn-danger" disabled>删除</button>
+    </div>
+    <div class="proto-note">「编辑」「删除」只对 admin、academic 和这个班的教师显示（sales 不显示）；班级不是开课状态（按 <code>GET /api/classes/:id</code> 的状态判断）时不显示「编辑」，「删除」照常。编辑弹窗与 homeworks.html 的「编辑作业」相同，保存成功后刷新本页并提示「已保存」。已有提交（<code>submitted_count</code> &gt; 0）时「删除」禁用，鼠标悬停提示「作业已有提交，不能删除」；没有提交时点「删除」弹确认框，删除成功后回到作业列表并提示「已删除」。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>作业信息</h2></div>
+      <div class="card-body">
+        <dl class="desc">
+          <div class="item"><dt>班级</dt><dd><a href="class-detail.html">四年级数学提高班</a></dd></div>
+          <div class="item"><dt>关联课次</dt><dd><a href="lesson-detail.html">第 8 次课 2026-10-14 周三 18:30</a></dd></div>
+          <div class="item"><dt>截止日期</dt><dd>2026-10-20</dd></div>
+          <div class="item"><dt>布置人</dt><dd>周敏</dd></div>
+          <div class="item"><dt>布置时间</dt><dd>2026-10-14 20:05</dd></div>
+          <div class="item"><dt>已提交 / 在班</dt><dd class="num">8 / 12</dd></div>
+        </dl>
+        <h3>内容</h3>
+        <p>完成练习册第 24–26 页，第 5 题写出计算过程。<br>家长拍照或把答案抄在提交框里即可。</p>
+      </div>
+    </div>
+    <div class="proto-note">数据来自 <code>GET /api/homeworks/:id</code>；关联课次是「第 <code>lesson_seq</code> 次课 <code>lesson_date</code>」，布置人是 <code>created_by_name</code>。内容按原文显示，保留换行。没有关联课次时「关联课次」显示「—」。</div>
+
+    <div class="stats">
+      <div class="stat"><div class="label">已提交</div><div class="value">8</div><div class="sub">在班 12 人</div></div>
+      <div class="stat warn"><div class="label">未提交</div><div class="value">4</div></div>
+      <div class="stat"><div class="label">逾期提交</div><div class="value">2</div></div>
+      <div class="stat"><div class="label">已批改</div><div class="value">5</div><div class="sub">待批改 3</div></div>
+    </div>
+    <div class="proto-note">四个数字由下面的提交情况列表在页面上算出：已提交 = 有 <code>submission_id</code> 的人数；未提交 = 没有 <code>submission_id</code> 的人数（列表里没提交的都是当前在班学员）；逾期提交 = <code>late</code> 为真的人数；已批改 = <code>score</code> 不为空的人数，待批改 = 已提交 − 已批改。未提交大于 0 时加 <code>.warn</code>。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>提交情况</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>学号</th><th>姓名</th><th>状态</th><th>提交时间</th><th>逾期</th><th class="num">分数</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>S000127</td><td>张一鸣</td><td><span class="tag tag-success">已提交</span></td><td>2026-10-15 19:42</td><td></td><td class="num">92</td><td class="ops"><button class="btn-link">查看与批改</button></td></tr>
+            <tr><td>S000128</td><td>李子涵</td><td><span class="tag tag-success">已提交</span></td><td>2026-10-16 20:15</td><td></td><td class="num">—</td><td class="ops"><button class="btn-link">批改</button></td></tr>
+            <tr><td>S000131</td><td>王雨桐</td><td><span class="tag tag-success">已提交</span></td><td>2026-10-21 08:30</td><td><span class="tag tag-warning">逾期</span></td><td class="num">78</td><td class="ops"><button class="btn-link">查看与批改</button></td></tr>
+            <tr><td>S000135</td><td>刘浩然</td><td><span class="tag tag-warning">未提交</span></td><td>—</td><td></td><td class="num">—</td><td class="ops"></td></tr>
+            <tr><td>S000140</td><td>赵可欣</td><td><span class="tag tag-warning">未提交</span></td><td>—</td><td></td><td class="num">—</td><td class="ops"></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      数据来自 <code>GET /api/homeworks/:id/status</code>：班里每个当前学员、以及已经提交过的学员（之后退了班的也在）各一行，按 <code>student_id</code> 升序，不分页。没提交的状态是「未提交」，提交时间、分数显示「—」，没有操作。<br>
+      已提交、还没批改（分数为空）的操作是「批改」；批改过的是「查看与批改」，可以重新批改。sales 只读：操作都是「查看」，弹窗里没有分数与评语的输入框和保存按钮。<br>
+      员工端不能替学员提交作业（提交只有家长端能做，见 parent-homeworks.html）。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog wide">
+      <div class="dialog-header">批改作业 · 王雨桐</div>
+      <div class="dialog-body">
+        <dl class="desc">
+          <div class="item"><dt>提交时间</dt><dd>2026-10-21 08:30 <span class="tag tag-warning">逾期</span></dd></div>
+          <div class="item"><dt>提交人</dt><dd>王雨桐家长</dd></div>
+          <div class="item"><dt>上次批改</dt><dd>周敏 2026-10-21 21:10</dd></div>
+        </dl>
+        <div class="field"><label class="field-label">提交内容</label><div class="card"><div class="card-body">第 24 页：1) 3/8 2) 5/6 3) 1 又 1/4<br>第 25 页：……<br>第 5 题：2/3 + 1/6 = 4/6 + 1/6 = 5/6</div></div></div>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">分数<span class="required">*</span></label><input class="input invalid" value="105"><div class="field-hint">0–100 的整数</div><div class="field-error">分数必须是 0–100 的整数</div></div>
+          <div class="field span-2"><label class="field-label">评语</label><textarea class="textarea">计算过程清楚，第 3 题约分再仔细一点。</textarea><div class="field-hint">0–500 个字</div><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存批改</button></div>
+    </div></div>
+    <div class="proto-note">
+      打开时按这一行的 <code>submission_id</code> 取 <code>GET /api/submissions/:id</code>，显示提交内容（保留换行）、提交时间、是否逾期；批改过的把原来的分数与评语填进输入框，并显示「上次批改」（<code>graded_by_name</code>、批改时间）；「提交人」是 <code>submitted_by_name</code>，没批改过不显示这一项。<br>
+      「保存批改」调用 <code>POST /api/submissions/:id/grade</code>，请求体 <code>{"score", "comment"}</code>；可以重复批改，以最后一次为准。成功后关闭弹窗、刷新提交情况并提示「已批改」（程序会给这个学员的家长发「作业已批改」通知）。<br>
+      只有这个班的教师、academic、admin 能看到输入框与「保存批改」；sales 打开的是只读的「查看提交」弹窗，只有「关闭」按钮。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除作业</div>
+      <div class="dialog-body">确定删除作业「第 3 单元 分数加减法练习」吗？删除后不能恢复。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/homeworks/:id</code> 成功后回到 homeworks.html 并提示「已删除」；返回 409 时确认框不关，显示接口的 <code>message</code>。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>对象不存在（404）</h3><div class="card state"><div class="title">这份作业不存在</div>可能已被删除，或网址有误<br><a class="btn" href="homeworks.html">返回作业列表</a></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>这份作业不是你的班级的<br><a class="btn" href="homeworks.html">返回作业列表</a></div><div class="proto-note">teacher 打开别的班级的作业、finance 打开任何作业时显示。</div></section>
+      <section><h3>班里没有学员</h3><div class="card"><div class="card-header"><h2>提交情况</h2></div><div class="state"><div class="title">班里现在没有学员</div>学员分班后会出现在这里</div></div></section>
+      <section><h3>还没有人提交</h3><div class="card"><div class="table-wrap"><table class="table"><tbody><tr><td>S000135</td><td>刘浩然</td><td><span class="tag tag-warning">未提交</span></td><td>—</td><td></td><td class="num">—</td><td class="ops"></td></tr></tbody></table></div></div><div class="proto-note">所有行都是「未提交」，这时「删除」按钮可用。</div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">提交情况加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>科目 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-007。科目列表、新建、编辑（含停用）、删除；admin、academic 能改，其他员工只读。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">孙丽（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html" class="on">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏同 students.html。权限：admin、academic 读写；sales、finance、teacher 只读（没有「新建科目」和操作列）；parent 不能用。</div>
+
+    <div class="page-header">
+      <h1>科目</h1>
+      <span class="grow"></span>
+      <button class="btn btn-primary">新建科目</button>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>名称</th><th>状态</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>数学</td><td><span class="tag tag-success">启用</span></td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>英语</td><td><span class="tag tag-success">启用</span></td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>语文</td><td><span class="tag tag-success">启用</span></td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>物理</td><td><span class="tag tag-success">启用</span></td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr class="muted"><td>编程</td><td><span class="tag tag-danger">停用</span></td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 5 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 1 页</span><button class="btn btn-sm" disabled>下一页</button></div>
+    </div>
+    <div class="proto-note">
+      <code>GET /api/subjects</code>，按 <code>id</code> 升序；PRD 没有给科目列表筛选参数，所以没有筛选条。页码写进网址参数 <code>?page=</code>。<br>
+      操作列与「新建科目」只给 admin、academic 显示。停用、启用在编辑弹窗里改「状态」；停用的科目不能再用在新建或修改的课程、教师里（那些页面的科目下拉只列启用的）。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">新建科目</div>
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">名称<span class="required">*</span></label><input class="input invalid" value="数学"><div class="field-hint">1–20 个字符，不能重复（不区分大小写）</div><div class="field-error">科目「数学」已存在</div></div>
+          <div class="field"><label class="field-label">状态</label><select class="select"><option>启用</option><option>停用</option></select><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">新建 <code>POST /api/subjects</code>、编辑 <code>PATCH /api/subjects/:id</code>（标题「编辑科目」，填好原值），字段 <code>name</code>、<code>active</code>。名称重复（409）显示在名称下。保存成功后关闭弹窗、刷新列表，轻提示「已保存」。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除科目</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">科目「数学」已被课程或教师使用，不能删除，可以停用</div>
+        确定删除科目「数学」吗？删除后不能恢复。
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/subjects/:id</code>。成功后关闭确认框、刷新列表，轻提示「已删除」；409 时确认框不关闭，接口的 <code>message</code> 显示在框里。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有科目）</h3><div class="card state"><div class="title">还没有科目</div>先建好科目，才能新建课程和教师<br><button class="btn btn-primary">新建科目</button></div><div class="proto-note">没有写权限的角色不显示按钮。</div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">科目列表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看科目<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

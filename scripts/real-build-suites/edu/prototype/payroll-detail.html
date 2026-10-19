@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工资单详情 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-037。工资单各教师的课酬，调整、重新计算、确认、发放、删除。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">赵敏（财务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html" class="on">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的。能打开这个页面的只有 admin 与 finance。</div>
+
+    <div class="crumbs"><a href="payrolls.html">工资单</a> / 2026-09</div>
+    <div class="page-header">
+      <h1>2026-09 工资单</h1>
+      <span class="tag tag-warning">草稿</span>
+      <span class="grow"></span>
+      <button class="btn btn-danger">删除</button>
+      <button class="btn">重新计算</button>
+      <button class="btn btn-primary">确认</button>
+    </div>
+    <div class="proto-note">按钮随状态变化：草稿显示「删除」「重新计算」「确认」，每行有「调整」；已确认只显示「发放」（主按钮），行里没有「调整」；已发放没有任何按钮（见下方其他状态）。</div>
+
+    <div class="card">
+      <div class="card-body">
+        <dl class="desc">
+          <div class="item"><dt>月份</dt><dd>2026-09</dd></div>
+          <div class="item"><dt>状态</dt><dd><span class="tag tag-warning">草稿</span></dd></div>
+          <div class="item"><dt>合计</dt><dd class="money">¥8,150.00</dd></div>
+          <div class="item"><dt>生成时间</dt><dd>2026-10-08 09:30</dd></div>
+          <div class="item"><dt>确认时间</dt><dd>—</dd></div>
+          <div class="item"><dt>发放时间</dt><dd>—</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>教师课酬</h2><span class="grow"></span><span class="meta">3 位教师</span></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>教师</th><th class="num">课次数</th><th class="num">课酬</th><th class="num">调整额</th><th>调整说明</th><th class="num">合计</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>刘洋</td><td class="num">24</td><td class="num">¥4,800.00</td><td class="num">¥200.00</td><td>9 月全勤奖</td><td class="num">¥5,000.00</td><td class="ops"><button class="btn-link">调整</button></td></tr>
+            <tr><td>孙静</td><td class="num">18</td><td class="num">¥2,700.00</td><td class="num negative">-¥100.00</td><td>9 月 12 日迟到</td><td class="num">¥2,600.00</td><td class="ops"><button class="btn-link">调整</button></td></tr>
+            <tr><td>周明</td><td class="num">6</td><td class="num">¥550.00</td><td class="num">¥0.00</td><td></td><td class="num">¥550.00</td><td class="ops"><button class="btn-link">调整</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">数据来自 <code>GET /api/payrolls/:id</code> 的 <code>lines</code>，按教师编号升序。课次数是这个月这位教师点名完成的课次数，课酬是各节课酬之和（规则见 <code>pay-rates.html</code>：例如周明 6 节、每节 ¥100.00，其中 1 节无人出勤按 ¥50.00，合计 ¥550.00）；合计 = 课酬 + 调整额。负的调整额用 <code>.negative</code> 带负号。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">调整课酬 · 孙静</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">调整后合计不能小于 0</div>
+        <dl class="desc">
+          <div class="item"><dt>课次数</dt><dd>18</dd></div>
+          <div class="item"><dt>课酬</dt><dd class="money">¥2,700.00</dd></div>
+          <div class="item"><dt>调整后合计</dt><dd class="money">¥2,600.00</dd></div>
+        </dl>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">调整额（元）<span class="required">*</span></label><input class="input" value="-100.00"><div class="field-hint">奖励填正数，扣款填负数；−10,000.00 到 10,000.00</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">调整说明</label><input class="input" value="9 月 12 日迟到"><div class="field-hint">0–100 个字</div><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">打开时带入这一行现在的调整额与说明，焦点在调整额。「调整后合计」随输入实时显示，小于 0 时在调整额下提示并禁用「保存」。提交 <code>POST /api/payrolls/:id/adjust</code>，请求体 <code>{teacher_id, amount, note}</code>（替换这位教师的调整额，不是累加；金额按元输入、提交时换算成分）。成功后关闭弹窗、提示「已调整」、刷新表格与合计。400、409 的 <code>message</code> 显示在弹窗顶部。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">重新计算</div>
+      <div class="dialog-body">按现在的点名记录与课酬标准重新计算 2026-09 的课次数与课酬。已有教师的调整额保留；新出现的教师调整额为 0；这个月已经没有课次的教师会从工资单里去掉（他的调整额也一起去掉）。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">重新计算</button></div>
+    </div></div>
+    <div class="proto-note">确认后 <code>POST /api/payrolls/:id/recalculate</code>，成功后提示「已重新计算」并刷新。用于点名更正或修改课酬标准之后。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">确认工资单</div>
+      <div class="dialog-body">确认 2026-09 工资单（3 位教师，合计 ¥8,150.00）吗？确认后不能再重新计算、调整或删除；这个月课次的点名也不能再更正。每位教师会收到通知，可以在「我的课酬」里看到。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">确认</button></div>
+    </div></div>
+    <div class="proto-note">确认后 <code>POST /api/payrolls/:id/confirm</code>，成功后提示「已确认」，页面变为已确认状态。状态不对（409，例如别人已确认）时确认框不关闭、显示 <code>message</code>，关闭后刷新页面。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">发放工资</div>
+      <div class="dialog-body">确定 2026-09 工资（合计 ¥8,150.00）已经发给教师了吗？标记为已发放后不能撤回。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">已发放</button></div>
+    </div></div>
+    <div class="proto-note">已确认时才有「发放」按钮。确认后 <code>POST /api/payrolls/:id/pay</code>，成功后提示「已标记为已发放」，页面变为已发放状态。系统不对接打款，只记录状态与发放时间。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除工资单</div>
+      <div class="dialog-body">确定删除 2026-09 的草稿工资单吗？删除后可以重新生成，已填的调整额会丢失。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note">只有草稿能删。确认后 <code>DELETE /api/payrolls/:id</code>（204），成功后回到工资单列表（<code>payrolls.html</code>）并提示「已删除」。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>对象不存在（404）</h3><div class="card state"><div class="title">这张工资单不存在</div>可能已被删除，或网址有误<br><a class="btn" href="payrolls.html">返回工资单列表</a></div></section>
+      <section><h3>已确认：调整按钮消失，只能发放</h3>
+        <div class="page-header"><h1>2026-08 工资单</h1><span class="tag tag-info">已确认</span><span class="grow"></span><button class="btn btn-primary">发放</button></div>
+        <div class="card"><div class="table-wrap"><table class="table">
+          <thead><tr><th>教师</th><th class="num">课次数</th><th class="num">课酬</th><th class="num">调整额</th><th>调整说明</th><th class="num">合计</th></tr></thead>
+          <tbody><tr><td>刘洋</td><td class="num">22</td><td class="num">¥4,400.00</td><td class="num">¥0.00</td><td></td><td class="num">¥4,400.00</td></tr></tbody>
+        </table></div></div>
+        <div class="proto-note">已确认、已发放的工资单没有操作列。</div></section>
+      <section><h3>已发放</h3><div class="page-header"><h1>2026-07 工资单</h1><span class="tag">已发放</span></div><div class="proto-note">没有任何按钮；字段列表里显示确认时间与发放时间。</div></section>
+      <section><h3>这个月没有已点名的课次</h3><div class="card state"><div class="title">这个月没有教师课酬</div>这个月还没有点名完成的课次；点名后可以「重新计算」</div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看工资单<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

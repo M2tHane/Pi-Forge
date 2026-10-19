@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课次详情 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-023、REQ-024。课次详情：课次信息、应到学员名单，调课、代课、停课。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">李娜（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html" class="on">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+<div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的（PRD 的权限表）。</div>
+    <div class="crumbs"><a href="schedule.html">课表</a> / <a href="class-detail.html">三年级数学提高班</a> / 第 11 次课</div>
+    <div class="page-header">
+      <h1>三年级数学提高班 · 第 11 次课</h1>
+      <span class="tag tag-warning">待上课</span>
+      <span class="grow"></span>
+      <button class="btn">调课</button>
+      <button class="btn">代课</button>
+      <button class="btn btn-danger">停课</button>
+    </div>
+    <div class="proto-note">
+      「调课」「代课」「停课」只给 admin、academic，并且只在课次是待上课、还没开始（现在早于课次日期加开始时间）时显示。
+      「点名」给 admin、academic 与这节课的上课教师，只在待上课、日期不晚于今天时可用；日期晚于今天的课次不显示「点名」（这节课在 2026-10-17，今天是 2026-10-15，所以上面没有）。已完成的课次把「点名」换成「点名记录」（进 <code>attendance.html</code> 查看与更正）和「课堂反馈」（进 <code>feedback.html</code>）。
+      sales、finance 只读；teacher 只能打开自己的课次（别人的显示无权限）。
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>课次信息</h2></div>
+      <div class="card-body">
+        <dl class="desc">
+          <div class="item"><dt>班级</dt><dd><a href="class-detail.html">三年级数学提高班</a></dd></div>
+          <div class="item"><dt>课程</dt><dd>三年级数学提高</dd></div>
+          <div class="item"><dt>次序</dt><dd>第 11 次</dd></div>
+          <div class="item"><dt>日期</dt><dd>2026-10-17 周六</dd></div>
+          <div class="item"><dt>时间</dt><dd>09:00–10:30</dd></div>
+          <div class="item"><dt>教室</dt><dd>A101</dd></div>
+          <div class="item"><dt>上课教师</dt><dd>刘建国</dd></div>
+          <div class="item"><dt>原教师（代课前）</dt><dd>—</dd></div>
+          <div class="item"><dt>状态</dt><dd><span class="tag tag-warning">待上课</span></dd></div>
+          <div class="item"><dt>停课原因</dt><dd>—</dd></div>
+          <div class="item" style="grid-column: span 2"><dt>课堂内容</dt><dd>—（点名时填写）</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="proto-note">数据来自 <code>GET /api/lessons/:id</code>（返回列表里的一项加 <code>roster</code>）：班级、课程、校区、教室、教师用 <code>class_name</code>、<code>course_name</code>、<code>campus_name</code>、<code>room_name</code>、<code>teacher_name</code>；「原教师」是 <code>original_teacher_name</code>，没有代课写「—」。停课原因只在已取消时有值。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>应到学员</h2><span class="meta">共 6 人（本班 5 人，补课 1 人）</span></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>学号</th><th>姓名</th><th>来源</th><th class="num">课时余额（节）</th><th>请假</th><th>点名</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>S000105</td><td><a href="student-detail.html">王雨桐</a></td><td>本班</td><td class="num">22</td><td></td><td>—</td><td class="ops"><a class="btn-link" href="leaves.html">登记请假</a></td></tr>
+            <tr><td>S000112</td><td><a href="student-detail.html">赵晨阳</a></td><td>本班</td><td class="num">0</td><td><span class="tag tag-warning">待审批</span></td><td>—</td><td class="ops"><a class="btn-link" href="leaves.html">查看请假</a></td></tr>
+            <tr><td>S000119</td><td><a href="student-detail.html">孙可欣</a></td><td>本班</td><td class="num">31</td><td><span class="tag tag-success">已批准</span></td><td>—</td><td class="ops"><a class="btn-link" href="leaves.html">查看请假</a></td></tr>
+            <tr><td>S000127</td><td><a href="student-detail.html">张一鸣</a></td><td>本班</td><td class="num">40</td><td><span class="tag tag-danger">已驳回</span></td><td>—</td><td class="ops"><a class="btn-link" href="leaves.html">登记请假</a></td></tr>
+            <tr><td>S000128</td><td><a href="student-detail.html">李子涵</a></td><td>本班</td><td class="num">28</td><td></td><td>—</td><td class="ops"><a class="btn-link" href="leaves.html">登记请假</a></td></tr>
+            <tr><td>S000131</td><td><a href="student-detail.html">周子墨</a></td><td><span class="tag">补课</span></td><td class="num">5</td><td></td><td>—</td><td class="ops"><a class="btn-link" href="makeups.html">查看补课</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      名单是接口返回的 <code>roster</code>，按 <code>student_id</code> 升序。来源：本班（<code>class</code>）| 补课（<code>makeup</code>，加 <code>.tag</code>）。请假是这个学员这节课最近一条请假的状态：待审批 / 已批准 / 已驳回 / 已取消，没有时空着。课时余额是 <code>remaining</code>（这门课程现在的余额）。点名：没点名写「—」，点名后是出勤 / 迟到 / 缺勤 / 请假（标签颜色同点名页）。
+      「登记请假」进 <code>leaves.html?student_id=…&amp;lesson_id=…</code> 并直接打开新建请假弹窗（只给 admin、academic、sales；只在课次待上课、还没开始、且这个学员没有待审批或已批准的请假时显示）；「查看请假」进 <code>leaves.html?student_id=…</code>。「查看补课」进 <code>makeups.html?student_id=…</code>（只给 admin、academic）。点姓名进学员详情。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">调课</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">学员王雨桐在 2026-10-18 10:30–12:00 已有别的课（四年级奥数班 第 7 次课）</div>
+        <p class="meta">当前：2026-10-17 周六 09:00–10:30，A101</p>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">新日期<span class="required">*</span></label><input class="input" type="date" value="2026-10-18"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">新开始时间<span class="required">*</span></label><input class="input" type="time" value="10:30"><div class="field-hint">下课时间 12:00（每节 90 分钟）</div><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">教室</label><select class="select"><option>不换教室（A101）</option><option>A102（容量 20）</option><option>B203（容量 16）</option></select><div class="field-hint">只列出东湖校区的启用教室</div><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">确定调课</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/lessons/:id/reschedule</code>，请求体 <code>{"date", "start_time", "room_id"}</code>；选「不换教室」时不带 <code>room_id</code>。教室选项来自 <code>GET /api/rooms?campus_id=班级的校区&amp;active=true</code>。成功后关闭弹窗、刷新本页并提示「已调课，已通知家长与教师」。返回 409（教师或教室时间冲突、不在教师可上课时间内、应到学员在新时间有别的课、课次已开始）或 400 时弹窗不关，在框内 <code>alert-error</code> 显示接口的 <code>message</code>。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">代课</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">教师张伟在 2026-10-17 09:00–10:30 已有课次（五年级奥数班 第 4 次课）</div>
+        <p class="meta">当前上课教师：刘建国</p>
+        <div class="field"><label class="field-label">代课教师<span class="required">*</span></label><select class="select"><option>（请选择）</option><option selected>张伟</option><option>李强</option></select><div class="field-hint">只列出能教「数学」的启用教师（不含当前上课教师）</div><div class="field-error"></div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">确定代课</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/lessons/:id/substitute</code>，请求体 <code>{"teacher_id"}</code>；选项来自 <code>GET /api/teachers?subject_id=课程的科目&amp;active=true</code>。已经有代课时，选项里包含原教师，写「刘建国（换回原教师）」，选它后原教师一栏清空。成功后刷新本页并提示「已安排代课」。409（教师时间冲突、不在可上课时间内、课次已开始）、400（教师已停用或不能教这门课）时在框内显示接口的 <code>message</code>。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">停课</div>
+      <div class="dialog-body">
+        <p>停课后这节课状态变为「已取消」，应到学员的家长和上课教师会收到通知。</p>
+        <div class="field"><label class="field-label">停课原因<span class="required">*</span></label><textarea class="textarea">教师外出培训</textarea><div class="field-hint">1–200 个字符</div><div class="field-error"></div></div>
+        <label class="checkbox"><input type="checkbox" checked> 在这个班最后一节课之后顺延补一节</label>
+        <div class="field-hint">按每周上课时间往后排一节（跳过节假日），班级的结课日期随之更新，总课次不变</div>
+      </div>
+      <div class="dialog-footer"><button class="btn">返回</button><button class="btn btn-danger">停课</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/lessons/:id/cancel</code>，请求体 <code>{"reason", "append"}</code>，勾选框默认不勾（<code>append: false</code>）。成功后刷新本页并提示「已停课」（勾了顺延时提示「已停课，已在 2027-01-30 顺延补一节」，日期取接口返回后重新查询的班级 <code>end_date</code>）。顺延的那一节冲突（409）时整个停课失败，在框内显示接口的 <code>message</code>。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>课次不存在（404）</h3><div class="card state"><div class="title">这个课次不存在</div>网址有误，请从课表进入<br><a class="btn" href="schedule.html">返回课表</a></div></section>
+      <section><h3>无权限（403，例如教师打开别人的课次）</h3><div class="card state"><div class="title">没有权限查看</div>这节课不在你的范围内<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+      <section><h3>已完成（已点名）的课次</h3>
+        <div class="page-header"><h1>三年级数学提高班 · 第 9 次课</h1><span class="tag tag-success">已完成</span><span class="grow"></span><a class="btn" href="attendance.html">点名记录</a><a class="btn" href="feedback.html">课堂反馈</a></div>
+        <div class="proto-note">已完成：没有调课、代课、停课；课堂内容显示点名时填的内容；名单的「点名」列显示每人的点名结果，名单固定为点名时的名单；没有「登记请假」。</div>
+      </section>
+      <section><h3>已取消（停课）的课次</h3>
+        <div class="page-header"><h1>三年级数学提高班 · 第 13 次课</h1><span class="tag tag-danger">已取消</span></div>
+        <div class="alert alert-warning">这节课已停课：教师外出培训</div>
+        <div class="proto-note">已取消：没有任何操作按钮；页面顶部用 <code>alert-warning</code> 显示停课原因。</div>
+      </section>
+      <section><h3>已开始但还没点名</h3>
+        <div class="page-header"><h1>三年级数学提高班 · 第 10 次课</h1><span class="tag tag-warning">待上课</span><span class="grow"></span><a class="btn btn-primary" href="attendance.html">点名</a></div>
+        <div class="proto-note">课次已开始（或日期已过）：调课、代课、停课不显示；「点名」用主按钮。</div>
+      </section>
+      <section><h3>教师查看自己的课次</h3>
+        <div class="page-header"><h1>三年级数学提高班 · 第 11 次课</h1><span class="tag tag-warning">待上课</span></div>
+        <div class="proto-note">teacher 只有「点名」（日期不晚于今天时）以及已完成后的「点名记录」「课堂反馈」，没有调课、代课、停课，名单里没有「登记请假」「查看补课」。</div>
+      </section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

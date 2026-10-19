@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>作业 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-038。作业列表：按班级筛选，布置、编辑、删除作业，点进作业详情看提交情况与批改。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">孙丽（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html" class="on">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏画的是 admin 能看到的全部入口；实际按角色只显示有权限的（PRD 的权限表）。作业对 admin、academic 读写，sales 只读，teacher 只能看与操作自己班级的（班级的 <code>teacher_id</code> 是自己绑定的教师档案），finance 看不到「作业」入口（直接打开显示无权限）。</div>
+
+    <div class="page-header">
+      <h1>作业</h1>
+      <span class="grow"></span>
+      <button class="btn btn-primary">布置作业</button>
+    </div>
+    <div class="proto-note">「布置作业」只有 admin、academic、teacher 能看到；sales 不显示。</div>
+
+    <form class="toolbar">
+      <select class="select"><option>全部班级</option><option>四年级数学提高班（CL000012）</option><option>五年级英语阅读班（CL000015）</option><option>三年级语文写作班（CL000009）</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+    <div class="proto-note">班级下拉的选项来自 <code>GET /api/classes?page_size=100</code>（不限状态，超过 100 个再逐页取完；按名称显示，后面带编号），teacher 只会拿到自己的班级。这份班级数据也用来判断每份作业所在班级是不是开课状态（作业列表的项不带班级状态）。PRD 只给了 <code>class_id</code> 一个筛选参数，所以这里只有班级一个筛选。</div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>标题</th><th>班级</th><th>关联课次</th><th>截止日期</th><th class="num">已提交 / 在班</th><th>布置人</th><th>布置时间</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><a href="homework-detail.html">第 3 单元 分数加减法练习</a></td><td><a href="class-detail.html">四年级数学提高班</a></td><td><a href="lesson-detail.html">第 8 次课 2026-10-14</a></td><td>2026-10-20</td><td class="num">8 / 12</td><td>周敏</td><td>2026-10-14 20:05</td><td class="ops"><a class="btn-link" href="homework-detail.html">查看</a><button class="btn-link">编辑</button></td></tr>
+            <tr><td><a href="homework-detail.html">英语短文阅读 Unit 4</a></td><td><a href="class-detail.html">五年级英语阅读班</a></td><td>—</td><td>2026-10-19</td><td class="num">0 / 10</td><td>李娜</td><td>2026-10-16 19:40</td><td class="ops"><a class="btn-link" href="homework-detail.html">查看</a><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td><a href="homework-detail.html">第 2 单元 口算练习</a></td><td><a href="class-detail.html">四年级数学提高班</a></td><td><a href="lesson-detail.html">第 6 次课 2026-10-07</a></td><td>2026-10-12</td><td class="num">12 / 12</td><td>周敏</td><td>2026-10-07 20:10</td><td class="ops"><a class="btn-link" href="homework-detail.html">查看</a><button class="btn-link">编辑</button></td></tr>
+            <tr><td><a href="homework-detail.html">看图写话：秋天的公园</a></td><td><a href="class-detail.html">三年级语文写作班</a></td><td><a href="lesson-detail.html">第 5 次课 2026-09-26</a></td><td>2026-09-28</td><td class="num">0 / 0</td><td>孙丽</td><td>2026-09-26 17:30</td><td class="ops"><a class="btn-link" href="homework-detail.html">查看</a><button class="btn-link danger">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 46 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 3 页</span><button class="btn btn-sm">下一页</button></div>
+    </div>
+    <div class="proto-note">
+      数据来自 <code>GET /api/homeworks</code>（分页，按截止日期降序、再按 <code>id</code> 降序，页面不另排序）。页码与筛选写进网址参数（<code>?page=2&amp;class_id=12</code>），刷新后不变；改筛选后回到第 1 页。<br>
+      「已提交 / 在班」是 <code>submitted_count</code> / <code>student_count</code>（当前在班人数）。「关联课次」显示「第 <code>lesson_seq</code> 次课 <code>lesson_date</code>」并链接到课次详情；没关联课次（两项为 <code>null</code>）显示「—」。「布置人」是 <code>created_by_name</code>。<br>
+      点标题或「查看」进作业详情（提交情况与批改）；点班级进班级详情。<br>
+      「编辑」「删除」只对 admin、academic 和这个班的教师显示，sales 只有「查看」。<strong>班级不是开课状态（已结课、已取消）时不显示「编辑」</strong>，但仍可删除（示例第 4 行是已结课班级的作业）。<strong>有提交的作业（<code>submitted_count</code> &gt; 0）不显示「删除」</strong>；万一接口仍返回 409，在确认框里显示接口的 <code>message</code>。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog wide">
+      <div class="dialog-header">布置作业</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">班级不是开课状态，不能布置作业</div>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">班级<span class="required">*</span></label><select class="select"><option>四年级数学提高班（CL000012）</option><option>五年级英语阅读班（CL000015）</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">关联课次</label><select class="select"><option>不关联</option><option>第 8 次课 2026-10-14 周三 18:30</option><option>第 9 次课 2026-10-21 周三 18:30</option></select><div class="field-hint">可选；只能选这个班的课次</div><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">标题<span class="required">*</span></label><input class="input" value="第 3 单元 分数加减法练习"><div class="field-hint">1–60 个字</div><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">内容<span class="required">*</span></label><textarea class="textarea">完成练习册第 24–26 页，第 5 题写出计算过程。</textarea><div class="field-hint">1–2000 个字</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">截止日期<span class="required">*</span></label><input class="input invalid" type="date" value="2026-10-12"><div class="field-error">截止日期不能早于今天</div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">
+      布置：<code>POST /api/homeworks</code>，请求体 <code>{"class_id", "lesson_id", "title", "content", "due_date"}</code>（不关联课次时 <code>lesson_id</code> 传 <code>null</code>）。班级下拉只列 <code>GET /api/classes?status=active&amp;page_size=100</code> 的班级（teacher 只有自己的）；选了班级后，关联课次下拉取 <code>GET /api/lessons?class_id=</code>（给了班级不用给日期范围），列出这个班没取消的课次；在作业列表按班级筛选过时默认选中那个班级。截止日期默认空、不能选今天以前的日期（页面先查，接口 400 时显示在字段下）。班级不是开课状态（409）、不是自己的班级（403）显示在顶部的 <code>alert-error</code>。<br>
+      编辑用同一个弹窗，标题改为「编辑作业」，填好原来的值，<strong>班级不能改（下拉禁用）</strong>；<code>PATCH /api/homeworks/:id</code> 只传改过的字段（截止日期只在请求里给了时才校验"不能早于今天"，所以没改就不传）。<br>
+      保存成功后关闭弹窗、刷新列表并提示「已保存」；新建成功后直接进入这份作业的详情页。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除作业</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">作业已有提交，不能删除</div>
+        确定删除作业「英语短文阅读 Unit 4」吗？删除后不能恢复。
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/homeworks/:id</code> 返回 204 后关闭确认框、刷新列表并提示「已删除」；返回 409（已有提交）时确认框不关，显示接口的 <code>message</code>（上面的红条）。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有作业）</h3><div class="card state"><div class="title">还没有作业</div>给开课中的班级布置作业后会出现在这里<br><button class="btn btn-primary">布置作业</button></div><div class="proto-note">sales 看到的空状态没有按钮。</div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">这个班级还没有作业</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>教师没有绑定教师档案</h3><div class="card state"><div class="title">还没有作业</div>你的账号还没有绑定教师档案，请联系教务<br></div><div class="proto-note">teacher 用户 <code>teacher_id</code> 为 <code>null</code>（<code>GET /api/auth/me</code>）时列表接口返回空，显示这一块，不显示「布置作业」。</div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">作业列表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看作业<br><a class="btn" href="dashboard.html">返回工作台</a></div><div class="proto-note">finance 直接打开这个页面时显示。</div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

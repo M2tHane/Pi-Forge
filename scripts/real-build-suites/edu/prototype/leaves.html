@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>请假 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-027。请假列表：新建、批准（含 20% 上限）、驳回、取消。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">李娜（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html" class="on">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+<div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的（PRD 的权限表）。</div>
+    <div class="page-header">
+      <h1>请假</h1>
+      <span class="grow"></span>
+      <button class="btn btn-primary">新建请假</button>
+    </div>
+    <div class="proto-note">「新建请假」给 admin、academic、sales；「批准」「驳回」只给 admin、academic；「取消」只给这条请假的创建人（家长在家长端的课表里请假与取消，见 <code>parent-schedule.html</code>）。</div>
+
+    <form class="toolbar">
+      <select class="select"><option>全部状态</option><option selected>待审批</option><option>已批准</option><option>已驳回</option><option>已取消</option></select>
+      <input class="input search" placeholder="学员姓名或学号">
+      <select class="select"><option>全部班级</option><option>三年级数学提高班</option><option>二年级英语启蒙班</option><option>五年级语文阅读班</option></select>
+      <span class="meta">课次日期</span>
+      <input class="input" type="date" value="2026-10-01">
+      <span class="meta">至</span>
+      <input class="input" type="date" value="2026-10-31">
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>学员</th><th>班级</th><th>课次日期</th><th>上课时间</th><th>原因</th><th>状态</th><th>审批备注</th><th>申请人</th><th>申请时间</th><th>审批人</th><th>审批时间</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><a href="student-detail.html">赵晨阳</a></td><td><a href="class-detail.html">三年级数学提高班</a></td><td><a href="lesson-detail.html">2026-10-17 周六</a></td><td>09:00</td><td>参加学校运动会</td><td><span class="tag tag-warning">待审批</span></td><td></td><td>赵晨阳家长（家长）</td><td>2026-10-15 09:12</td><td>—</td><td>—</td><td class="ops"><button class="btn-link">批准</button><button class="btn-link danger">驳回</button><button class="btn-link danger">取消</button></td></tr>
+            <tr><td><a href="student-detail.html">王雨桐</a></td><td><a href="class-detail.html">二年级英语启蒙班</a></td><td><a href="lesson-detail.html">2026-10-19 周一</a></td><td>16:30</td><td>看牙医</td><td><span class="tag tag-warning">待审批</span></td><td></td><td>王芳</td><td>2026-10-14 20:41</td><td>—</td><td>—</td><td class="ops"><button class="btn-link">批准</button><button class="btn-link danger">驳回</button></td></tr>
+            <tr><td><a href="student-detail.html">孙可欣</a></td><td><a href="class-detail.html">三年级数学提高班</a></td><td><a href="lesson-detail.html">2026-10-17 周六</a></td><td>09:00</td><td>家中有事</td><td><span class="tag tag-success">已批准</span></td><td>已安排补课</td><td>李娜</td><td>2026-10-12 18:05</td><td>李娜</td><td>2026-10-13 10:20</td><td class="ops"><button class="btn-link danger">取消</button></td></tr>
+            <tr><td><a href="student-detail.html">张一鸣</a></td><td><a href="class-detail.html">三年级数学提高班</a></td><td><a href="lesson-detail.html">2026-10-17 周六</a></td><td>09:00</td><td>想休息</td><td><span class="tag tag-danger">已驳回</span></td><td>本学期已请假较多</td><td>张一鸣家长</td><td>2026-10-11 21:30</td><td>李娜</td><td>2026-10-12 09:02</td><td class="ops"></td></tr>
+            <tr class="muted"><td><a href="student-detail.html">李子涵</a></td><td><a href="class-detail.html">三年级数学提高班</a></td><td><a href="lesson-detail.html">2026-10-14 周三</a></td><td>18:30</td><td>感冒</td><td><span class="tag tag-danger">已取消</span></td><td></td><td>王芳</td><td>2026-10-13 07:50</td><td>—</td><td>—</td><td class="ops"></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 23 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 2 页</span><button class="btn btn-sm">下一页</button></div>
+    </div>
+    <div class="proto-note">
+      数据来自 <code>GET /api/leaves</code>，按 <code>id</code> 降序（新申请的在前），分页。页码与筛选写进网址参数，参数名与接口一致：<code>?page=1&amp;status=pending&amp;student_id=112&amp;class_id=12&amp;from=2026-10-01&amp;to=2026-10-31</code>；<code>from</code>、<code>to</code> 是课次日期（含两端）。打开时如果网址没有任何参数，默认带 <code>status=pending</code>（先看待审批的）。学员用输入框搜 <code>GET /api/students?q=…</code>，选中后带 <code>student_id</code>；班级下拉来自 <code>GET /api/classes?page_size=100</code>。
+      状态：待审批 <code>tag-warning</code>、已批准 <code>tag-success</code>、已驳回 <code>tag-danger</code>、已取消 <code>tag-danger</code>（整行 <code>muted</code>）。时间都按北京时间。「申请人」是 <code>created_by_name</code>，「审批人」是 <code>reviewed_by_name</code>（没审批写「—」）。点学员进学员详情，点班级进班级详情，点课次日期进课次详情。
+      行内操作：「批准」「驳回」只在待审批的行显示；「取消」只在当前用户是创建人、状态是待审批或已批准、课次还没开始时显示（列表里没有课次结束时间，用课次日期加开始时间判断）。teacher 能查看自己课次的请假（权限表「请假：查看」），只读：没有任何操作按钮，也没有「新建请假」。finance 没有这个页面。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">新建请假</div>
+      <div class="dialog-body">
+        <div class="field"><label class="field-label">学员<span class="required">*</span></label><input class="input" placeholder="输入姓名、学号或手机号搜索" value="赵晨阳 S000112"><div class="field-error"></div></div>
+        <div class="field"><label class="field-label">请假的课<span class="required">*</span></label><select class="select"><option>（请选择）</option><option selected>2026-10-17 周六 09:00–10:30 三年级数学提高班 第 11 次</option><option>2026-10-19 周一 16:30–18:00 二年级英语启蒙班 第 20 次</option><option>2026-10-21 周三 18:30–20:00 三年级数学提高班 第 12 次</option></select><div class="field-hint">只列出这个学员接下来 31 天内还没开始的课</div><div class="field-error"></div></div>
+        <div class="field"><label class="field-label">原因<span class="required">*</span></label><textarea class="textarea">参加学校运动会</textarea><div class="field-hint">1–200 个字符</div><div class="field-error"></div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">提交</button></div>
+    </div></div>
+    <div class="proto-note">学员搜索 <code>GET /api/students?q=…&amp;status=active</code>；选中学员后用 <code>GET /api/lessons?student_id=…&amp;from=今天&amp;to=今天+30 天&amp;status=scheduled</code> 列出他要上的课，去掉已经开始的。从课次详情的「登记请假」进来时（网址带 <code>student_id</code>、<code>lesson_id</code>）自动打开这个弹窗并选好学员与课次。提交 <code>POST /api/leaves</code>，请求体 <code>{"student_id", "lesson_id", "reason"}</code>；成功后关闭弹窗、刷新列表并提示「已提交请假」，新请假状态是待审批。409（这节课已有待审批或已批准的请假、学员停读、课次已开始）、400（学员不是这节课的应到学员）时弹窗不关，在框内顶部 <code>alert-error</code> 显示接口的 <code>message</code>。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">批准请假</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">赵晨阳在三年级数学提高班已批准请假 8 次，已达上限（总课次 40 的 20%），不能再批准</div>
+        <p>赵晨阳 · 三年级数学提高班 · 2026-10-17 周六 09:00 · 参加学校运动会</p>
+        <p class="meta">这个学员在本班已批准的请假：7 次；上限 8 次（总课次 40 × 20%，向上取整）。批准后这节课点名时只能记「请假」，不扣课时。</p>
+        <div class="field"><label class="field-label">备注</label><textarea class="textarea"></textarea><div class="field-hint">选填，0–200 个字符；请假的创建人会收到通知</div><div class="field-error"></div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">批准</button></div>
+    </div></div>
+    <div class="proto-note">打开时用 <code>GET /api/leaves?student_id=…&amp;class_id=…&amp;status=approved</code> 的 <code>total</code> 显示已批准次数，上限 = ceil(班级总课次 × 0.2)，总课次取 <code>GET /api/classes/:id</code> 的 <code>lesson_count</code>；已达到上限时提示行加一句「已达上限，批准会失败」，但按钮不禁用（以接口为准）。提交 <code>POST /api/leaves/:id/approve</code>，请求体 <code>{"note"}</code>（备注为空时不带）。成功后关闭弹窗、刷新列表并提示「已批准」。409（超过上限、请假已不是待审批）时弹窗不关，在框内显示接口的 <code>message</code>。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">驳回请假</div>
+      <div class="dialog-body">
+        <p>张一鸣 · 三年级数学提高班 · 2026-10-17 周六 09:00 · 想休息</p>
+        <div class="field"><label class="field-label">驳回说明</label><textarea class="textarea">本学期已请假较多</textarea><div class="field-hint">选填，0–200 个字符；请假的创建人会收到通知</div><div class="field-error"></div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">驳回</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/leaves/:id/reject</code>，请求体 <code>{"note"}</code>（PRD 规定可以省略，所以这里是选填，和 <code>common-states.html</code> 里驳回原因必填的示例不同）。成功后刷新列表并提示「已驳回」；409 时在框内显示接口的 <code>message</code>。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">取消请假</div>
+      <div class="dialog-body">确定取消孙可欣 2026-10-17 周六 09:00 三年级数学提高班的请假吗？取消后这节课按正常上课点名。</div>
+      <div class="dialog-footer"><button class="btn">返回</button><button class="btn btn-danger">取消请假</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/leaves/:id/cancel</code>，只有创建人能取消（别人 403），且课次还没开始。成功后刷新列表并提示「已取消请假」；409（课次已开始、状态不对）、403 时在框内显示接口的 <code>message</code>。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>没有待审批的请假（默认筛选）</h3><div class="card state"><div class="title">没有待审批的请假</div>家长在家长端提交的请假，或在这里新建的请假会出现在这里<br><button class="btn">查看全部请假</button></div><div class="proto-note">「查看全部请假」去掉 <code>status</code> 参数。</div></section>
+      <section><h3>空（还没有请假）</h3><div class="card state"><div class="title">还没有请假记录</div><button class="btn btn-primary">新建请假</button></div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">没有符合条件的请假</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">请假列表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403，例如 finance）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看请假<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

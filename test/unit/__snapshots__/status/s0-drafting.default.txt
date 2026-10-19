@@ -1,0 +1,10 @@
+需要你处理：无
+
+B-001「演示」（新项目）
+[架构] → 开发 → 交付
+架构阶段：architect 按你的技术栈搭骨架、定契约与计划
+进度：0 / 1 个任务完成
+正在进行：
+- T-001 架构：骨架、契约与计划（architect）实现中
+
+（完整任务表与最近事件：/forge-status --detail；成本：/forge-status --cost；度量：/forge-status --metrics）

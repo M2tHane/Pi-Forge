@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>用户 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-003（另见 REQ-004 的权限）。只有 admin 能用：用户列表、新建、编辑（含重设密码、停用）、删除。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">管理员（管理员）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html" class="on">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏同 students.html。整页只有 admin 能打开（权限表：用户 admin 读写，其他角色"—"），其他角色侧栏里没有「用户」，直接打开网址时显示底部的"无权限"。</div>
+
+    <div class="page-header">
+      <h1>用户</h1>
+      <span class="grow"></span>
+      <button class="btn btn-primary">新建用户</button>
+    </div>
+
+    <form class="toolbar">
+      <input class="input search" placeholder="用户名或姓名">
+      <select class="select"><option>全部角色</option><option>管理员</option><option>教务</option><option>课程顾问</option><option>财务</option><option>教师</option><option>家长</option></select>
+      <select class="select"><option>全部状态</option><option>启用</option><option>停用</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>用户名</th><th>姓名</th><th>角色</th><th>手机</th><th>状态</th><th>创建时间</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>admin</td><td>管理员 <span class="tag">我</span></td><td>管理员</td><td></td><td><span class="tag tag-success">启用</span></td><td>2026-08-20 09:00</td><td class="ops"><button class="btn-link">编辑</button></td></tr>
+            <tr><td>sunli</td><td>孙丽</td><td>教务</td><td>138 0711 2001</td><td><span class="tag tag-success">启用</span></td><td>2026-08-20 10:12</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link">停用</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>wangfang</td><td>王芳</td><td>课程顾问</td><td>138 0711 2002</td><td><span class="tag tag-success">启用</span></td><td>2026-08-20 10:15</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link">停用</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>zhaomin</td><td>赵敏</td><td>财务</td><td>138 0711 2003</td><td><span class="tag tag-success">启用</span></td><td>2026-08-20 10:20</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link">停用</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>liuyang</td><td>刘洋</td><td>教师</td><td>139 0712 3301</td><td><span class="tag tag-success">启用</span></td><td>2026-08-21 14:05</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link">停用</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>lizihan_mama</td><td>李子涵妈妈</td><td>家长</td><td>138 0000 1234</td><td><span class="tag tag-success">启用</span></td><td>2026-09-02 16:40</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link">停用</button><button class="btn-link danger">删除</button></td></tr>
+            <tr class="muted"><td>chenhao</td><td>陈浩</td><td>课程顾问</td><td>137 2222 3333</td><td><span class="tag tag-danger">停用</span></td><td>2026-08-22 09:30</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link">启用</button><button class="btn-link danger">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 46 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 3 页</span><button class="btn btn-sm">下一页</button></div>
+    </div>
+    <div class="proto-note">
+      <code>GET /api/users</code>，按 <code>id</code> 升序（PRD 没有规定排序，用默认）。页码与筛选写进网址参数：<code>?page=2&amp;role=teacher&amp;active=false&amp;q=liu</code>，刷新后不变；搜索框去掉首尾空白后为空时不带 <code>q</code>；「全部角色」「全部状态」不带对应参数。<br>
+      角色显示中文名（管理员、教务、课程顾问、财务、教师、家长），不显示英文取值。创建时间按北京时间显示。<br>
+      当前登录的自己那一行姓名后加「我」标签，只有「编辑」，没有「停用」「删除」（接口会 409：不能停用、删除自己）。<br>
+      「停用」「启用」是 <code>PATCH /api/users/:id</code> <code>{"active": false}</code> / <code>{"active": true}</code>；停用先弹确认框，启用直接执行，成功后轻提示「已停用」「已启用」并刷新这一行。<br>
+      教师用户创建后，到教师详情页（teacher-detail.html）把教师档案绑定到这个用户；家长用户到学员详情页（student-detail.html）的家长一栏绑定。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">新建用户</div>
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">用户名<span class="required">*</span></label><input class="input invalid" value="liuyang"><div class="field-hint">3–32 个字符，只能是字母、数字和下划线；保存为小写，创建后不能改</div><div class="field-error">用户名已存在</div></div>
+          <div class="field"><label class="field-label">姓名<span class="required">*</span></label><input class="input"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">角色<span class="required">*</span></label><select class="select"><option>（请选择）</option><option>管理员</option><option>教务</option><option>课程顾问</option><option>财务</option><option>教师</option><option>家长</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">手机</label><input class="input"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">密码<span class="required">*</span></label><input class="input" type="password" autocomplete="new-password"><div class="field-hint">6–64 个字符</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">状态</label><select class="select"><option>启用</option><option>停用</option></select><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/users</code>，请求体 <code>{"username", "name", "role", "phone", "password", "active"}</code>。用户名重复（409）时错误显示在用户名下（如上）。保存成功后关闭弹窗、回到第 1 页刷新列表，轻提示「已创建用户」。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">编辑用户</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">这个用户绑定了教师档案，不能改成别的角色</div>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">用户名</label><input class="input" value="liuyang" disabled><div class="field-hint">创建后不能改</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">姓名<span class="required">*</span></label><input class="input" value="刘洋"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">角色<span class="required">*</span></label><select class="select invalid"><option>教务</option><option selected>教师</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">手机</label><input class="input" value="139 0712 3301"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">重设密码</label><input class="input" type="password" autocomplete="new-password" placeholder="不改就留空"><div class="field-hint">6–64 个字符；改了之后这个用户在所有设备上的登录都会退出</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">状态</label><select class="select"><option>启用</option><option>停用</option></select><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">
+      <code>PATCH /api/users/:id</code>，只发改过的字段（<code>name</code>、<code>role</code>、<code>phone</code>、<code>active</code>；重设密码不为空时带 <code>password</code>）。编辑自己时角色与状态两项禁用（不能改自己的角色、不能停用自己）。<br>
+      409（绑定了教师档案或学员的用户改角色、改自己的角色等）显示在弹窗顶部的 <code>alert-error</code>，内容是接口的 <code>message</code>，不关闭弹窗。保存成功后关闭弹窗、刷新这一行，轻提示「已保存」。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">停用用户</div>
+      <div class="dialog-body">确定停用用户「王芳（wangfang）」吗？停用后不能登录，已经登录的设备会立即退出。可以随时重新启用。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">停用</button></div>
+    </div></div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除用户</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">这个用户绑定了教师档案，不能删除，可以停用</div>
+        确定删除用户「刘洋（liuyang）」吗？删除后不能恢复。
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/users/:id</code>。成功（204）后关闭确认框、刷新列表，轻提示「已删除」；409（绑定了教师档案或学员）时确认框不关闭，错误显示在框里（如上）。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">没有符合条件的用户</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">用户列表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403，非 admin 打开）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能管理用户<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+      <div class="proto-note">列表至少有当前的 admin 自己，所以没有"还没有用户"的空状态。</div>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

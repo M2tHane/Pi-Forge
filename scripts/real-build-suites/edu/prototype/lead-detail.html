@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>线索详情 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-014、REQ-015、REQ-016、REQ-017。线索的资料、跟进记录、试听、转为学员与标记流失。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">王芳（课程顾问）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html" class="on">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="crumbs"><a href="leads.html">线索</a> / 刘雨桐</div>
+    <div class="page-header">
+      <h1>刘雨桐</h1>
+      <span class="tag tag-warning">已约试听</span>
+      <span class="grow"></span>
+      <button class="btn-link danger">删除</button>
+      <button class="btn">编辑</button>
+      <button class="btn btn-danger">标记流失</button>
+      <button class="btn btn-primary">转为学员</button>
+    </div>
+    <div class="proto-note">
+      <code>GET /api/leads/:id</code>。admin 与负责这条线索的 sales 能打开；sales 打开别人的线索返回 403，显示"无权限"（见底部）。
+      按钮显示规则：线索已结束（已转化、流失）时「编辑」「标记流失」「转为学员」「添加跟进」「安排试听」都不显示。「删除」只在这条线索没有任何跟进记录和试听记录时显示（有记录时接口返回 409「有跟进或试听记录的线索不能删除」）。
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>基本信息</h2></div>
+      <div class="card-body">
+        <dl class="desc">
+          <div class="item"><dt>姓名</dt><dd>刘雨桐</dd></div>
+          <div class="item"><dt>手机</dt><dd>139 2222 6688</dd></div>
+          <div class="item"><dt>年级</dt><dd>三年级</dd></div>
+          <div class="item"><dt>来源</dt><dd>转介绍</dd></div>
+          <div class="item"><dt>意向课程</dt><dd>三年级数学提高</dd></div>
+          <div class="item"><dt>所属校区</dt><dd>东湖校区</dd></div>
+          <div class="item"><dt>负责顾问</dt><dd>王芳</dd></div>
+          <div class="item"><dt>状态</dt><dd><span class="tag tag-warning">已约试听</span></dd></div>
+          <div class="item"><dt>下次跟进</dt><dd>2026-10-17</dd></div>
+          <div class="item"><dt>创建时间</dt><dd>2026-10-12 10:05</dd></div>
+          <div class="item"><dt>转化的学员</dt><dd>—</dd></div>
+          <div class="item"><dt>流失原因</dt><dd>—</dd></div>
+          <div class="item"><dt>备注</dt><dd>李子涵妈妈介绍来的，周末上午有空</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="proto-note">意向课程、所属校区、负责顾问分别取 <code>interest_course_name</code>、<code>campus_name</code>、<code>owner_name</code>。「转化的学员」在已转化时显示学员姓名（<code>student_name</code>）与学号，链接到学员详情（<code>student-detail.html</code>）；「流失原因」只在流失时有内容。没有值的字段显示「—」。</div>
+
+    <div class="grid-2" style="margin-top: var(--space-4)">
+      <div>
+        <div class="card">
+          <div class="card-header"><h2>跟进记录</h2></div>
+          <div class="card-body">
+            <form>
+              <div class="form-grid">
+                <div class="field"><label class="field-label">跟进方式<span class="required">*</span></label><select class="select"><option>电话</option><option>微信</option><option>面谈</option><option>其他</option></select><div class="field-error"></div></div>
+                <div class="field"><label class="field-label">下次跟进</label><input class="input" type="date" value="2026-10-17"><div class="field-hint">不填表示暂不安排；只能是今天或以后</div><div class="field-error"></div></div>
+                <div class="field span-2"><label class="field-label">跟进内容<span class="required">*</span></label><textarea class="textarea" placeholder="最多 500 字"></textarea><div class="field-error"></div></div>
+              </div>
+              <div class="form-actions"><button class="btn btn-primary" type="submit">添加跟进</button></div>
+            </form>
+            <ul class="timeline" style="margin-top: var(--space-4)">
+              <li><div class="meta">2026-10-14 16:20 · 电话 · 王芳</div><div>约了周六上午试听三年级数学提高，家长希望小班。</div><div class="meta">下次跟进：2026-10-17</div></li>
+              <li><div class="meta">2026-10-12 10:30 · 微信 · 王芳</div><div>发了课程介绍与上课时间，家长说和孩子商量一下。</div><div class="meta">下次跟进：2026-10-14</div></li>
+            </ul>
+          </div>
+        </div>
+        <div class="proto-note">
+          <code>POST /api/leads/:id/follow-ups</code>，请求体 <code>{"method", "content", "next_follow_up"}</code>；下次跟进默认空。成功后清空表单、把新记录加到时间线最上面，并重新取线索：线索的「下次跟进」改成这一条的值，状态是「新建」的变成「已联系」。
+          时间线按 <code>GET /api/leads/:id/follow-ups</code> 的顺序（新的在上），每条显示时间、方式、记录人（<code>created_by_name</code>）、内容和这一条填的下次跟进（为空时不显示这一行）。线索已结束时不显示表单，只显示时间线。
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-header"><h2>试听</h2><span class="grow"></span><button class="btn btn-sm" disabled>安排试听</button></div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>时间</th><th>课程</th><th>教师</th><th>状态</th><th class="ops">操作</th></tr></thead>
+              <tbody>
+                <tr><td>2026-10-18 10:00<div class="meta">东湖校区</div></td><td>三年级数学提高</td><td>陈静</td><td><span class="tag tag-warning">已安排</span></td><td class="ops"><button class="btn-link">登记结果</button><button class="btn-link">修改</button><button class="btn-link danger">取消</button></td></tr>
+                <tr class="muted"><td>2026-10-13 18:30<div class="meta">东湖校区</div></td><td>三年级数学提高</td><td>—</td><td><span class="tag tag-danger">已取消</span></td><td class="ops"></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="proto-note">
+          <code>GET /api/trials?lead_id=:id</code>，按日期、开始时间升序。状态：已安排（黄）、已到（蓝）、未到（红）、已取消（红，整行灰）；已到、未到的行在下面显示反馈。教师列取 <code>teacher_name</code>。
+          「登记结果」「修改」「取消」只在「已安排」的行显示。这条线索已有一个已安排的试听时「安排试听」禁用，鼠标悬停提示「已有安排好的试听，先登记结果或取消」（同时只能有一个，接口也会返回 409）。
+        </div>
+      </div>
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">安排试听</div>
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">试听课程<span class="required">*</span></label><select class="select"><option>三年级数学提高</option><option>四年级数学提高</option><option>少儿英语</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">校区<span class="required">*</span></label><select class="select"><option>东湖校区</option><option>光谷校区</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">日期<span class="required">*</span></label><input class="input" type="date" value="2026-10-18"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">开始时间<span class="required">*</span></label><input class="input" type="time" value="10:00"><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">试听教师</label><select class="select"><option>（暂不指定）</option><option>陈静</option><option>李明</option></select><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">
+      新建：<code>POST /api/trials</code>，请求体 <code>{"lead_id", "course_id", "campus_id", "teacher_id", "date", "start_time"}</code>；试听课程默认线索的意向课程，校区默认线索的校区。课程只列启用的（<code>GET /api/courses?active=true&amp;page_size=100</code>）；教师只列启用的（<code>GET /api/teachers?active=true&amp;page_size=100</code>，选了课程后只列能教这门课科目的：<code>subject_id</code> 参数）。
+      保存成功后关闭弹窗，试听列表多一行「已安排」，线索状态变为「已约试听」。「修改」用同一个弹窗（标题「修改试听」，<code>PATCH /api/trials/:id</code>，只能改课程、教师、日期、开始时间，校区只显示不能改；日期不限）。接口返回 409（线索已结束、已有安排好的试听、试听已不是已安排）时 <code>message</code> 显示在弹窗顶部的 <code>alert-error</code>。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">登记试听结果</div>
+      <div class="dialog-body">
+        <p class="meta">2026-10-18 10:00 · 三年级数学提高 · 陈静</p>
+        <div class="field"><label class="field-label">是否到场<span class="required">*</span></label>
+          <div class="radio-group"><label class="checkbox"><input type="radio" name="attended" checked> 已到</label><label class="checkbox"><input type="radio" name="attended"> 未到</label></div>
+          <div class="field-error"></div></div>
+        <div class="field"><label class="field-label">试听反馈</label><textarea class="textarea" placeholder="孩子表现、家长意见，最多 500 字"></textarea><div class="field-error"></div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/trials/:id/complete</code>，请求体 <code>{"attended", "feedback"}</code>。保存成功后关闭弹窗、刷新试听列表与线索：试听变为「已到」时线索变为「已试听」，「未到」时线索改回「已联系」。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">取消试听</div>
+      <div class="dialog-body">确定取消 2026-10-18 10:00 的「三年级数学提高」试听吗？</div>
+      <div class="dialog-footer"><button class="btn">不取消</button><button class="btn btn-danger">取消试听</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/trials/:id/cancel</code>。成功后试听变为「已取消」，线索改回「已联系」，提示「已取消试听」。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">编辑线索</div>
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">姓名<span class="required">*</span></label><input class="input" value="刘雨桐"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">手机<span class="required">*</span></label><input class="input" value="139 2222 6688"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">年级</label><select class="select"><option>三年级</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">来源<span class="required">*</span></label><select class="select"><option>转介绍</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">意向课程</label><select class="select"><option>三年级数学提高</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">所属校区<span class="required">*</span></label><select class="select"><option>东湖校区</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">负责顾问</label><select class="select"><option>王芳</option><option>孙磊</option></select><div class="field-hint">只有 admin 能看到这一项；sales 修改时接口忽略负责人，总是自己</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">下次跟进</label><input class="input" type="date" value="2026-10-17"><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">备注</label><textarea class="textarea">李子涵妈妈介绍来的，周末上午有空</textarea><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">字段与新建线索相同（见 <code>leads.html</code>），没有「状态」：状态只由跟进、试听、转化、流失改变。<code>PATCH /api/leads/:id</code>，只提交改过的字段。保存成功后关闭弹窗、刷新基本信息并提示「已保存」；手机号与别的未结束线索重复（409）显示在手机下面。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">标记流失</div>
+      <div class="dialog-body">
+        <div class="field"><label class="field-label">流失原因<span class="required">*</span></label><textarea class="textarea" placeholder="例如：价格原因、已报别家，1–200 字"></textarea><div class="field-error"></div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">标记流失</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/leads/:id/lose</code>，请求体 <code>{"reason"}</code>。成功后状态变为「流失」，基本信息里显示流失原因，所有操作按钮消失（只剩时间线与试听记录可看）。</div>
+
+    <div class="proto-dialog"><div class="dialog wide">
+      <div class="dialog-header">转为学员</div>
+      <div class="dialog-body">
+        <div class="alert alert-info">将新建学员并把这条线索标记为「已转化」。下面的资料已从线索带入，可以修改。</div>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">姓名<span class="required">*</span></label><input class="input" value="刘雨桐"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">性别</label><select class="select"><option>未知</option><option>男</option><option>女</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">出生日期</label><input class="input" type="date"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">年级</label><select class="select"><option>三年级</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">学校</label><input class="input"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">所属校区<span class="required">*</span></label><select class="select"><option>东湖校区</option><option>光谷校区</option></select><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">手机</label><input class="input" value="139 2222 6688"><div class="field-hint">默认取线索的手机号，可以改</div><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">转为学员</button></div>
+    </div></div>
+    <div class="proto-note">
+      <code>POST /api/leads/:id/convert</code>，请求体只带 <code>name</code>、<code>gender</code>、<code>birth_date</code>、<code>grade</code>、<code>school</code>、<code>phone</code>、<code>campus_id</code>（没填的不带，由接口取线索的值）。
+      成功（201，返回新学员）后提示「已转为学员 S000129」，直接进入新学员的详情页（<code>student-detail.html</code>），那里可以「报名」。线索已结束（409）时 <code>message</code> 显示在弹窗顶部。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除线索</div>
+      <div class="dialog-body">确定删除线索「刘雨桐」吗？删除后不能恢复。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/leads/:id</code>。成功后回到线索列表（<code>leads.html</code>）并提示「已删除」；409 时确认框不关闭，显示接口的 <code>message</code>。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>对象不存在（404）</h3><div class="card state"><div class="title">这条线索不存在</div>可能已被删除，或网址有误<br><a class="btn" href="leads.html">返回线索列表</a></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>这条线索不是你负责的<br><a class="btn" href="leads.html">返回线索列表</a></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">线索加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>已转化的线索（页头与基本信息）</h3>
+        <div class="page-header"><h1>李子涵</h1><span class="tag tag-success">已转化</span><span class="grow"></span></div>
+        <div class="card"><div class="card-body"><dl class="desc">
+          <div class="item"><dt>转化的学员</dt><dd><a href="student-detail.html">李子涵（S000128）</a></dd></div>
+          <div class="item"><dt>下次跟进</dt><dd>—</dd></div>
+        </dl></div></div>
+        <div class="proto-note">没有任何操作按钮，跟进卡片只有时间线、没有表单，试听卡片没有「安排试听」与行内操作。</div>
+      </section>
+      <section><h3>流失的线索</h3>
+        <div class="page-header"><h1>郑浩</h1><span class="tag tag-danger">流失</span><span class="grow"></span></div>
+        <div class="alert alert-warning">流失原因：已在别家机构报名</div>
+      </section>
+      <section><h3>跟进与试听都为空</h3>
+        <div class="card"><div class="card-body state"><div class="title">还没有跟进记录</div>联系家长后在上面记一笔</div></div>
+        <div class="card"><div class="card-body state"><div class="title">还没有试听</div>点「安排试听」约一节试听课</div></div>
+      </section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>订单 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-019。订单列表：按状态、下单日期、单号筛选。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">王芳（课程顾问）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html" class="on">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">订单：admin、sales 读写，academic、finance 只读，teacher 看不到入口。只读的角色不显示「报名下单」。</div>
+
+    <div class="page-header">
+      <h1>订单</h1>
+      <span class="grow"></span>
+      <a class="btn" href="#">导出 CSV</a>
+      <a class="btn btn-primary" href="order-new.html">报名下单</a>
+    </div>
+    <div class="proto-note">「导出 CSV」第五期才有（REQ-048），只给 admin、sales、finance：下载 <code>GET /api/exports/orders.csv</code>，带上当前的筛选参数（不带 <code>page</code>）。第二到四期不显示这个按钮。</div>
+
+    <form class="toolbar">
+      <input class="input search" placeholder="单号">
+      <select class="select"><option>全部状态</option><option>待支付</option><option>已支付</option><option>已取消</option></select>
+      <label class="field-label">下单日期</label><input class="input" type="date"><span>至</span><input class="input" type="date">
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+    <div class="proto-note">
+      <code>GET /api/orders</code>。筛选写进网址参数：<code>q</code>（单号包含它）、<code>status</code>、<code>from</code>、<code>to</code>（下单日期，北京时间，含两端）、<code>student_id</code>、<code>page</code>，刷新后不变；改筛选回到第 1 页。
+      网址带 <code>student_id</code> 时筛选条前面显示「学员：李子涵（S000128）×」，点 × 去掉这个条件（学员详情的「订单」页签也是这个接口）。
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>单号</th><th>学员</th><th>课程</th><th class="num">原价</th><th class="num">优惠</th><th class="num">应付</th><th>状态</th><th>支付方式</th><th>下单时间</th><th>支付时间</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><a href="order-detail.html">OD000088</a></td><td><a href="student-detail.html">李子涵</a><div class="meta">S000128</div></td><td>四年级数学提高 20 节、少儿英语 12 节</td><td class="num">¥4,200.00</td><td class="num">¥200.00</td><td class="num">¥4,000.00</td><td><span class="tag tag-warning">待支付</span></td><td>—</td><td>2026-10-15 14:30</td><td>—</td><td class="ops"><a class="btn-link" href="order-detail.html">查看</a></td></tr>
+            <tr><td><a href="order-detail.html">OD000087</a></td><td><a href="student-detail.html">张一鸣</a><div class="meta">S000127</div></td><td>少儿英语 16 节</td><td class="num">¥2,400.00</td><td class="num">¥240.00</td><td class="num">¥2,160.00</td><td><span class="tag tag-success">已支付</span></td><td>支付宝</td><td>2026-10-14 19:05</td><td>2026-10-14 19:08</td><td class="ops"><a class="btn-link" href="order-detail.html">查看</a><a class="btn-link" href="receipt.html">收据</a></td></tr>
+            <tr class="muted"><td><a href="order-detail.html">OD000085</a></td><td><a href="student-detail.html">陈思</a><div class="meta">S000098</div></td><td>三年级数学提高 10 节</td><td class="num">¥1,000.00</td><td class="num">¥0.00</td><td class="num">¥1,000.00</td><td><span class="tag tag-danger">已取消</span></td><td>—</td><td>2026-10-12 10:20</td><td>—</td><td class="ops"><a class="btn-link" href="order-detail.html">查看</a></td></tr>
+            <tr><td><a href="order-detail.html">OD000072</a></td><td><a href="student-detail.html">李子涵</a><div class="meta">S000128</div></td><td>三年级数学提高 10 节</td><td class="num">¥1,000.00</td><td class="num">¥0.00</td><td class="num">¥1,000.00</td><td><span class="tag tag-success">已支付</span></td><td>现金</td><td>2026-09-01 15:05</td><td>2026-09-01 15:10</td><td class="ops"><a class="btn-link" href="order-detail.html">查看</a><a class="btn-link" href="receipt.html">收据</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 88 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 5 页</span><button class="btn btn-sm">下一页</button></div>
+    </div>
+    <div class="proto-note">
+      按编号降序（新的在前），每页 20 条。「课程」列由 <code>items</code> 拼成「课程名 课时数 节」，用顿号分隔。状态：待支付（黄）、已支付（绿）、已取消（红，整行灰）。没有支付方式、支付时间的显示「—」；时间按北京时间。
+      点单号或「查看」进订单详情（待支付的订单在详情页支付、修改、取消）；点学员姓名进学员详情；「收据」只在已支付的行显示，进收据页（<code>receipt.html</code>）。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有订单）</h3><div class="card state"><div class="title">还没有订单</div>给学员报名后，订单会出现在这里<br><a class="btn btn-primary" href="order-new.html">报名下单</a></div><div class="proto-note">academic、finance 看到的空状态没有按钮。</div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">没有符合条件的订单</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">订单列表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看订单<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>转课 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-032。转课记录列表与新建转课（剩余价值按退费算法转出，零头进学员余额）。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">王芳（课程顾问）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html" class="on">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的。能看到「转课」的是 admin、sales（读写）与 academic、finance（只读）。</div>
+
+    <div class="page-header">
+      <h1>转课</h1>
+      <span class="grow"></span>
+      <button class="btn btn-primary">新建转课</button>
+    </div>
+    <div class="proto-note">「新建转课」只有 admin 与 sales 能看到；academic、finance 只能查看列表。</div>
+
+    <form class="toolbar">
+      <input class="input search" placeholder="学员姓名或学号">
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+    <div class="proto-note">学员框同退费列表：输入后下拉匹配的学员，选中后按 <code>student_id</code> 筛选，写进网址参数（<code>?student_id=127&amp;page=2</code>）。</div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>单号</th><th>学员</th><th>转出课程</th><th class="num">转出课时</th><th class="num">转出价值</th><th>转入课程</th><th class="num">转入课时</th><th class="num">零头转入余额</th><th>经办人</th><th>转课时间</th></tr></thead>
+          <tbody>
+            <tr><td>CT000005</td><td><a href="student-detail.html">张一鸣</a></td><td>小学英语阅读</td><td class="num">5</td><td class="num">¥570.00</td><td>四年级数学提高</td><td class="num">3</td><td class="num">¥120.00</td><td>王芳</td><td>2026-10-14 15:20</td></tr>
+            <tr><td>CT000004</td><td><a href="student-detail.html">李子涵</a></td><td>小学英语阅读</td><td class="num">8</td><td class="num">¥912.00</td><td>小学语文写作</td><td class="num">7</td><td class="num">¥72.00</td><td>王芳</td><td>2026-10-03 10:05</td></tr>
+            <tr><td>CT000003</td><td><a href="student-detail.html">王小雨</a></td><td>初中物理一对一</td><td class="num">2</td><td class="num">¥600.00</td><td>初中数学一对一</td><td class="num">2</td><td class="num">¥0.00</td><td>刘晓东</td><td>2026-09-21 18:40</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 5 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 1 页</span><button class="btn btn-sm" disabled>下一页</button></div>
+    </div>
+    <div class="proto-note">数据来自 <code>GET /api/course-transfers</code>（分页），按 <code>id</code> 降序。学员、转出课程、转入课程、经办人用接口带的 <code>student_name</code>、<code>from_course_name</code>、<code>to_course_name</code>、<code>created_by_name</code>。转出价值是 <code>value</code>，转入课时是 <code>to_lessons</code>，零头转入余额是 <code>to_balance</code>；转课记录不能修改或撤销，所以没有操作列。点学员名进学员详情（课时账户与余额页签能看到这次转课的流水）。</div>
+
+    <div class="proto-dialog"><div class="dialog wide">
+      <div class="dialog-header">新建转课</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">小学英语阅读 有一张待审批的退费单，处理完后才能转课</div>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">学员<span class="required">*</span></label><input class="input" value="张一鸣 S000127"><div class="field-hint">输入姓名、学号或手机号搜索</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">转出课程<span class="required">*</span></label><select class="select"><option>小学英语阅读（剩 8 节）</option></select><div class="field-hint">只列这个学员还有课时的课程</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">转出课时数<span class="required">*</span></label><input class="input" value="5"><div class="field-hint">1 到 8 节</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">转入课程<span class="required">*</span></label><select class="select"><option>四年级数学提高（每节 ¥150.00）</option><option>小学语文写作（每节 ¥120.00）</option><option>初中物理一对一（每节 ¥300.00）</option></select><div class="field-hint">只列启用、单价大于 0、且不同于转出课程的课程</div><div class="field-error"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>转课结果（预计）</h2></div>
+          <div class="card-body">
+            <dl class="desc">
+              <div class="item"><dt>转出价值</dt><dd class="money">¥570.00</dd></div>
+              <div class="item"><dt>转入课时</dt><dd class="money">3 节</dd></div>
+              <div class="item"><dt>转入课时包金额</dt><dd class="money">¥450.00</dd></div>
+              <div class="item"><dt>零头转入学员余额</dt><dd class="money">¥120.00</dd></div>
+            </dl>
+            <div class="alert alert-info">转出价值按退费的算法计算：从转出课程最晚生成、还有剩余课时的课时包往前扣（按生成时间、编号从新到旧）；扣完一个包的剩余课时就转出它的全部剩余价值，只扣一部分时按「实付 × 扣的课时 ÷ 这个包的总课时」计算，不足一分的舍去。转入课时 = 转出价值 ÷ 转入课程单价，向下取整；转入课时 × 单价 生成一个新的课时包，剩下的零头加到学员余额。</div>
+            <div class="field-hint">示例：从 2026-09-05 的课时包（实付 ¥2,280.00 / 20 节，剩 8 节）扣 5 节，¥2,280.00 × 5 ÷ 20 = ¥570.00；¥570.00 ÷ ¥150.00 = 3 节，余 ¥120.00。</div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">确认转课</button></div>
+    </div></div>
+    <div class="proto-note">
+      弹窗打开时焦点在「学员」框。转出课程从 <code>GET /api/students/:id/accounts</code> 取 <code>remaining &gt; 0</code> 的课程；转入课程从 <code>GET /api/courses?active=true</code> 取单价大于 0 的，去掉已选的转出课程。<br>
+      「转课结果（预计）」由页面用 <code>GET /api/students/:id/packages?course_id=转出课程</code> 与转入课程的单价实时计算；转入课时算出来是 0（转出价值不够一节）时，结果区显示 <code>alert-error</code>「转出价值 ¥X 不够转入课程的一节课（¥Y），请多转几节或换课程」，「确认转课」禁用。<br>
+      提交 <code>POST /api/course-transfers</code>，请求体 <code>{student_id, from_course_id, to_course_id, lessons}</code>。成功（201）后关闭弹窗，提示「已转课：转入 3 节，余额增加 ¥120.00」（取接口返回的 <code>to_lessons</code>、<code>to_balance</code>），刷新列表。转出、转入、余额一起生效，失败时都不生效。400（课程相同、转入课程停用或单价为 0）显示在对应字段下；409（课时数超过余额、转出课程有待审批的退费单、转入课时为 0）显示在弹窗顶部。转出后这门课程课时为 0 的学员会由程序自动从这门课程筹备中、开课中的班级退班（今天退班），页面不单独提示。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有转课记录）</h3><div class="card state"><div class="title">还没有转课记录</div>学员想换课程时，把剩余课时的价值转到新课程<br><button class="btn btn-primary">新建转课</button></div><div class="proto-note">academic、finance 看到的空状态没有按钮。</div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">这个学员没有转课记录</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>新建转课：转出价值不够一节</h3><div class="card"><div class="card-body"><div class="alert alert-error">转出价值 ¥114.00 不够转入课程的一节课（¥150.00），请多转几节或换课程</div><div class="form-actions"><button class="btn">取消</button><button class="btn btn-primary" disabled>确认转课</button></div></div></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">转课记录加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看转课<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

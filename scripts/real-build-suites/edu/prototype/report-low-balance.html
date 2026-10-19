@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>余额预警 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-047 AC3。列出在读班级里、某门课程剩余课时不超过阈值的学员，数据来自 GET /api/reports/low-balance，方便课程顾问跟进续费。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">王芳（课程顾问）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html" class="on">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的（PRD 的权限表）。「余额预警」入口给 admin、academic（教务）、sales（课程顾问）；finance 与 teacher 没有。</div>
+
+    <div class="page-header">
+      <h1>余额预警</h1>
+      <span class="grow"></span>
+    </div>
+
+    <form class="toolbar">
+      <label class="meta" for="th">剩余课时不超过</label>
+      <input class="input" id="th" type="number" min="0" max="20" step="1" value="3" style="width: 10%">
+      <span class="meta">节</span>
+      <select class="select"><option>全部校区</option><option>东湖校区</option><option>光谷校区</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+    <div class="proto-note">
+      筛选写进网址参数，与接口一致：<code>?threshold=5&amp;campus_id=1</code>。<code>threshold</code> 默认 3（等于 3 时不写进网址），只能填 0–20 的整数，否则不发请求，在输入框下提示「请填 0–20 的整数」。「清除筛选」恢复阈值 3、去掉校区。
+    </div>
+
+    <div class="stats">
+      <div class="stat warn"><div class="label">需要续费</div><div class="value">4</div><div class="sub">学员与课程的组合</div></div>
+      <div class="stat warn"><div class="label">课时已用完</div><div class="value">1</div><div class="sub">剩余 0 节，点名时会因课时不足失败</div></div>
+    </div>
+    <div class="proto-note">两个数字由页面按返回的数组计算：总条数、其中剩余为 0 的条数。0 条时两张卡片都去掉 <code>.warn</code>。</div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>学员</th><th>课程</th><th class="num">剩余课时</th><th>所在班级</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><a href="student-detail.html">赵晨阳</a></td><td>小学数学（四年级）</td><td class="num"><span class="tag tag-danger">0</span></td><td><a href="class-detail.html">四年级数学提高班</a></td><td class="ops"><a class="btn-link" href="student-detail.html">查看</a><a class="btn-link" href="order-new.html">续报</a></td></tr>
+            <tr><td><a href="student-detail.html">张一鸣</a></td><td>小学数学（四年级）</td><td class="num">1</td><td><a href="class-detail.html">四年级数学提高班</a></td><td class="ops"><a class="btn-link" href="student-detail.html">查看</a><a class="btn-link" href="order-new.html">续报</a></td></tr>
+            <tr><td><a href="student-detail.html">李子涵</a></td><td>少儿英语阅读</td><td class="num">2</td><td><a href="class-detail.html">四年级英语阅读班</a>、<a href="class-detail.html">英语阅读周末班</a></td><td class="ops"><a class="btn-link" href="student-detail.html">查看</a><a class="btn-link" href="order-new.html">续报</a></td></tr>
+            <tr><td><a href="student-detail.html">王若溪</a></td><td>创意美术</td><td class="num">3</td><td><a href="class-detail.html">一年级创意美术班</a></td><td class="ops"><a class="btn-link" href="student-detail.html">查看</a><a class="btn-link" href="order-new.html">续报</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 4 条</span></div>
+    </div>
+    <div class="proto-note">
+      接口直接返回数组，不分页：页面显示全部，底部只显示「共 N 条」。顺序照接口：剩余课时升序，再按学员编号、课程编号升序。剩余 0 节的数字用 <code>tag-danger</code> 标出。
+      「所在班级」是这门课程的开课班级（一个学员在同一门课可能在多个班），显示 <code>class_names</code>，与 <code>class_ids</code> 一一对应，点名称进对应的班级详情。点学员姓名或「查看」进学员详情的「课时」页签（<code>student-detail.html?tab=accounts</code>）。
+      「续报」进报名下单页并带上这个学员和这门课程（<code>order-new.html?student_id=127&amp;course_id=2</code>）；<b>只有 admin 与 sales 能看到「续报」</b>，教务（academic）没有下单权限，只显示「查看」。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（没有需要预警的学员）</h3><div class="card state"><div class="title">没有剩余课时不超过 3 节的学员</div>在读班级里的学员课时都还充足</div>
+        <div class="proto-note">标题里的数字是当前的阈值；改过校区筛选时下面加「清除筛选」按钮。</div></section>
+      <section><h3>阈值填写错误（页面自己检查）</h3>
+        <form class="toolbar"><label class="meta">剩余课时不超过</label><input class="input invalid" type="number" value="30" style="width: 10%"><span class="meta">节</span><button class="btn" type="submit">查询</button></form>
+        <div class="field-error">请填 0–20 的整数</div>
+      </section>
+      <section><h3>教务看到的操作列</h3>
+        <div class="card"><div class="table-wrap"><table class="table">
+          <thead><tr><th>学员</th><th>课程</th><th class="num">剩余课时</th><th>所在班级</th><th class="ops">操作</th></tr></thead>
+          <tbody><tr><td><a href="student-detail.html">张一鸣</a></td><td>小学数学（四年级）</td><td class="num">1</td><td><a href="class-detail.html">四年级数学提高班</a></td><td class="ops"><a class="btn-link" href="student-detail.html">查看</a></td></tr></tbody>
+        </table></div></div>
+      </section>
+      <section><h3>出错</h3><div class="card state"><div class="title">余额预警加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看余额预警<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

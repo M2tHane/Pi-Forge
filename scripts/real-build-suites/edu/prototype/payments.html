@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>收款流水 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-034（导出见 REQ-048）。收款流水列表、按日期的收支汇总与按方式明细、导出 CSV。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">赵敏（财务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html" class="on">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的。能看到「收款流水」的只有 admin 与 finance（只读）。</div>
+
+    <div class="page-header">
+      <h1>收款流水</h1>
+      <span class="grow"></span>
+      <a class="btn" href="#">导出 CSV</a>
+    </div>
+
+    <form class="toolbar">
+      <input class="input" type="date" value="2026-10-01" aria-label="开始日期">
+      <span>至</span>
+      <input class="input" type="date" value="2026-10-18" aria-label="结束日期">
+      <select class="select"><option>全部类型</option><option>收款</option><option>退费</option><option>取现</option></select>
+      <select class="select"><option>全部方式</option><option>现金</option><option>刷卡</option><option>微信</option><option>支付宝</option><option>转账</option></select>
+      <input class="input search" placeholder="学员姓名或学号">
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+    <div class="proto-note">
+      筛选写进网址参数，与接口一致：<code>from</code>、<code>to</code>（日期，含两端，按流水时间的北京日期）、<code>type</code>（收款 <code>payment</code>、退费 <code>refund</code>、取现 <code>withdraw</code>）、<code>method</code>（<code>cash</code>、<code>card</code>、<code>wechat</code>、<code>alipay</code>、<code>transfer</code>）、<code>student_id</code>（学员框选中一个学员后才带）、<code>page</code>。<br>
+      第一次打开（网址里没有日期）默认 <code>from</code> 为本月 1 日、<code>to</code> 为今天，并写进网址；「清除筛选」恢复成这个默认值。<code>from</code> 晚于 <code>to</code> 时不查询，在日期框下提示「开始日期不能晚于结束日期」。方式里没有「学员余额」：用余额支付的订单不记收款流水。
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>汇总</h2><span class="grow"></span><span class="meta">2026-10-01 至 2026-10-18</span></div>
+      <div class="card-body">
+        <div class="stats">
+          <div class="stat"><div class="label">收入</div><div class="value">¥86,420.00</div><div class="sub">收款合计</div></div>
+          <div class="stat"><div class="label">支出</div><div class="value">¥3,126.00</div><div class="sub">原路退费与余额取现</div></div>
+          <div class="stat"><div class="label">净收入</div><div class="value">¥83,294.00</div><div class="sub">收入 − 支出</div></div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>方式</th><th class="num">收入</th><th class="num">支出</th><th class="num">净收入</th></tr></thead>
+            <tbody>
+              <tr><td>支付宝</td><td class="num">¥12,600.00</td><td class="num">¥0.00</td><td class="num">¥12,600.00</td></tr>
+              <tr><td>刷卡</td><td class="num">¥18,240.00</td><td class="num">¥900.00</td><td class="num">¥17,340.00</td></tr>
+              <tr><td>现金</td><td class="num">¥4,280.00</td><td class="num">¥200.00</td><td class="num">¥4,080.00</td></tr>
+              <tr><td>转账</td><td class="num">¥9,000.00</td><td class="num">¥0.00</td><td class="num">¥9,000.00</td></tr>
+              <tr><td>微信</td><td class="num">¥42,300.00</td><td class="num">¥2,026.00</td><td class="num">¥40,274.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="proto-note">汇总来自 <code>GET /api/payments/summary?from=…&amp;to=…</code>，只用日期，不受类型、方式、学员筛选影响（接口只接受 <code>from</code>、<code>to</code>），所以卡片右上角只写日期范围，并在下面小字注明「汇总只按日期，不受类型、方式、学员筛选影响」。按方式的明细只列有记录的方式，顺序同接口（按方式的英文取值字母顺序：支付宝、刷卡、现金、转账、微信）。支出显示为正数（接口的 <code>outgo</code> 是绝对值）。</div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>流水号</th><th>类型</th><th>学号</th><th>学员</th><th class="num">金额</th><th>方式</th><th>关联单据</th><th>经办人</th><th>时间</th></tr></thead>
+          <tbody>
+            <tr><td>PY000231</td><td>收款</td><td>S000128</td><td><a href="student-detail.html">李子涵</a></td><td class="num">¥1,500.00</td><td>微信</td><td><a href="order-detail.html">订单 OD000156</a></td><td>王芳</td><td>2026-10-18 11:02</td></tr>
+            <tr><td>PY000230</td><td>取现</td><td>S000098</td><td><a href="student-detail.html">陈思</a></td><td class="num negative">-¥200.00</td><td>现金</td><td>—</td><td>赵敏</td><td>2026-10-17 16:45</td></tr>
+            <tr><td>PY000229</td><td>退费</td><td>S000127</td><td><a href="student-detail.html">张一鸣</a></td><td class="num negative">-¥456.00</td><td>微信</td><td><a href="refund-detail.html">退费单 RF000010</a></td><td>赵敏</td><td>2026-10-09 15:10</td></tr>
+            <tr><td>PY000228</td><td>收款</td><td>S000127</td><td><a href="student-detail.html">张一鸣</a></td><td class="num">¥3,600.00</td><td>刷卡</td><td><a href="order-detail.html">订单 OD000154</a></td><td>刘晓东</td><td>2026-10-08 19:30</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 86 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 5 页</span><button class="btn btn-sm">下一页</button></div>
+    </div>
+    <div class="proto-note">
+      列表来自 <code>GET /api/payments</code>（分页），按 <code>id</code> 降序。金额：收款为正；退费、取现为负，用 <code>.negative</code> 带负号。学号、学员、经办人用 <code>student_no</code>、<code>student_name</code>、<code>created_by_name</code>。关联单据：收款的显示「订单 <code>order_no</code>」，链接到订单详情（<code>order-detail.html</code>，用 <code>order_id</code>）；原路退费的显示「退费单 <code>refund_no</code>」，链接到退费详情（<code>refund-detail.html</code>，用 <code>refund_id</code>），取现没有关联单据显示「—」。流水不能修改或删除，没有操作列。<br>
+      「导出 CSV」下载 <code>GET /api/exports/payments.csv</code>，带上当前全部筛选参数（不带 <code>page</code>），导出全部符合条件的流水；下载中按钮禁用并显示「导出中…」，失败时用轻提示显示接口的 <code>message</code>。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>这段时间没有流水</h3><div class="card"><div class="card-body"><div class="stats"><div class="stat"><div class="label">收入</div><div class="value">¥0.00</div></div><div class="stat"><div class="label">支出</div><div class="value">¥0.00</div></div><div class="stat"><div class="label">净收入</div><div class="value">¥0.00</div></div></div></div></div><div class="card state"><div class="title">这段时间没有收款流水</div>订单支付、原路退费、余额取现后会出现在这里</div><div class="proto-note">汇总的按方式明细为空时不显示明细表格。</div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">没有符合条件的流水</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>日期不合法</h3><div class="toolbar"><input class="input invalid" type="date" value="2026-10-20"><span>至</span><input class="input invalid" type="date" value="2026-10-01"></div><div class="field-error">开始日期不能晚于结束日期</div><div class="proto-note">日期不合法时不发请求，汇总与列表保持上一次的结果。</div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">收款流水加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看收款流水<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

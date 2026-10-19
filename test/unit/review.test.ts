@@ -1,0 +1,293 @@
+// 逐任务审查的纯函数部分。
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  REVIEW_DIFF_MAX, buildReviewBrief, classifyIssues, contractFilesFor, effectiveVerdict, fitSnippets, mustHandoff, mustOf,
+  latestReviewRound, nextReviewId, nextReviewRound, pageApiSection, reviewIdOf, reviewMode, reviewRoundOf, reviewSlotOf, reviewTasksOf, splitPageCommits, stripAcceptanceDiff,
+  suggestionLine, touchesContracts, truncateDiff, validateConfirm,
+  type ReviewPolicy,
+} from '../../src/core/stage/review.ts';
+import type { ReviewFinding } from '../../src/core/state/schemas.ts';
+import { crossTaskInputs } from '../../src/core/stage/review-flow.ts';
+import { S0_EXTRA_WRITES } from '../../src/core/plan/batches.ts';
+import { ownAcceptanceGlob } from '../../src/core/state/paths.ts';
+import { hard, mkTask } from '../helpers/tasks.ts';
+
+const policy: ReviewPolicy = { criticalFanout: 3, maxRounds: 2 };
+const derived = (id: string, over: Parameters<typeof mkTask>[1] = {}) => mkTask(id, over);
+
+test('reviewMode：task.review 有值就用它（skip 只由程序写在接入真实接口任务上）', () => {
+  const tasks = [mkTask('T-001')];
+  assert.equal(reviewMode(mkTask('T-001', { review: 'strong', size: 'S' }), tasks, policy), 'strong');
+  assert.equal(reviewMode(mkTask('T-001', { review: 'auto', size: 'S' }), tasks, policy), 'auto');
+  assert.equal(reviewMode(mkTask('T-001', { review: 'skip', risk: 'high' }), tasks, policy), 'skip');
+});
+
+test('reviewMode：被 critical_fanout 个 task 硬依赖、layers 含 auth、risk=high 都是 strong（优先于 size）', () => {
+  const base = derived('T-001', { size: 'S' });
+  const dependents = ['T-002', 'T-003', 'T-004'].map((id) => mkTask(id, { deps: [hard('T-001')] }));
+  assert.equal(reviewMode(base, [mkTask('T-001'), ...dependents], policy), 'strong');
+  assert.equal(reviewMode(base, [mkTask('T-001'), ...dependents.slice(0, 2)], policy), 'auto', '只有 2 个依赖者，不到 3');
+  assert.equal(reviewMode(base, [mkTask('T-001'), ...dependents], { ...policy, criticalFanout: 0 }), 'auto', 'critical_fanout 为 0 关闭');
+  const cancelled = dependents.map((t) => ({ ...t, status: 'cancelled' as const }));
+  assert.equal(reviewMode(base, [mkTask('T-001'), ...cancelled], policy), 'auto', '已取消的不计');
+  assert.equal(reviewMode(derived('T-001', { layers: ['backend', 'auth'], size: 'S' }), [], policy), 'strong');
+  assert.equal(reviewMode(derived('T-001', { risk: 'high', size: 'S' }), [], policy), 'strong');
+  assert.equal(reviewMode(derived('T-001', { risk: 'normal' }), [], policy), 'auto');
+});
+
+test('reviewMode：impl 不论 size 一律审查', () => {
+  assert.equal(reviewMode(derived('T-001', { size: 'S' }), [], policy), 'auto');
+  assert.equal(reviewMode(derived('T-001', { size: 'M' }), [], policy), 'auto');
+  assert.equal(reviewMode(mkTask('T-001', { review: 'strong', risk: 'high' }), [], policy), 'strong');
+});
+
+test('reviewMode：fix / merge-fix / doc 不做逐任务审查（即使写了 review）', () => {
+  for (const kind of ['fix', 'merge-fix', 'doc'] as const) {
+    assert.equal(reviewMode(mkTask('T-001', { kind, review: 'strong', risk: 'high' }), [], policy), 'skip', kind);
+  }
+});
+
+test('classifyIssues：编号 R-1…；级别与出处照写，程序不校验出处', () => {
+  const mk = (level: 'must' | 'suggest', basis: string) => ({ level, basis, files: ['src/a.ts'], location: 'f()', problem: 'p', expected: 'e' });
+  const issues = classifyIssues([mk('must', 'ac:REQ-001.AC1'), mk('must', 'rule:rules/不存在.md#R9'), mk('suggest', '坏味道'), mk('must', '  ')]);
+  assert.deepEqual(issues.map((i) => [i.id, i.level, i.basis]), [['R-1', 'must', 'ac:REQ-001.AC1'], ['R-2', 'must', 'rule:rules/不存在.md#R9'], ['R-3', 'suggest', '坏味道'], ['R-4', 'must', '（未写出处）']]);
+  assert.equal(mustOf(issues).length, 3);
+  assert.equal(classifyIssues([]).length, 0);
+  assert.equal(classifyIssues([mk('suggest', 'x')], 5)[0]!.id, 'R-5');
+});
+
+test('effectiveVerdict：有 must 就是 changes，没有就是 pass，不管 reviewer 写了什么', () => {
+  assert.equal(effectiveVerdict(classifyIssues([{ level: 'must', basis: '我觉得', files: ['a.ts'], location: '', problem: 'p', expected: 'e' }])), 'changes');
+  assert.equal(effectiveVerdict(classifyIssues([{ level: 'suggest', basis: 'x', files: ['a.ts'], location: '', problem: 'p', expected: 'e' }])), 'pass');
+  assert.equal(effectiveVerdict([]), 'pass');
+});
+
+test('validateConfirm：必须覆盖上一轮全部 must，不能多出编号（第二轮不能提新问题），不能重复', () => {
+  const prior = ['R-1', 'R-3'];
+  assert.deepEqual(validateConfirm([{ id: 'R-1', resolved: true }, { id: 'R-3', resolved: false, note: '还差一处' }], prior), []);
+  assert.match(validateConfirm([{ id: 'R-1', resolved: true }], prior).join(), /还没有回答这些编号：R-3/);
+  assert.match(validateConfirm([{ id: 'R-1', resolved: true }, { id: 'R-3', resolved: true }, { id: 'R-9', resolved: false }], prior).join(), /不在上一轮的清单里.*R-9/);
+  assert.match(validateConfirm([{ id: 'R-2', resolved: true }, { id: 'R-1', resolved: true }, { id: 'R-3', resolved: true }], prior).join(), /R-2/, 'suggest 的编号也不是上一轮的 must');
+  assert.match(validateConfirm([{ id: 'R-1', resolved: true }, { id: 'R-1', resolved: false }, { id: 'R-3', resolved: true }], prior).join(), /R-1 重复/);
+  assert.ok(validateConfirm([], prior).length > 0);
+});
+
+test('审查 task 的编号与轮次：.rv → .rv-2 → .rv-3；取消的轮次也占编号；reviewTasksOf 忽略取消的与别的 task 的', () => {
+  assert.equal(reviewRoundOf('T-003.rv'), 1);
+  assert.equal(reviewRoundOf('T-003.rv-2'), 2);
+  assert.equal(reviewRoundOf('T-003'), 0);
+  assert.equal(nextReviewId([{ id: 'T-003' }], 'T-003'), 'T-003.rv');
+  assert.equal(nextReviewId([{ id: 'T-003.rv' }], 'T-003'), 'T-003.rv-2');
+  assert.equal(nextReviewId([{ id: 'T-003.rv' }, { id: 'T-003.rv-2' }, { id: 'T-013.rv-7' }], 'T-003'), 'T-003.rv-3');
+  const rv = (id: string, for_task: string, status: 'done' | 'cancelled') => ({ id, kind: 'review' as const, for_task, status });
+  assert.deepEqual(reviewTasksOf([rv('T-003.rv-2', 'T-003', 'done'), rv('T-003.rv', 'T-003', 'done'), rv('T-003.rv-3', 'T-003', 'cancelled'), rv('T-004.rv', 'T-004', 'done')], 'T-003').map((t) => t.id), ['T-003.rv', 'T-003.rv-2']);
+});
+
+test('按页审查的编号：T-003.rv.2 是第 1 轮第 2 页、.rv.0 是公共部分；轮次按页面任务计；最新一轮含这一轮的全部审查', () => {
+  assert.deepEqual(['T-003.rv.1', 'T-003.rv-2.0', 'T-003.rv', 'T-003.rv-2'].map((id) => [reviewRoundOf(id), reviewSlotOf(id)]), [[1, 1], [2, 0], [1, null], [2, null]]);
+  assert.deepEqual([reviewIdOf('T-003', 1), reviewIdOf('T-003', 1, 0), reviewIdOf('T-003', 2, 3)], ['T-003.rv', 'T-003.rv.0', 'T-003.rv-2.3']);
+  assert.equal(nextReviewRound([{ id: 'T-003.rv.0' }, { id: 'T-003.rv.1' }, { id: 'T-003.rv-2.1' }, { id: 'T-0030.rv-5' }], 'T-003'), 3);
+  assert.equal(nextReviewId([{ id: 'T-003.rv.1' }], 'T-003'), 'T-003.rv-2');
+  const rv = (id: string, status: 'done' | 'cancelled' = 'done') => ({ id, kind: 'review' as const, for_task: 'T-003', status });
+  const all = [rv('T-003.rv-2.2'), rv('T-003.rv.2'), rv('T-003.rv.0'), rv('T-003.rv.1'), rv('T-003.rv-2.0'), rv('T-003.rv-2.1', 'cancelled')];
+  assert.deepEqual(reviewTasksOf(all, 'T-003').map((t) => t.id), ['T-003.rv.0', 'T-003.rv.1', 'T-003.rv.2', 'T-003.rv-2.0', 'T-003.rv-2.2']);
+  assert.deepEqual(latestReviewRound(all, 'T-003').map((t) => t.id), ['T-003.rv-2.0', 'T-003.rv-2.2']);
+  assert.deepEqual(latestReviewRound(all, 'T-004'), []);
+});
+
+test('splitPageCommits：[page:<id>] 归那一页，[shared]、没标记的与标记了别的页面的归公共部分；有页面没有自己的 commit 时列出', () => {
+  const c = (subject: string, sha = subject) => ({ sha, subject });
+  const commits = [c('[shared] 公共表格组件'), c('[page:login] 登录页'), c('[page: products ] 商品页'), c('[page:login] 登录页补错误状态'), c('[B-001/T-006] 提交时的快照'), c('[page:reports] 报表')];
+  const s = splitPageCommits(commits, ['login', 'products']);
+  assert.deepEqual(s.pages.map((p) => [p.page, p.commits.map((x) => x.sha)]), [['login', ['[page:login] 登录页', '[page:login] 登录页补错误状态']], ['products', ['[page: products ] 商品页']]]);
+  assert.deepEqual(s.shared.map((x) => x.sha), ['[shared] 公共表格组件', '[B-001/T-006] 提交时的快照', '[page:reports] 报表']);
+  assert.deepEqual(s.stray.map((x) => x.page), ['reports']);
+  assert.deepEqual(s.missing, []);
+  // 没有按约定标记：有页面找不到自己的 commit（整批退回一次审查）
+  assert.deepEqual(splitPageCommits([c('登录页与商品页'), c('[page:login] 登录页')], ['login', 'products']).missing, ['products']);
+  assert.deepEqual(splitPageCommits([], ['login']).missing, ['login']);
+});
+
+test('按页审查的说明：只审这一页或公共部分；测试只由一个审查者运行；退回整批审查时提醒', () => {
+  const base = { taskId: 'T-006', title: '页面（B1）：页面 login', reviewId: 'T-006.rv.1', acIds: [], acTexts: {}, contracts: { shown: [], omitted: [] }, deviations: [], range: { from: 'a', to: 'b' }, diff: { text: 'x', truncated: false }, priorMust: [] };
+  const page = buildReviewBrief({ ...base, part: { kind: 'page', page: 'login', pages: ['login', 'products'] }, testsBy: 'T-006.rv.0' });
+  assert.match(page, /## 这次只审页面「login」\n[^\n]*2 页（login、products）[^\n]*只含 `\[page:login\]` 的 commit/);
+  assert.match(page, /这一轮的测试由 T-006\.rv\.0 运行，你不用运行测试/);
+  assert.doesNotMatch(page, /先运行本 task 自己的测试/);
+  const shared = buildReviewBrief({ ...base, reviewId: 'T-006.rv.0', part: { kind: 'shared', pages: ['login'], design: ['src/web/DESIGN.md'], stray: ['abc12345（[page:reports]）'] } });
+  assert.match(shared, /## 这次只审公共部分[\s\S]*DESIGN\.md、theme\.css：src\/web\/DESIGN\.md[\s\S]*不在本任务的页面清单里[^\n]*abc12345/);
+  assert.match(buildReviewBrief({ ...base, part: { kind: 'shared', pages: ['login'], design: [], stray: [] } }), /DESIGN\.md、theme\.css：仓库里没有/);
+  assert.match(buildReviewBrief({ ...base, part: { kind: 'fallback', missing: ['products'] } }), /## 提醒：commit 没有按约定标记，退回整批审查\n这些页面找不到[^\n]*：products/);
+  assert.match(buildReviewBrief({ ...base, priorMust: [{ id: 'R-1', level: 'must', basis: 'ac:x', files: ['a'], location: '', problem: 'p', expected: 'e' }], testsBy: 'T-006.rv-2.0' }), /确认轮[\s\S]*这一轮的测试由 T-006\.rv-2\.0 运行/);
+});
+
+const section = (file: string, body = '+x') => `diff --git a/${file} b/${file}\nindex 1..2 100644\n--- a/${file}\n+++ b/${file}\n@@ -1 +1 @@\n${body}\n`;
+
+test('stripAcceptanceDiff：去掉 tests/acceptance/** 的文件段，其他文件（包括 tests/unit）保留', () => {
+  const diff = section('src/a.ts') + section('tests/acceptance/T-001/a.test.ts') + section('tests/acceptance/_support/T-001/h.ts') + section('tests/unit/a.test.ts') + section('docs/tests/acceptance/x.md');
+  const out = stripAcceptanceDiff(diff);
+  assert.ok(out.includes('a/src/a.ts') && out.includes('a/tests/unit/a.test.ts') && out.includes('a/docs/tests/acceptance/x.md'));
+  assert.ok(!out.includes('tests/acceptance/T-001') && !out.includes('_support'));
+  assert.equal(stripAcceptanceDiff(''), '');
+  assert.equal(stripAcceptanceDiff(section('tests/acceptance/T-001/a.test.ts')), '');
+});
+
+test('truncateDiff：不超过上限原样返回；超过在行边界截断并注明总字数', () => {
+  const small = 'a\n'.repeat(10);
+  assert.deepEqual(truncateDiff(small), { text: small, truncated: false });
+  const big = `${'x'.repeat(99)}\n`.repeat(400);
+  assert.ok(big.length > REVIEW_DIFF_MAX);
+  const r = truncateDiff(big);
+  assert.equal(r.truncated, true);
+  assert.match(r.text, new RegExp(`diff 共 ${big.length} 字，已截断到前 \\d+ 字`));
+  const kept = r.text.split('\n…（')[0]!;
+  assert.ok(kept.length <= REVIEW_DIFF_MAX);
+  assert.ok(kept.split('\n').every((l) => l === 'x'.repeat(99)), '在整行处截断');
+  assert.equal(truncateDiff('abcdef', 4).truncated, true);
+  assert.equal(truncateDiff('abcd', 4).truncated, false);
+});
+
+test('契约片段：diff 里改到的在前，再加本模块同名的文件；超出总长上限的整份省略或截断', () => {
+  const all = ['docs/contracts/openapi.yaml', 'docs/contracts/paths/datasource.yaml', 'docs/contracts/paths/team.yaml', 'docs/contracts/errors/datasource.yaml', 'docs/contracts/modules/datasource.md', 'src/x.ts'];
+  assert.deepEqual(contractFilesFor('datasource', all, ['docs/contracts/errors/datasource.yaml', 'src/x.ts']), [
+    'docs/contracts/errors/datasource.yaml', 'docs/contracts/paths/datasource.yaml', 'docs/contracts/modules/datasource.md',
+  ]);
+  assert.deepEqual(contractFilesFor(undefined, all, ['docs/contracts/openapi.yaml']), ['docs/contracts/openapi.yaml']);
+  assert.deepEqual(contractFilesFor('billing', all, []), []);
+  assert.equal(touchesContracts(['src/a.ts', 'docs/contracts/openapi.yaml']), true);
+  assert.equal(touchesContracts(['src/a.ts', 'docs/contract.md']), false);
+
+  const r = fitSnippets([{ path: 'a', content: 'x'.repeat(600) }, { path: 'b', content: 'y'.repeat(600) }, { path: 'c', content: 'z' }], 1000);
+  assert.equal(r.shown.length, 2);
+  assert.match(r.shown[1]!.content, /已截断/);
+  assert.deepEqual(r.omitted, ['c']);
+  assert.deepEqual(fitSnippets([{ path: 'a', content: 'small' }], 1000), { shown: [{ path: 'a', content: 'small' }], omitted: [] });
+});
+
+const must: ReviewFinding = { id: 'R-1', level: 'must', basis: 'ac:REQ-001.AC2', files: ['src/a.ts'], location: 'create()', problem: '名称为空时返回 500', expected: '返回 400' };
+
+test('buildReviewBrief 第一轮：AC 原文、契约、偏离、diff 都在；截断时注明', () => {
+  const brief = buildReviewBrief({
+    taskId: 'T-001', title: '创建看板', reviewId: 'T-001.rv', acIds: ['REQ-001.AC1', 'REQ-001.AC9'], acTexts: { 'REQ-001.AC1': 'Given 已登录 When 创建 Then 返回编号' },
+    contracts: { shown: [{ path: 'docs/contracts/paths/board.yaml', content: '/api/boards: {}' }], omitted: ['docs/contracts/openapi.yaml'] },
+    deviations: ['多加了一个索引'], range: { from: 'aaaaaaaa1111', to: 'bbbbbbbb2222' },
+    diff: { text: '+export const a = 1;', truncated: false }, priorMust: [],
+  });
+  assert.match(brief, /# 审查：T-001「创建看板」（T-001\.rv）/);
+  assert.match(brief, /- REQ-001\.AC1：Given 已登录 When 创建 Then 返回编号/);
+  assert.match(brief, /- REQ-001\.AC9：（PRD 里找不到原文）/);
+  assert.match(brief, /### docs\/contracts\/paths\/board\.yaml[\s\S]*\/api\/boards/);
+  assert.match(brief, /因长度限制省略：docs\/contracts\/openapi\.yaml/);
+  assert.match(brief, /多加了一个索引/);
+  assert.match(brief, /aaaaaaaa\.\.bbbbbbbb[\s\S]*\+export const a = 1;/);
+  assert.match(brief, /forge_review_report/);
+  assert.ok(!brief.includes('forge_review_confirm'));
+  const cut = buildReviewBrief({ taskId: 'T-001', title: 't', reviewId: 'T-001.rv', acIds: [], acTexts: {}, contracts: { shown: [], omitted: [] }, deviations: [], range: { from: 'a', to: 'b' }, diff: { text: 'x', truncated: true }, priorMust: [] });
+  assert.match(cut, /已按 20000 字截断/);
+  assert.match(cut, /（没有相关的契约文件）/);
+});
+
+test('buildReviewBrief 确认轮：只有上一轮的 must 清单和增量 diff，说明只能用 forge_review_confirm', () => {
+  const brief = buildReviewBrief({
+    taskId: 'T-001', title: '创建看板', reviewId: 'T-001.rv-2', acIds: ['REQ-001.AC1'], acTexts: { 'REQ-001.AC1': 'AC 原文不该出现' },
+    contracts: { shown: [{ path: 'docs/contracts/x.yaml', content: '契约不该出现' }], omitted: [] }, deviations: ['偏离不该出现'],
+    range: { from: 'cccccccc', to: 'dddddddd' }, diff: { text: '+fix', truncated: false }, priorMust: [must],
+  });
+  assert.match(brief, /确认轮/);
+  assert.match(brief, /forge_review_confirm/);
+  assert.match(brief, /不能提出新问题/);
+  assert.match(brief, /R-1　出处：ac:REQ-001\.AC2[\s\S]*src\/a\.ts（create\(\)）[\s\S]*名称为空时返回 500[\s\S]*返回 400/);
+  assert.match(brief, /增量 diff[\s\S]*\+fix/);
+  for (const absent of ['AC 原文不该出现', '契约不该出现', '偏离不该出现']) assert.ok(!brief.includes(absent), absent);
+});
+
+test('mustHandoff 与 suggestionLine：返工说明带编号；用尽时说明已阻塞；suggest 带审查 task 与 R 编号', () => {
+  assert.match(mustHandoff(1, [must], false), /第 1 轮[\s\S]*R-1[\s\S]*只会核对这些编号/);
+  assert.match(mustHandoff(2, [must], true), /审查轮数已用完/);
+  const line = suggestionLine('T-001.rv', 'T-001', { ...must, id: 'R-3', level: 'suggest', basis: '过长函数' });
+  assert.match(line, /^- \[T-001\.rv R-3\] T-001：/);
+  assert.ok(line.includes('src/a.ts') && line.includes('返回 400'));
+});
+
+test('buildReviewBrief：给了 tests 与 acceptance 时，先列出要运行的命令，再列 AC 覆盖；缺失的 AC 点名为 must', () => {
+  const base = { taskId: 'T-001', title: 't', reviewId: 'T-001.rv', acIds: ['REQ-001.AC1'], acTexts: {}, contracts: { shown: [], omitted: [] }, deviations: [], range: { from: 'a', to: 'b' }, diff: { text: 'x', truncated: false }, priorMust: [] };
+  const brief = buildReviewBrief({
+    ...base, withAcceptance: true,
+    tests: { run: [{ name: 'acceptance', shell: 'pnpm acc -- T-001' }], skipped: ['单元测试：本 task 没有改动单元测试文件，全量单元测试在阶段门禁运行'] },
+    acceptance: { rows: [{ ac: 'REQ-001.AC1', files: ['tests/acceptance/T-001/a.test.js'] }, { ac: 'REQ-001.AC2', files: [] }], missing: ['REQ-001.AC2'] },
+  });
+  assert.match(brief, /先运行本 task 自己的测试[\s\S]*pnpm acc -- T-001[\s\S]*未运行[\s\S]*没有改动单元测试文件/);
+  assert.match(brief, /defect:<命令> 失败/);
+  assert.match(brief, /REQ-001\.AC1：tests\/acceptance\/T-001\/a\.test\.js/);
+  assert.match(brief, /REQ-001\.AC2：\*\*没有带该编号的测试\*\*/);
+  assert.match(brief, /以下 AC 没有测试：REQ-001\.AC2/);
+  assert.match(brief, /含 tests\/acceptance\/\*\*/);
+  const plain = buildReviewBrief({ ...base });
+  assert.doesNotMatch(plain, /先运行本 task 自己的测试|审查本 task 的验收测试/);
+  assert.match(plain, /不含 tests\/acceptance/);
+  const confirm = buildReviewBrief({ ...base, tests: { run: [{ name: 'test', shell: 'pnpm test x' }], skipped: [] }, priorMust: [{ id: 'R-1', level: 'must', basis: 'defect:x', files: ['a.ts'], location: '', problem: 'p', expected: 'e' }] });
+  assert.match(confirm, /确认轮也先运行这些命令/);
+});
+
+test('跨 task 的提醒：diff 里落在已完成的其他 task 范围内的文件、改了公共文件的已有内容，进第一轮说明', () => {
+  const t005 = mkTask('T-005', { status: 'done', writes: ['public/pages/products/**'] });
+  const t008 = mkTask('T-008', { status: 'done', writes: ['server/modules/inventory/**'] });
+  const t013 = mkTask('T-013', { writes: ['server/modules/exports/**', 'public/pages/products/**'] });
+  const cross = crossTaskInputs([t005, t008, t013], t013, ['public/pages/products/page.js', 'server/modules/exports/csv.js', 'docs/contracts/x.md']);
+  assert.deepEqual(cross, { othersFiles: [{ file: 'public/pages/products/page.js', owners: ['T-005'] }] });
+  const base = { taskId: 'T-013', title: 't', reviewId: 'T-013.rv', acIds: [], acTexts: {}, contracts: { shown: [], omitted: [] }, deviations: [], range: { from: 'a', to: 'b' }, diff: { text: 'x', truncated: false }, priorMust: [] };
+  const brief = buildReviewBrief({ ...base, ...cross, sharedEdits: ['types/errors.ts'] });
+  assert.match(brief, /## 公共文件的已有内容被修改\n- types\/errors\.ts\n[^\n]*只是追加/);
+  assert.match(brief, /## 改了其他 task 负责的文件\n- public\/pages\/products\/page\.js（T-005）\n[^\n]*页面能不能打开/);
+  assert.doesNotMatch(buildReviewBrief(base), /其他 task|公共文件/, '没有跨 task 的情况不加这两节');
+  assert.deepEqual(crossTaskInputs([t005], mkTask('T-001'), ['src/server/t-001/a.ts']), {});
+  // architect 的 writes 含 **：不把每个文件都标成它负责
+  const arch = mkTask('T-001', { status: 'done', role: 'architect', writes: ['**', ...S0_EXTRA_WRITES, ownAcceptanceGlob('T-001')] });
+  assert.deepEqual(crossTaskInputs([arch, t005, t008, t013], t013, ['public/pages/products/page.js', 'server/modules/exports/csv.js']), { othersFiles: [{ file: 'public/pages/products/page.js', owners: ['T-005'] }] });
+});
+
+test('页面审查材料：page-api.md 里这一页的小节（到下一个同级标题为止）、原型路径；找不到小节时取含页面 id 的行', () => {
+  const md = ['# 页面与接口', '', '## login 登录', '- POST /api/login', '### 错误', '- 401', '## purchase-orders 采购单', '- GET /api/po', '', '| loginx | 不是这页 |'].join('\n');
+  assert.equal(pageApiSection(md, 'login'), '## login 登录\n- POST /api/login\n### 错误\n- 401');
+  assert.equal(pageApiSection(md, 'purchase-orders'), '## purchase-orders 采购单\n- GET /api/po\n\n| loginx | 不是这页 |');
+  assert.equal(pageApiSection('| 页面 | 接口 |\n| products | GET /api/products |\n| orders | GET /api/orders |', 'products'), '| products | GET /api/products |');
+  assert.equal(pageApiSection(md, 'reports'), null);
+  const base = { taskId: 'T-005', title: '页面 login', reviewId: 'T-005.rv', acIds: [], acTexts: {}, contracts: { shown: [], omitted: [] }, deviations: [], range: { from: 'a', to: 'b' }, diff: { text: 'x', truncated: false }, priorMust: [] };
+  const brief = buildReviewBrief({ ...base, pages: [{ id: 'login', prototype: 'docs/prototype/login.html', api: '## login 登录\n- POST /api/login', acs: [{ id: 'REQ-001.AC1', text: '能登录' }, { id: 'REQ-001.AC9', text: null }] }] });
+  assert.match(brief, /## 页面「login」的审查材料\n\n原型：docs\/prototype\/login\.html。[^\n]*四种状态/);
+  assert.match(brief, /docs\/contracts\/page-api\.md 里这一页的部分[^\n]*\n```\n## login 登录\n- POST \/api\/login\n```/);
+  assert.match(brief, /这一页对应需求的 AC（对照用[^\n]*\n- REQ-001\.AC1：能登录\n- REQ-001\.AC9：（PRD 里找不到原文）/);
+  assert.match(buildReviewBrief({ ...base, pages: [{ id: 'login', prototype: null, api: null, acs: [] }] }), /PRD 的页面表里找不到这个页面[\s\S]*没找到这一页的部分，自己读整个文件/);
+  assert.doesNotMatch(buildReviewBrief(base), /审查材料/);
+});
+
+test('后端 domain 的审查材料：openapi.yaml 里按 tags、x-domain、x-req、路径段取本 domain 的接口；取不到时提示自己读；超长截断', async () => {
+  const { domainApiSection, domainApiSnippet } = await import('../../src/core/stage/review.ts');
+  const api = [
+    'openapi: 3.1.0', 'paths:',
+    '  /api/users/me:', '    get: { operationId: me, x-req: [REQ-009] }',
+    '  /api/login:', '    post: { operationId: login, tags: [user] }',
+    '  /api/sessions:', '    delete: { operationId: logout, x-domain: user }',
+    '  /api/accounts:', '    get: { operationId: accounts, x-req: [REQ-001] }',
+    '  /api/products:', '    get: { operationId: products, tags: [catalog], x-req: [REQ-002] }', '    post: { operationId: newProduct, tags: [Catalog] }',
+    '  /api/user/groups:', '    $ref: paths/user.yaml#/groups',
+  ].join('\n');
+  const user = domainApiSection(api, 'user', ['REQ-001'])!;
+  for (const op of ['me', 'login', 'logout', 'accounts']) assert.match(user, new RegExp(`operationId: ${op}\\b`), op);
+  assert.match(user, /\/api\/user\/groups:\n\s+\$ref: paths\/user\.yaml#\/groups/);
+  assert.doesNotMatch(user, /products/);
+  const catalog = domainApiSection(api, 'catalog')!;
+  assert.match(catalog, /operationId: products[\s\S]*operationId: newProduct/);
+  assert.doesNotMatch(catalog, /login|accounts/);
+  assert.equal(domainApiSection(api, 'inventory'), null);
+  assert.equal(domainApiSection('paths: [oops', 'user'), null, '解析失败');
+  assert.equal(domainApiSection('openapi: 3.1.0\n', 'user'), null);
+  // 取 REQ 编号用 AC 编号的前缀；取不到时提示；没有 openapi.yaml 时不给
+  assert.match(domainApiSnippet(api, 'user', ['REQ-001.AC1'])[0]!.content, /operationId: accounts/);
+  assert.deepEqual(domainApiSnippet(api, 'inventory', []), [{ path: 'docs/contracts/openapi.yaml 里 domain「inventory」负责的接口', content: '（没找到本 domain 的接口，自己读 docs/contracts/openapi.yaml）' }]);
+  assert.deepEqual(domainApiSnippet('', 'user', []), []);
+  const long = ['paths:', ...Array.from({ length: 400 }, (_, i) => `  /api/users/${i}:\n    get: { operationId: get${i}, description: "${'x'.repeat(40)}" }`)].join('\n');
+  const fit = fitSnippets(domainApiSnippet(long, 'user', []), 8_000);
+  assert.ok(fit.shown[0]!.content.length < 8_100 && fit.shown[0]!.content.endsWith('…（已截断）'));
+});

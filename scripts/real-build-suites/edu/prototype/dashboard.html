@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工作台 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-045（第五期的看板数字）、REQ-044 AC3（第五期的公告）与 REQ-002 AC4（欢迎语用当前用户）。第一期只有欢迎语与按角色的快捷入口，第五期在上面加看板数字。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">孙丽（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html" class="on">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏同 students.html：画的是 admin 能看到的全部入口，实际按角色显示。这一页画的是教务孙丽看到的样子。家长登录后不进这一页：打开 <code>/</code> 时直接跳到家长端 <code>/parent</code>（parent-home.html）。</div>
+
+    <div class="page-header">
+      <h1>工作台</h1>
+    </div>
+
+    <div class="card"><div class="card-body">
+      <h2>下午好，孙丽</h2>
+      <p class="meta">教务 · 今天是 2026-10-15 周四</p>
+    </div></div>
+    <div class="proto-note">欢迎语用 <code>GET /api/auth/me</code> 的 <code>name</code> 与 <code>role</code>（角色中文名同 common-states.html）；问候按北京时间：5:00–11:59「上午好」，12:00–17:59「下午好」，其他「晚上好」。日期是北京时间的今天。</div>
+
+    <!-- 第五期：看板数字 -->
+    <div class="proto-note"><b>第五期才有这一块（REQ-045）。</b>第一期到第四期这里什么都不画，欢迎语下面直接是快捷入口。只有 admin、academic、sales、finance 显示；teacher 不显示这一块，也不请求 <code>GET /api/reports/dashboard</code>（权限表里看板 teacher 是"—"，请求会 403）。</div>
+    <div class="card">
+      <div class="card-header">
+        <h2>今日概况</h2>
+        <span class="grow"></span>
+        <select class="select"><option>全部校区</option><option>东湖校区</option><option>光谷校区</option></select>
+      </div>
+      <div class="card-body">
+        <div class="stats">
+          <div class="stat"><div class="label">今日课次</div><div class="value">12</div><div class="sub">已点名 5 节 · <a href="schedule.html">看课表</a></div></div>
+          <div class="stat"><div class="label">今日出勤率</div><div class="value">92%</div><div class="sub">按今天已点名的课次</div></div>
+          <div class="stat"><div class="label">在读学员</div><div class="value">386</div><div class="sub">在开课班级里的学员（去重）</div></div>
+          <div class="stat"><div class="label">本月新增学员</div><div class="value">27</div><div class="sub">2026-10 新建档</div></div>
+          <div class="stat"><div class="label">本月收款净额</div><div class="value money">¥86,420.00</div><div class="sub">收款减去退费与取现</div></div>
+          <div class="stat warn"><div class="label">待审批请假</div><div class="value">4</div><div class="sub"><a href="leaves.html">去处理</a></div></div>
+          <div class="stat warn"><div class="label">待审批退费</div><div class="value">2</div><div class="sub">等财务审批</div></div>
+          <div class="stat warn"><div class="label">待跟进线索</div><div class="value">9</div><div class="sub">下次跟进日期不晚于今天</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="proto-note">
+      数据来自 <code>GET /api/reports/dashboard</code>，一次取全部 9 个数：今日课次 <code>today_lessons</code>（副行「已点名 N 节」是 <code>today_completed</code>）、今日出勤率 <code>today_attendance_rate</code>（为 <code>null</code> 时显示「—」，副行改成「今天还没有点名的课」）、在读学员 <code>active_students</code>、本月新增学员 <code>month_new_students</code>、本月收款净额 <code>month_income</code>（分换算成元，负数用 <code>.negative</code> 带负号）、待审批请假 <code>pending_leaves</code>、待审批退费 <code>pending_refunds</code>、待跟进线索 <code>follow_ups_due</code>。待审批请假、待审批退费、待跟进线索大于 0 时加 <code>.warn</code>，为 0 时不加。<br>
+      校区下拉：默认「全部校区」，不带参数；选了校区时带 <code>campus_id</code> 重新请求，并写进网址参数（<code>/?campus_id=1</code>），刷新后不变。下拉里列出全部校区（<code>GET /api/campuses?page_size=100</code>，停用的校区排在后面，名称后加「（停用）」）。选了校区时：课次按班级的校区，学员与线索按所属校区，收款、请假、退费按学员的所属校区（接口已处理）。admin、academic、sales、finance 看到的数字相同，只有待跟进线索对 sales 只算自己负责的。<br>
+      副行里的链接只给有那个页面权限的角色显示：「看课表」→ schedule.html（第三期起）；「去处理」请假 → leaves.html（admin、academic）；待审批退费的「去处理」→ refunds.html（admin、finance，画在下面的财务视角里）；待跟进线索的「去跟进」→ leads.html?follow_up_before=今天（admin、sales）。
+    </div>
+
+    <!-- 第五期：公告 -->
+    <div class="proto-note"><b>第五期才有这一块（REQ-044 AC3）。</b>所有员工角色（含 teacher）都显示。</div>
+    <div class="card">
+      <div class="card-header"><h2>公告</h2></div>
+      <div class="list-item"><span class="tag tag-warning">置顶</span><div class="grow"><b>国庆假期排课调整说明</b><div class="meta">全校 · 2026-09-28 10:00</div><div>10 月 1 日至 3 日停课，相关课次已顺延，请各位老师在课表中确认。</div></div></div>
+      <div class="list-item"><div class="grow"><b>东湖校区 10 月教研会</b><div class="meta">东湖校区 · 2026-10-12 09:30</div><div>10 月 20 日（周二）14:00 在 A101 召开，全体教师参加。</div></div></div>
+    </div>
+    <div class="proto-note">数据来自 <code>GET /api/announcements/visible</code>（置顶的在前，再按发布时间降序，接口已排好）。置顶的加「置顶」标签；第二行是校区（<code>campus_name</code>，为 <code>null</code> 时写「全校」）与发布时间（<code>published_at</code>，北京时间）；正文超过 3 行时折叠，点「展开」看全文。只显示前 5 条；没有公告时这张卡片不显示。公告的管理在 announcements.html（admin、academic）。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>快捷入口</h2></div>
+      <div class="card-body">
+        <div class="actions" style="justify-content: flex-start; flex-wrap: wrap">
+          <a class="btn" href="schedule.html">课表</a>
+          <a class="btn" href="classes.html">班级</a>
+          <a class="btn" href="leaves.html">请假审批</a>
+          <a class="btn" href="homeworks.html">作业</a>
+          <a class="btn" href="courses.html">课程</a>
+          <a class="btn" href="teachers.html">教师</a>
+          <a class="btn" href="rooms.html">教室</a>
+          <a class="btn" href="calendar.html">学期与节假日</a>
+          <a class="btn" href="password.html">修改密码</a>
+        </div>
+      </div>
+    </div>
+    <div class="proto-note">
+      快捷入口按角色显示（上面画的是 academic）；每期只显示已经有页面的入口（括号里是从第几期起有）。所有员工角色最后都有「修改密码」→ password.html（顶栏点自己的姓名也能进）。
+      <ul>
+        <li>admin：用户 users.html、校区 campuses.html、课程 courses.html、教师 teachers.html、学期与节假日 calendar.html；学员 students.html（二期起）；班级 classes.html（三期起）；工资单 payrolls.html（四期起）；操作日志 audit-logs.html（五期起）。</li>
+        <li>academic：课程 courses.html、教师 teachers.html、教室 rooms.html、学期与节假日 calendar.html；课表 schedule.html、班级 classes.html、请假审批 leaves.html（三期起）；作业 homeworks.html（五期起）。</li>
+        <li>sales：课程 courses.html；线索 leads.html、试听 trials.html、学员 students.html、报名下单 order-new.html（二期起）。</li>
+        <li>finance：课程 courses.html；订单 orders.html、优惠 discounts.html（二期起）；收款流水 payments.html、退费 refunds.html、工资单 payrolls.html（四期起）。</li>
+        <li>teacher：我的档案与可上课时间 → teacher-detail.html（打开 <code>/teachers/</code> 加 <code>me.teacher_id</code>；<code>teacher_id</code> 为 <code>null</code> 时不显示这个入口）；我的课表 my-schedule.html（三期起）；我的课酬 my-pay.html（四期起）；作业 homeworks.html（五期起）。</li>
+      </ul>
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>第一期到第四期（还没有看板）</h3>
+        <div class="card"><div class="card-body"><h2>下午好，孙丽</h2><p class="meta">教务 · 今天是 2026-10-15 周四</p></div></div>
+        <div class="card"><div class="card-header"><h2>快捷入口</h2></div><div class="card-body"><div class="actions" style="justify-content: flex-start; flex-wrap: wrap"><a class="btn" href="courses.html">课程</a><a class="btn" href="teachers.html">教师</a><a class="btn" href="rooms.html">教室</a><a class="btn" href="calendar.html">学期与节假日</a><a class="btn" href="password.html">修改密码</a></div></div></div>
+        <div class="proto-note">第一期的教务看到的样子：没有「今日概况」卡片。</div>
+      </section>
+      <section><h3>教师看到的（第五期也没有看板数字）</h3>
+        <div class="card"><div class="card-body"><h2>下午好，刘洋</h2><p class="meta">教师 · 今天是 2026-10-15 周四</p></div></div>
+        <div class="card"><div class="card-header"><h2>快捷入口</h2></div><div class="card-body"><div class="actions" style="justify-content: flex-start; flex-wrap: wrap"><a class="btn" href="teacher-detail.html">我的档案与可上课时间</a><a class="btn" href="my-schedule.html">我的课表</a><a class="btn" href="my-pay.html">我的课酬</a><a class="btn" href="homeworks.html">作业</a><a class="btn" href="password.html">修改密码</a></div></div></div>
+        <div class="proto-note">teacher 的侧栏用 my-schedule.html 里画的教师侧栏。没有绑定教师档案的教师不显示「我的档案与可上课时间」。</div>
+      </section>
+      <section><h3>财务看到的看板（副行链接不同）</h3>
+        <div class="stats">
+          <div class="stat"><div class="label">本月收款净额</div><div class="value money">¥86,420.00</div><div class="sub"><a href="payments.html">看收款流水</a></div></div>
+          <div class="stat warn"><div class="label">待审批退费</div><div class="value">2</div><div class="sub"><a href="refunds.html">去处理</a></div></div>
+          <div class="stat"><div class="label">本月收款净额（为负）</div><div class="value money negative">-¥1,200.00</div><div class="sub">退费多于收款时</div></div>
+        </div>
+        <div class="proto-note">「看收款流水」→ payments.html，只给 admin、finance 显示（第四期起）。</div>
+      </section>
+      <section><h3>看板加载中</h3>
+        <div class="card"><div class="card-header"><h2>今日概况</h2></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+        <div class="proto-note">看板在加载、出错时，欢迎语与快捷入口照常显示（它们不依赖看板接口）。</div>
+      </section>
+      <section><h3>看板出错</h3>
+        <div class="card"><div class="card-header"><h2>今日概况</h2></div><div class="state"><div class="title">看板加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></div>
+      </section>
+      <section><h3>公告加载失败</h3><div class="card"><div class="card-header"><h2>公告</h2></div><div class="state"><div class="title">公告加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></div></section>
+      <section><h3>今天还没有课</h3>
+        <div class="stats">
+          <div class="stat"><div class="label">今日课次</div><div class="value">0</div><div class="sub">今天没有课</div></div>
+          <div class="stat"><div class="label">今日出勤率</div><div class="value">—</div><div class="sub">今天还没有点名的课</div></div>
+        </div>
+      </section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

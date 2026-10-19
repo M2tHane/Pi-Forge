@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>学期与节假日 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-009。一页两张卡片：学期（新建、编辑、删除）与节假日（按日期范围筛选、新建、编辑、删除）；admin、academic 能改，其他员工只读。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">孙丽（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html" class="on">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏同 students.html。权限：admin、academic 读写；sales、finance、teacher 只读（没有新建按钮和操作列）；parent 不能用。</div>
+
+    <div class="page-header">
+      <h1>学期与节假日</h1>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>学期</h2><span class="grow"></span><button class="btn btn-primary btn-sm">新建学期</button></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>名称</th><th>开始日期</th><th>结束日期</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>2026 春季学期</td><td>2026-02-23</td><td>2026-07-05</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>2026 暑期班</td><td>2026-07-06</td><td>2026-08-30</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>2026 秋季学期 <span class="tag tag-info">进行中</span></td><td>2026-08-31</td><td>2027-01-24</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      <code>GET /api/terms</code> 返回数组（不分页，没有分页条），按开始日期升序。今天（北京时间）在开始与结束日期之间的学期名称后加「进行中」标签（页面自己算）。<br>
+      新建按钮与操作列只给 admin、academic 显示。
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>节假日</h2><span class="grow"></span><button class="btn btn-primary btn-sm">新建节假日</button></div>
+      <div class="card-body">
+        <div class="alert alert-info">节假日只影响之后发布班级、停课顺延时生成的课次；已经排好的课次不会因为新加的节假日而改变，需要的话到课次详情里调课或停课。</div>
+        <form class="toolbar">
+          <label class="meta" for="hf">日期从</label><input class="input" id="hf" type="date" value="2026-10-01">
+          <label class="meta" for="ht">到</label><input class="input" id="ht" type="date">
+          <button class="btn" type="submit">查询</button>
+          <button class="btn-link" type="reset">清除筛选</button>
+        </form>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>日期</th><th>星期</th><th>名称</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>2026-10-01</td><td>周四</td><td>国庆节</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>2026-10-02</td><td>周五</td><td>国庆节</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>2026-10-03</td><td>周六</td><td>国庆节</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>2027-01-01</td><td>周五</td><td>元旦</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>2027-02-06</td><td>周六</td><td>春节</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      <code>GET /api/holidays</code> 返回数组（不分页，没有分页条），按日期升序；星期由页面根据日期算出（周一到周日）。日期范围写进网址参数 <code>?from=2026-10-01&amp;to=2026-12-31</code>，两端都包含；第一次打开（网址里没有参数）时 <code>from</code> 默认是本月 1 日、<code>to</code> 不填（看本月及以后的），「清除筛选」后两项都不带，显示全部。<code>to</code> 早于 <code>from</code> 时页面提示「结束日期不能早于开始日期」，不发请求（接口对 <code>from</code> 晚于 <code>to</code> 也返回 400）。<br>
+      上面画的是 <code>from=2026-10-01</code> 的结果。新建按钮与操作列只给 admin、academic 显示。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">新建学期</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">与学期「2026 秋季学期」的日期重叠</div>
+        <div class="form-grid">
+          <div class="field span-2"><label class="field-label">名称<span class="required">*</span></label><input class="input" value="2027 寒假班"><div class="field-hint">1–30 个字符，不能重复</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">开始日期<span class="required">*</span></label><input class="input" type="date" value="2027-01-20"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">结束日期<span class="required">*</span></label><input class="input" type="date" value="2027-02-20"><div class="field-hint">不能早于开始日期；和其他学期的日期不能重叠（含首尾两天）</div><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">新建 <code>POST /api/terms</code>、编辑 <code>PATCH /api/terms/:id</code>（标题「编辑学期」，填好原值），字段 <code>name</code>、<code>start_date</code>、<code>end_date</code>。页面先校验结束日期不早于开始日期（错误显示在结束日期下）；名称重复（409）显示在名称下；日期重叠（409）显示在弹窗顶部（如上）。保存成功后关闭弹窗、刷新学期列表，轻提示「已保存」。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">新建节假日</div>
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">日期<span class="required">*</span></label><input class="input invalid" type="date" value="2026-10-01"><div class="field-error">2026-10-01 已经是节假日</div></div>
+          <div class="field"><label class="field-label">名称<span class="required">*</span></label><input class="input" value="国庆节"><div class="field-hint">1–30 个字符</div><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">新建 <code>POST /api/holidays</code>、编辑 <code>PATCH /api/holidays/:id</code>（标题「编辑节假日」），字段 <code>date</code>、<code>name</code>。日期重复（409）显示在日期下。一次只加一天，连续多天的假期逐天添加。保存成功后关闭弹窗、刷新节假日列表，轻提示「已保存」。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除学期</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">学期「2026 秋季学期」已有班级，不能删除</div>
+        确定删除学期「2026 秋季学期」吗？删除后不能恢复。
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除节假日</div>
+      <div class="dialog-body">确定删除节假日「2026-10-01 国庆节」吗？已经排好的课次不会因此改变。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/terms/:id</code>、<code>DELETE /api/holidays/:id</code>。成功后关闭确认框、刷新对应列表，轻提示「已删除」；409 时确认框不关闭，接口的 <code>message</code> 显示在框里。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中（两张卡片各自加载）</h3><div class="card"><div class="card-header"><h2>学期</h2></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有学期）</h3><div class="card"><div class="card-header"><h2>学期</h2></div><div class="state"><div class="title">还没有学期</div>学期用来给班级分组，开班时可以不选<br><button class="btn btn-primary">新建学期</button></div></div></section>
+      <section><h3>节假日筛选后没有结果</h3><div class="card"><div class="card-header"><h2>节假日</h2></div><div class="state"><div class="title">这段时间没有节假日</div><button class="btn">清除筛选</button></div></div></section>
+      <section><h3>出错</h3><div class="card"><div class="card-header"><h2>节假日</h2></div><div class="state"><div class="title">节假日加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></div><div class="proto-note">一张卡片出错不影响另一张。</div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看学期与节假日<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

@@ -1,0 +1,67 @@
+// 第六轮 D1–D3：forge_service 启动并在运行结束时清理服务；guard 拒绝时给出可行做法。
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createServer } from 'node:net';
+import { setupProject, PROJECT_YAML } from '../helpers/project.ts';
+import { makeEngine } from '../helpers/engine.ts';
+import { mkTask } from '../helpers/tasks.ts';
+import { alive } from '../../src/core/workspace/services.ts';
+
+const freePort = () => new Promise<number>((resolve) => {
+  const s = createServer();
+  s.listen(0, '127.0.0.1', () => { const port = (s.address() as { port: number }).port; s.close(() => resolve(port)); });
+});
+
+test('forge_service：启动 commands.yaml 里的命令或直接给的命令；ready 等端口就绪；本次运行结束时程序结束服务（连同它的子进程）', async () => {
+  const port = await freePort();
+  const server = `node -e "require('http').createServer((q,s)=>s.end('pong')).listen(${port})"`;
+  const yaml = PROJECT_YAML.replace(/  e2e:       "true"/, `  e2e:       "true"\n  serve:     "${server.replace(/"/g, '\\"')}"`);
+  const p = await setupProject({ yaml, tasks: [mkTask('T-001', { verify: [] })] });
+  try {
+    assert.ok(p.config.role('worker').tools.has('forge_service'), 'worker 按模板显式拥有 forge_service');
+    let pid = 0;
+    const { engine, errors } = makeEngine(p, async (_role, _n, a) => {
+      await a.call('forge_claim');
+      const bg = await a.call('bash', { command: 'sleep 100 &' });
+      assert.match(bg.text, /forge_service start/, '后台 & 被拦下时提示用 forge_service');
+      assert.match((await a.call('forge_service', { action: 'start', name: 'nope' })).text, /commands\.yaml 里没有命令 nope[\s\S]*command 参数/);
+      const r = await a.call('forge_service', { action: 'start', name: 'serve', ready: port, timeout_s: 20 });
+      assert.ok(r.ok, r.text);
+      assert.match(r.text, /已就绪/);
+      pid = Number(/pid (\d+)/.exec(r.text)![1]);
+      assert.match((await a.call('bash', { command: `curl -s http://localhost:${port}/` })).text, /pong/);
+      assert.match((await a.call('forge_service', { action: 'status' })).text, /serve（运行中/);
+      await a.call('write', { path: 'src/server/t-001/a.ts', content: 'ok\n' });
+      await a.call('forge_note', { text: '完成' });
+      await a.call('forge_submit', { summary: '完成' });
+    });
+    await engine.next(p.flowId);
+    await engine.idle();
+    assert.deepEqual(errors, []);
+    assert.ok(pid > 0);
+    for (let i = 0; i < 50 && alive(pid); i++) await new Promise((r) => setTimeout(r, 50));
+    assert.ok(!alive(pid), '运行结束后服务已被结束');
+    assert.ok(p.store.readEvents().some((e) => /启动的服务：serve/.test(e.reason ?? '')));
+  } finally { p.cleanup(); }
+});
+
+test('实现任务直接改 writes 外、与其他 task 重叠的文件（m9b STD 的路由注册入口），改动随任务合入', async () => {
+  const p = await setupProject({ tasks: [mkTask('T-001', { verify: [] }), mkTask('T-002', { verify: [], shared: ['src/shared/date.ts'], deps: [{ task: 'T-001', type: 'hard', reason: 'x' }] })] });
+  try {
+    const { engine, errors } = makeEngine(p, async (_role, _n, a) => {
+      await a.call('forge_claim');
+      for (const f of ['src/server/common/date.ts', 'src/shared/date.ts', 'src/server/t-002/util.ts', 'src/server/t-001/a.ts']) {
+        const r = await a.call('write', { path: f, content: 'x\n' });
+        assert.ok(r.ok, `${f}：${r.text}`);
+      }
+      await a.call('forge_note', { text: '完成' });
+      await a.call('forge_submit', { summary: '完成' });
+    });
+    await engine.next(p.flowId);
+    await engine.idle();
+    assert.deepEqual(errors, []);
+    const done = p.store.readTask(p.flowId, 'T-001');
+    assert.equal(done.status, 'done');
+    assert.equal(p.git('show', `flow/${p.flowId}/integration:src/shared/date.ts`).trim(), 'x');
+  } finally { p.cleanup(); }
+});

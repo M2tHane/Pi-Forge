@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>操作日志 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-049。只读的操作记录列表（GET /api/audit-logs），只有 admin 能看；没有修改、删除与导出。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">2</span></a>
+  <a class="user" href="password.html">周明（管理员）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html" class="on">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏是 admin 的全部入口。操作日志只有 admin 能看，其他角色的侧栏没有「操作日志」。</div>
+
+    <div class="page-header">
+      <h1>操作日志</h1>
+      <span class="grow"></span>
+    </div>
+
+    <form class="toolbar">
+      <select class="select"><option>全部操作人</option><option>周明（admin）</option><option>王芳（wangfang）</option><option>孙丽（sunli）</option><option>赵敏（zhaomin）</option></select>
+      <select class="select">
+        <option>全部操作</option>
+        <optgroup label="用户"><option>新建用户</option><option>修改用户</option><option>删除用户</option></optgroup>
+        <optgroup label="订单"><option>订单收款</option><option>取消订单</option></optgroup>
+        <optgroup label="退费"><option>发起退费</option><option>批准退费</option><option>驳回退费</option></optgroup>
+        <optgroup label="转课与余额"><option>转课</option><option>余额取现</option></optgroup>
+        <optgroup label="点名"><option>点名</option><option>更正点名</option></optgroup>
+        <optgroup label="课次"><option>调课</option><option>代课</option><option>停课</option></optgroup>
+        <optgroup label="班级"><option>发布班级</option><option>结课</option><option>取消班级</option></optgroup>
+        <optgroup label="工资单"><option>确认工资单</option><option>发放工资</option></optgroup>
+      </select>
+      <select class="select"><option>全部对象</option><option>用户</option><option>订单</option><option>退费单</option><option>转课</option><option>学员</option><option>课次</option><option>班级</option><option>工资单</option></select>
+      <input class="input" placeholder="对象编号" style="width: 10%">
+      <input class="input" type="date" value="2026-10-01">
+      <span class="meta">至</span>
+      <input class="input" type="date" value="2026-10-15">
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+    <div class="proto-note">
+      筛选写进网址参数，与接口一致：<code>?user_id=2&amp;action=order.pay&amp;target_type=order&amp;target_id=1024&amp;from=2026-10-01&amp;to=2026-10-15&amp;page=2</code>，全部可选，打开页面时都不带（显示全部）。日期按 <code>created_at</code> 的北京日期，开始日期晚于结束日期时不发请求并提示（接口同样返回 400）。对象编号只能填正整数，否则提示「请填正整数」。
+      「操作人」下拉来自 <code>GET /api/users?page_size=100</code>（超过再逐页取完；含停用的），显示「姓名（用户名）」。操作与对象的中文名照 PRD 的 REQ-049 AC4：
+      user.create 新建用户、user.update 修改用户、user.delete 删除用户、order.pay 订单收款、order.cancel 取消订单、refund.create 发起退费、refund.approve 批准退费、refund.reject 驳回退费、course_transfer.create 转课、wallet.withdraw 余额取现、attendance.create 点名、attendance.update 更正点名、lesson.reschedule 调课、lesson.substitute 代课、lesson.cancel 停课、class.publish 发布班级、class.finish 结课、class.cancel 取消班级、payroll.confirm 确认工资单、payroll.pay 发放工资；
+      user 用户、order 订单、refund 退费单、course_transfer 转课、student 学员、lesson 课次、class 班级、payroll 工资单。
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>时间</th><th>操作人</th><th>操作</th><th>对象</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>2026-10-15 16:42</td><td>赵敏（zhaomin）</td><td>批准退费</td><td><a href="refund-detail.html">退费单 36</a></td><td>批准退费 RF000036，退回 ¥640.00，原路退回</td></tr>
+            <tr><td>2026-10-15 15:10</td><td>王芳（wangfang）</td><td>订单收款</td><td><a href="order-detail.html">订单 1024</a></td><td>订单 OD001024 支付 ¥3,840.00（微信）</td></tr>
+            <tr><td>2026-10-15 14:30</td><td>张伟（zhangwei）</td><td>点名</td><td><a href="lesson-detail.html">课次 4521</a></td><td>四年级数学提高班 第 12 次课点名，扣课时 11 人</td></tr>
+            <tr><td>2026-10-15 11:05</td><td>孙丽（sunli）</td><td>停课</td><td><a href="lesson-detail.html">课次 4588</a></td><td>一年级创意美术班 第 8 次课停课，顺延补一节；原因：教师病假</td></tr>
+            <tr><td>2026-10-15 10:20</td><td>孙丽（sunli）</td><td>发布班级</td><td><a href="class-detail.html">班级 21</a></td><td>发布一年级创意美术班，生成 16 个课次</td></tr>
+            <tr><td>2026-10-14 17:55</td><td>赵敏（zhaomin）</td><td>余额取现</td><td><a href="student-detail.html">学员 127</a></td><td>张一鸣 余额取现 ¥80.00（现金）</td></tr>
+            <tr><td>2026-10-14 09:12</td><td>周明（admin）</td><td>修改用户</td><td><a href="users.html">用户 9</a></td><td>修改用户 liuyang：停用</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 2,316 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 116 页</span><button class="btn btn-sm">下一页</button></div>
+    </div>
+    <div class="proto-note">
+      按 <code>id</code> 降序（最新的在前），每页 20 条，页码写进网址参数 <code>page</code>。「时间」是 <code>created_at</code> 按北京时间显示；「操作人」显示「<code>user_name</code>（<code>username</code>）」；「说明」是接口的 <code>detail</code> 原样显示。
+      「对象」显示「对象类型中文名 + 编号」（如「订单 1024」），点了进对应页面：订单 → order-detail.html、退费单 → refund-detail.html、学员 → student-detail.html、课次 → lesson-detail.html、班级 → class-detail.html、工资单 → payroll-detail.html；转课进 course-transfers.html，用户进 users.html（这两个没有详情页）。用户被删除后仍显示「用户 9」这样的编号，点了进用户列表。
+      日志只读：没有新建、修改、删除，也没有导出。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有日志）</h3><div class="card state"><div class="title">还没有操作日志</div>支付订单、审批退费、点名、发布班级等操作后会记录在这里</div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">没有符合条件的操作日志</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>筛选填写错误（页面自己检查）</h3>
+        <div class="alert alert-error">开始日期不能晚于结束日期</div>
+        <div class="field"><input class="input invalid" value="abc" style="width: 20%"><div class="field-error">请填正整数</div></div>
+      </section>
+      <section><h3>出错</h3><div class="card state"><div class="title">操作日志加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>只有管理员能查看操作日志<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

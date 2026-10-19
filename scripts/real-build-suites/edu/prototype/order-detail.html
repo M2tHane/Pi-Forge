@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>订单详情 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-019。订单明细，待支付的订单可以修改、支付、取消、删除。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">王芳（课程顾问）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html" class="on">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="crumbs"><a href="orders.html">订单</a> / OD000088</div>
+    <div class="page-header">
+      <h1>订单 OD000088</h1>
+      <span class="tag tag-warning">待支付</span>
+      <span class="grow"></span>
+      <button class="btn-link danger">删除</button>
+      <button class="btn">修改</button>
+      <button class="btn btn-danger">取消订单</button>
+      <button class="btn btn-primary">收款</button>
+    </div>
+    <div class="proto-note">
+      <code>GET /api/orders/:id</code>。按钮按状态与角色显示：<b>待支付</b>时 admin、sales 看到「删除」「修改」「取消订单」「收款」；<b>已支付</b>时只有「查看收据」（所有能看订单的角色都有，见底部）；<b>已取消</b>时没有按钮。academic、finance 只读，看不到删除、修改、取消、收款。
+      「取消订单」保留这张订单（状态变为已取消，留作记录）；「删除」把订单整个删掉（适合下错的单）。已支付的订单不能取消或删除，要退费走退费流程（第四期）。
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>订单信息</h2></div>
+      <div class="card-body">
+        <dl class="desc">
+          <div class="item"><dt>单号</dt><dd>OD000088</dd></div>
+          <div class="item"><dt>学员</dt><dd><a href="student-detail.html">李子涵</a>（S000128）</dd></div>
+          <div class="item"><dt>状态</dt><dd><span class="tag tag-warning">待支付</span></dd></div>
+          <div class="item"><dt>原价</dt><dd class="money">¥4,200.00</dd></div>
+          <div class="item"><dt>优惠</dt><dd class="money negative">-¥200.00</dd><dd class="meta">秋季报名立减</dd></div>
+          <div class="item"><dt>应付</dt><dd class="money">¥4,000.00</dd></div>
+          <div class="item"><dt>支付方式</dt><dd>—</dd></div>
+          <div class="item"><dt>下单人</dt><dd>王芳</dd></div>
+          <div class="item"><dt>下单时间</dt><dd>2026-10-15 14:30</dd></div>
+          <div class="item"><dt>支付时间</dt><dd>—</dd></div>
+          <div class="item"><dt>备注</dt><dd>家长要求周六上午的班</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="proto-note">优惠名称取 <code>discount_name</code>，下单人取 <code>created_by_name</code>。没有用优惠时「优惠」显示 ¥0.00、不显示优惠名称。待支付时支付方式与支付时间显示「—」。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>课程明细</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>课程</th><th class="num">课时数</th><th class="num">单价（每节）</th><th class="num">金额</th><th class="num">优惠分摊</th><th class="num">实付</th></tr></thead>
+          <tbody>
+            <tr><td>四年级数学提高</td><td class="num">20</td><td class="num">¥120.00</td><td class="num">¥2,400.00</td><td class="num negative">-¥114.28</td><td class="num">¥2,285.72</td></tr>
+            <tr><td>少儿英语</td><td class="num">12</td><td class="num">¥150.00</td><td class="num">¥1,800.00</td><td class="num negative">-¥85.72</td><td class="num">¥1,714.28</td></tr>
+            <tr><td><b>合计</b></td><td class="num">32</td><td class="num"></td><td class="num"><b>¥4,200.00</b></td><td class="num negative"><b>-¥200.00</b></td><td class="num"><b>¥4,000.00</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      取订单的 <code>items</code>，按接口返回的顺序。单价是下单时的课程单价（之后课程调价不影响这张订单）。优惠分摊：除最后一行外按金额比例向下取整到分，最后一行是剩下的；每行实付是支付后这门课课时包的实付金额。
+      已支付后这块下面多一行说明「支付后已为每门课程生成课时包，见 <a href="student-detail.html">学员详情的「课时」页签</a>」（链接带 <code>?tab=lessons</code>）。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">收款</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">学员余额不足</div>
+        <p class="meta">OD000088 · 李子涵（S000128）</p>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">应付金额</label><div class="money" style="font-size: var(--text-xl); font-weight: var(--weight-bold)">¥4,000.00</div></div>
+          <div class="field"><label class="field-label">实收金额（元）<span class="required">*</span></label><input class="input" value="4000.00"><div class="field-hint">必须与应付金额一致</div><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">支付方式<span class="required">*</span></label>
+            <div class="radio-group">
+              <label class="checkbox"><input type="radio" name="method"> 现金</label>
+              <label class="checkbox"><input type="radio" name="method"> 刷卡</label>
+              <label class="checkbox"><input type="radio" name="method"> 微信</label>
+              <label class="checkbox"><input type="radio" name="method"> 支付宝</label>
+              <label class="checkbox"><input type="radio" name="method"> 转账</label>
+              <label class="checkbox"><input type="radio" name="method" checked> 学员余额（当前 ¥20.00）</label>
+            </div>
+            <div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">确认收款</button></div>
+    </div></div>
+    <div class="proto-note">
+      <code>POST /api/orders/:id/pay</code>，请求体 <code>{"method", "amount"}</code>（实收金额按元输入，默认填好应付金额，提交时换算成分）。支付方式没有默认值，必须选一个。实收与应付不一致时页面先拦下并在金额下面提示「实收金额必须等于应付 ¥4,000.00」（接口也返回 400）。
+      「学员余额」选项第四期起才显示，括号里是 <code>GET /api/students/:id/wallet</code> 的当前余额；余额小于应付时这个选项仍可选，但提交会返回 409「学员余额不足」，显示在弹窗顶部（如上图）。第四期之前余额总是 0，用余额支付接口一律返回 409，所以不显示这个选项。除余额外的方式收款都会记一条收款流水（第二期起就记，第四期才有查看的页面）。
+      收款成功后关闭弹窗，订单变为「已支付」，页头只剩「查看收据」，提示「已收款」；每门课程生成一个课时包。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog wide">
+      <div class="dialog-header">修改订单</div>
+      <div class="dialog-body">
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>课程</th><th class="num">单价（每节）</th><th class="num">课时数</th><th class="num">金额</th><th class="num">优惠分摊</th><th class="num">实付</th><th class="ops">操作</th></tr></thead>
+            <tbody>
+              <tr><td><select class="select"><option>四年级数学提高（MATH-4A）</option></select></td><td class="num">¥120.00</td><td class="num"><input class="input" value="20"></td><td class="num">¥2,400.00</td><td class="num negative">-¥114.28</td><td class="num">¥2,285.72</td><td class="ops"><button class="btn-link danger">删除</button></td></tr>
+              <tr><td><select class="select"><option>少儿英语（ENG-K3）</option></select></td><td class="num">¥150.00</td><td class="num"><input class="input" value="12"></td><td class="num">¥1,800.00</td><td class="num negative">-¥85.72</td><td class="num">¥1,714.28</td><td class="ops"><button class="btn-link danger">删除</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="actions" style="justify-content: flex-start; margin: var(--space-2) 0 var(--space-4)"><button class="btn btn-sm">添加课程</button></div>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">优惠</label><select class="select"><option>秋季报名立减 · 减 ¥200.00 · 原价满 ¥2,000.00</option><option>不使用优惠</option><option>老带新九折 · 减 10%</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">备注</label><input class="input" value="家长要求周六上午的班"><div class="field-error"></div></div>
+        </div>
+        <dl class="desc" style="margin-top: var(--space-3)">
+          <div class="item"><dt>原价</dt><dd class="money">¥4,200.00</dd></div>
+          <div class="item"><dt>优惠</dt><dd class="money negative">-¥200.00</dd></div>
+          <div class="item"><dt>应付</dt><dd class="money">¥4,000.00</dd></div>
+        </dl>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">
+      只有待支付的订单能改，学员不能改（要换学员就取消后重新下单）。课程行、优惠、金额预览的规则与报名下单页相同（<code>order-new.html</code>），单价取<b>现在</b>的课程单价（可能与下单时不同）。
+      <code>PATCH /api/orders/:id</code>：改了课程行就带完整的 <code>items</code>（整体替换），只改优惠或备注时只带 <code>discount_id</code> 或 <code>note</code>。保存成功后关闭弹窗，用返回的订单刷新页面并提示「已保存」；订单已不是待支付（409）时 <code>message</code> 显示在弹窗顶部。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">取消订单</div>
+      <div class="dialog-body">确定取消订单「OD000088」（李子涵，应付 ¥4,000.00）吗？取消后不能再收款，需要时重新下单。</div>
+      <div class="dialog-footer"><button class="btn">不取消</button><button class="btn btn-danger">取消订单</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/orders/:id/cancel</code>。成功后订单变为「已取消」，按钮全部消失，提示「订单已取消」；已支付（409「已支付的订单不能取消」）时确认框不关闭，显示 <code>message</code>。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除订单</div>
+      <div class="dialog-body">确定删除订单「OD000088」吗？删除后不能恢复。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/orders/:id</code>。成功后回到订单列表（<code>orders.html</code>）并提示「已删除」；409 时确认框不关闭，显示 <code>message</code>。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>对象不存在（404）</h3><div class="card state"><div class="title">这张订单不存在</div>可能已被删除，或网址有误<br><a class="btn" href="orders.html">返回订单列表</a></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看订单<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">订单加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>已支付的订单（页头与信息）</h3>
+        <div class="page-header"><h1>订单 OD000088</h1><span class="tag tag-success">已支付</span><span class="grow"></span><a class="btn btn-primary" href="receipt.html">查看收据</a></div>
+        <div class="card"><div class="card-body"><dl class="desc">
+          <div class="item"><dt>支付方式</dt><dd>微信</dd></div>
+          <div class="item"><dt>支付时间</dt><dd>2026-10-15 15:02</dd></div>
+          <div class="item"><dt>应付</dt><dd class="money">¥4,000.00</dd></div>
+        </dl></div></div>
+        <div class="alert alert-info">支付后已为每门课程生成课时包，见 <a href="student-detail.html">学员详情的「课时」页签</a></div>
+      </section>
+      <section><h3>已取消的订单（页头）</h3>
+        <div class="page-header"><h1>订单 OD000085</h1><span class="tag tag-danger">已取消</span><span class="grow"></span></div>
+      </section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

@@ -1,0 +1,145 @@
+/*
+ * 小组待办 主题与公共样式（示例）。这里定义"有哪些值"，什么时候用哪个、什么不能做写在 DESIGN.md。
+ * 变量分两层：原始色板只在本文件里用，组件只用语义层（--color-*）。
+ * 断点（media query 里不能用变量）：窄屏 max-width: 600px。
+ */
+:root {
+  /* 1. 原始色板 */
+  --gray-0: #fff;
+  --gray-50: #f4f5f7;
+  --gray-100: #f0f0f0;
+  --gray-150: #eceff3;
+  --gray-200: #e5e7eb;
+  --gray-300: #ccc;
+  --gray-500: #999;
+  --gray-600: #777;
+  --gray-700: #555;
+  --gray-900: #222;
+  --blue-300: #93b4f5;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --red-50: #fdecea;
+  --red-600: #d93025;
+  --red-700: #b3261e;
+
+  /* 2. 语义色：组件只用这一层 */
+  --color-bg: var(--gray-50);
+  --color-surface: var(--gray-0);
+  --color-hover: var(--gray-100);
+  --color-text: var(--gray-900);
+  --color-text-muted: var(--gray-600);
+  --color-text-disabled: var(--gray-500);
+  --color-text-inverse: var(--gray-0);
+  --color-border: var(--gray-300);
+  --color-divider: var(--gray-100);
+  --color-skeleton: var(--gray-150);
+  --color-selected: var(--gray-900);
+  --color-primary: var(--blue-600);
+  --color-primary-hover: var(--blue-700);
+  --color-primary-disabled: var(--blue-300);
+  --color-focus: var(--blue-600);
+  --color-danger: var(--red-600);
+  --color-danger-bg: var(--red-50);
+  --color-danger-strong: var(--red-700);
+
+  /* 3. 字体 */
+  --font-sans: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --leading-normal: 1.5;
+  --weight-bold: 600;
+
+  /* 4. 间距梯度 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-10: 40px;
+  --space-16: 64px;
+
+  /* 5. 圆角、阴影 */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / .08);
+
+  /* 6. 动效 */
+  --duration-fast: 120ms;
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+
+  /* 7. 层级 */
+  --z-toast: 1200;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font: var(--text-base)/var(--leading-normal) var(--font-sans); background: var(--color-bg); color: var(--color-text); }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 1px; }
+
+/* 布局 */
+.app-header { display: flex; justify-content: space-between; align-items: center; background: var(--color-surface); padding: var(--space-3) var(--space-6); border-bottom: 1px solid var(--color-divider); }
+.app-header h1 { font-size: var(--text-lg); margin: 0; }
+.app-header a { color: var(--color-primary); margin-left: var(--space-3); }
+.page { max-width: 720px; margin: var(--space-6) auto; padding: 0 var(--space-4); }
+.page-narrow { max-width: 360px; margin-top: var(--space-16); }
+.page-narrow h1 { font-size: var(--text-xl); text-align: center; margin-bottom: var(--space-6); }
+.card { background: var(--color-surface); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+.card-body { padding: var(--space-6); }
+
+/* 按钮 */
+.btn { padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out); }
+.btn:hover { background: var(--color-hover); }
+.btn-primary { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-text-inverse); }
+.btn-primary:hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); }
+.btn-primary[disabled] { background: var(--color-primary-disabled); border-color: var(--color-primary-disabled); cursor: wait; }
+.btn-block { display: block; width: 100%; margin-top: var(--space-4); padding: var(--space-3); }
+.btn-link-danger { border: 0; background: none; color: var(--color-danger); padding: var(--space-1) var(--space-2); cursor: pointer; }
+.btn-link-danger:hover { text-decoration: underline; }
+
+/* 表单 */
+.field-label { display: block; margin-top: var(--space-3); font-weight: var(--weight-bold); }
+.input { width: 100%; padding: var(--space-2) var(--space-3); margin-top: var(--space-1); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; }
+.input.invalid { border-color: var(--color-danger); }
+.field-error { color: var(--color-danger); font-size: var(--text-sm); min-height: 18px; }
+.alert-error { background: var(--color-danger-bg); color: var(--color-danger-strong); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); }
+.hint { color: var(--color-text-muted); font-size: var(--text-sm); text-align: center; margin-top: var(--space-4); }
+
+/* 工具条：一行里的输入框与按钮 */
+.toolbar { display: flex; gap: var(--space-2); }
+.toolbar .input { width: auto; margin-top: 0; }
+.toolbar .input.grow { flex: 1; min-width: 0; }
+
+/* 分段筛选：一组互斥的按钮，选中的加 .on */
+.segmented { display: flex; gap: var(--space-1); margin: var(--space-2) 0 var(--space-3); }
+.segmented .btn.on { background: var(--color-selected); border-color: var(--color-selected); color: var(--color-text-inverse); }
+
+/* 列表 */
+.list { list-style: none; padding: 0; margin: 0; }
+.list-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-top: 1px solid var(--color-divider); }
+.list-row:first-child { border-top: 0; }
+.list-row .grow { flex: 1; }
+.list-row.done .grow { text-decoration: line-through; color: var(--color-text-disabled); }
+.meta { color: var(--color-text-muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.pager { display: flex; justify-content: center; align-items: center; gap: var(--space-3); margin-top: var(--space-3); }
+
+/* 四种状态：加载（骨架）、空、出错、无权限 */
+.skeleton .list-row span { display: block; height: 14px; width: 60%; background: var(--color-skeleton); border-radius: var(--radius-sm); }
+.state { padding: var(--space-10) var(--space-4); text-align: center; color: var(--color-text-muted); }
+.state .btn { margin-top: var(--space-4); }
+.toast { position: fixed; left: 50%; bottom: var(--space-6); transform: translateX(-50%); z-index: var(--z-toast); background: var(--color-danger-strong); color: var(--color-text-inverse); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); }
+
+/* 窄屏：工具条与列表行换行 */
+@media (max-width: 600px) {
+  .app-header { padding: var(--space-3) var(--space-4); }
+  .toolbar { flex-wrap: wrap; }
+  .toolbar .input.grow { flex-basis: 100%; }
+  .list-row { flex-wrap: wrap; }
+  .list-row .meta { order: 3; flex-basis: 100%; }
+}
+
+/* 原型顶部的演示条：只用来切换演示状态，不是产品的一部分 */
+.demo { background: var(--gray-200); padding: var(--space-1) var(--space-3); font-size: var(--text-sm); color: var(--gray-700); }
+.demo button { margin-left: var(--space-1); }

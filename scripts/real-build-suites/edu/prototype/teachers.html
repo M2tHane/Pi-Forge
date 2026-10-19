@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>教师 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-010。教师列表（搜索与筛选）与新建教师；编辑、删除和可上课时间在教师详情页。admin、academic 能改，其他员工只读。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">孙丽（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html" class="on">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏同 students.html。权限：admin、academic 读写；sales、finance、teacher 只读（没有「新建教师」）；parent 不能用。</div>
+
+    <div class="page-header">
+      <h1>教师</h1>
+      <span class="grow"></span>
+      <button class="btn btn-primary">新建教师</button>
+    </div>
+
+    <form class="toolbar">
+      <input class="input search" placeholder="教师姓名">
+      <select class="select"><option>全部校区</option><option>东湖校区</option><option>光谷校区</option><option>汉口校区（停用）</option></select>
+      <select class="select"><option>全部科目</option><option>数学</option><option>英语</option><option>语文</option><option>物理</option><option>编程（停用）</option></select>
+      <select class="select"><option>全部状态</option><option>启用</option><option>停用</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>姓名</th><th>所属校区</th><th>能教的科目</th><th>类型</th><th class="num">默认每节课酬</th><th>手机</th><th>登录账号</th><th>状态</th><th>建档日期</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><a href="teacher-detail.html">刘洋</a></td><td>东湖校区</td><td>数学、物理</td><td>全职</td><td class="num money">¥200.00</td><td>139 0712 3301</td><td>刘洋</td><td><span class="tag tag-success">启用</span></td><td>2026-08-21</td><td class="ops"><a class="btn-link" href="teacher-detail.html">查看</a></td></tr>
+            <tr><td><a href="teacher-detail.html">陈静</a></td><td>东湖校区</td><td>英语</td><td>全职</td><td class="num money">¥220.00</td><td>139 0712 3302</td><td>陈静</td><td><span class="tag tag-success">启用</span></td><td>2026-08-21</td><td class="ops"><a class="btn-link" href="teacher-detail.html">查看</a></td></tr>
+            <tr><td><a href="teacher-detail.html">周磊</a></td><td>光谷校区</td><td>物理</td><td>兼职</td><td class="num money">¥180.00</td><td></td><td class="meta">未绑定</td><td><span class="tag tag-success">启用</span></td><td>2026-09-03</td><td class="ops"><a class="btn-link" href="teacher-detail.html">查看</a></td></tr>
+            <tr><td><a href="teacher-detail.html">黄晓雯</a></td><td>光谷校区</td><td>语文、英语</td><td>兼职</td><td class="num money">¥150.00</td><td>136 1234 5678</td><td>黄晓雯</td><td><span class="tag tag-success">启用</span></td><td>2026-09-10</td><td class="ops"><a class="btn-link" href="teacher-detail.html">查看</a></td></tr>
+            <tr class="muted"><td><a href="teacher-detail.html">吴凯</a></td><td>东湖校区</td><td>编程</td><td>兼职</td><td class="num money">¥0.00</td><td>135 8888 0000</td><td class="meta">未绑定</td><td><span class="tag tag-danger">停用</span></td><td>2026-08-25</td><td class="ops"><a class="btn-link" href="teacher-detail.html">查看</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 18 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 1 页</span><button class="btn btn-sm" disabled>下一页</button></div>
+    </div>
+    <div class="proto-note">
+      <code>GET /api/teachers</code>，按 <code>id</code> 升序。所属校区显示 <code>campus_name</code>，能教的科目把 <code>subject_names</code> 用「、」连起来，类型 <code>full_time</code> 显示「全职」、<code>part_time</code> 显示「兼职」，默认每节课酬 <code>pay_per_lesson</code> 从分换算成元，登录账号显示绑定用户的姓名 <code>user_name</code>（<code>user_id</code> 为 <code>null</code> 时显示「未绑定」），建档日期是 <code>created_at</code> 的北京日期。<br>
+      筛选与页码写进网址参数：<code>?q=刘&amp;campus_id=1&amp;subject_id=1&amp;active=true&amp;page=1</code>，刷新后不变；搜索框去掉首尾空白后为空时不带 <code>q</code>；选了科目时只列能教这个科目的教师。<br>
+      点姓名或「查看」进教师详情（teacher-detail.html，<code>/teachers/:id</code>）；编辑、删除、可上课时间都在详情页。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog wide">
+      <div class="dialog-header">新建教师</div>
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">姓名<span class="required">*</span></label><input class="input" value="周磊"><div class="field-hint">1–30 个字符</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">手机</label><input class="input"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">所属校区<span class="required">*</span></label><select class="select"><option>东湖校区</option><option selected>光谷校区</option></select><div class="field-hint">只列启用的校区</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">类型<span class="required">*</span></label><select class="select"><option>全职</option><option selected>兼职</option></select><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">能教的科目<span class="required">*</span></label>
+            <div class="actions" style="justify-content: flex-start; flex-wrap: wrap">
+              <label class="checkbox"><input type="checkbox"> 数学</label>
+              <label class="checkbox"><input type="checkbox"> 英语</label>
+              <label class="checkbox"><input type="checkbox"> 语文</label>
+              <label class="checkbox"><input type="checkbox" checked> 物理</label>
+            </div>
+            <div class="field-hint">选 1–5 个，只列启用的科目</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">默认每节课酬（元）</label><input class="input" value="180.00"><div class="field-hint">0–10,000.00 元，最多两位小数；不填为 0。某门课程单独定的课酬在「课酬标准」里设置</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">绑定登录账号</label><input class="input" placeholder="输入用户名或姓名搜索" value="zhou"><select class="select"><option>（不绑定）</option><option selected>zhoulei（周磊）</option><option>zhouming（周明）</option></select><div class="field-hint">只列启用的教师角色用户；绑定后这个用户登录就是这位教师</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">状态</label><select class="select"><option>启用</option><option>停用</option></select><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">
+      <code>POST /api/teachers</code>，字段 <code>name</code>、<code>phone</code>、<code>campus_id</code>、<code>employment</code>、<code>subject_ids</code>、<code>pay_per_lesson</code>（按元输入，提交时乘 100 换成分）、<code>user_id</code>（不绑定为 <code>null</code>）、<code>active</code>。页面先校验科目选了 1–5 个（「请选择能教的科目」「最多选 5 个科目」）。<br>
+      绑定登录账号（admin、academic 都能用）：下拉选项来自 <code>GET /api/users/options?role=teacher&amp;q=</code>（启用的教师用户，最多 20 条，按编号升序），搜索框输入后带 <code>q</code> 重新取（用户名或姓名包含它）；每项显示「用户名（姓名）」。接口不排除已绑定的用户，选了已被别的档案绑定的账号时接口 409，错误显示在这一项下。科目、校区下拉用 <code>page_size=100</code> 取全部（超过 100 条再逐页取）。<br>
+      保存成功后关闭弹窗，直接进入新教师的详情页（teacher-detail.html），轻提示「已创建教师」。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有教师）</h3><div class="card state"><div class="title">还没有教师</div>新建教师后才能开班排课<br><button class="btn btn-primary">新建教师</button></div><div class="proto-note">没有写权限的角色不显示按钮。</div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">没有符合条件的教师</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">教师列表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看教师<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

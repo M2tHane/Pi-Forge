@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>家长端首页 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-042、REQ-044（以及 REQ-043 的未读数）。家长端的布局参考页：顶栏 + 底部导航条换成顶部的 parent-nav + 窄的单列内容；首页显示当前孩子的资料、课时、余额、近 7 天的课与公告。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="parent-header">
+  <b>小树培训学校</b>
+  <span class="grow"></span>
+  <a href="parent-notifications.html">通知 <span class="badge">2</span></a>
+  <span>李建华</span>
+  <a href="login.html">退出</a>
+</header>
+<nav class="parent-nav">
+  <a href="parent-home.html" class="on">首页</a>
+  <a href="parent-schedule.html">课表</a>
+  <a href="parent-homeworks.html">作业</a>
+  <a href="parent-reports.html">成绩</a>
+  <a href="parent-notifications.html">通知</a>
+</nav>
+<main class="parent-page">
+  <div class="proto-note">
+    家长端布局（所有家长端页面相同）：顶部 <code>.parent-header</code>（学校名、通知与未读数、家长姓名、退出），下面 <code>.parent-nav</code> 五个入口（首页、课表、作业、成绩、通知，当前项 <code>.on</code>），再下面是窄的单列内容 <code>.parent-page</code>。家长端不出现任何员工端的入口。手机优先：所有内容单列排列，按钮至少一行高，列表用 <code>.list-item</code>。
+    未读数来自 <code>GET /api/notifications/unread-count</code>，为 0 时不显示角标，超过 99 显示 99+。「退出」调用 <code>POST /api/auth/logout</code> 后回到登录页。
+  </div>
+
+  <div class="child-switch">
+    <a class="btn on" href="parent-home.html" aria-current="true">李子涵</a>
+    <a class="btn" href="parent-home.html">李子轩</a>
+  </div>
+  <div class="proto-note">
+    孩子来自 <code>GET /api/parent/children</code>（按学员编号升序）。当前孩子写进网址参数 <code>?student_id=128</code>，在家长端各页面之间切换时带着这个参数（导航链接都带上），刷新后不变；没有参数或参数不是自己的孩子时用第一个孩子。只绑定了一个孩子时不显示切换条。
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>李子涵</h2><span class="meta">S000128</span></div>
+    <div class="card-body">
+      <dl class="desc">
+        <div class="item"><dt>年级</dt><dd>四年级</dd></div>
+        <div class="item"><dt>校区</dt><dd>东湖校区</dd></div>
+        <div class="item"><dt>账户余额</dt><dd class="money">¥80.00</dd></div>
+      </dl>
+    </div>
+  </div>
+  <div class="proto-note">学号、姓名、年级、校区、余额都取自 <code>GET /api/parent/children</code> 这一项（<code>no</code>、<code>name</code>、<code>grade</code>、<code>campus_name</code>、<code>balance</code>）。年级为空时显示「—」。余额是退费或转课留下、可用于下次报名的钱，为 0 时显示 <code>¥0.00</code>。</div>
+
+  <div class="card">
+    <div class="card-header"><h2>课时</h2></div>
+    <div class="list-item">
+      <div class="grow">
+        <div>小学数学（四年级）</div>
+        <div class="meta">已购 48 节 · 已上 36 节 · 退费 0 节 · 转出 0 节 · 转入 0 节</div>
+      </div>
+      <div style="text-align: right">
+        <div class="money">剩余 <b>12</b> 节</div>
+        <div class="meta money">¥1,440.00</div>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div>少儿英语阅读</div>
+        <div class="meta">已购 20 节 · 已上 18 节 · 退费 0 节 · 转出 0 节 · 转入 0 节</div>
+      </div>
+      <div style="text-align: right">
+        <div class="money">剩余 <b>2</b> 节 <span class="tag tag-warning">课时不多</span></div>
+        <div class="meta money">¥300.00</div>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div>创意美术</div>
+        <div class="meta">已购 0 节 · 已上 4 节 · 退费 0 节 · 转出 8 节 · 转入 12 节</div>
+      </div>
+      <div style="text-align: right">
+        <div class="money">剩余 <b>0</b> 节</div>
+        <div class="meta money">¥0.00</div>
+      </div>
+    </div>
+  </div>
+  <div class="proto-note">
+    每门有课时包的课程一行，来自这一项的 <code>accounts</code>（按课程编号升序）：已购 <code>purchased</code>、已上 <code>consumed</code>、退费 <code>refunded</code>、转出 <code>transferred_out</code>、转入 <code>transferred_in</code>、剩余 <code>remaining</code>；右下的金额是剩余课时的价值 <code>remaining_value</code>。
+    剩余 1–3 节时加 <code>tag-warning</code>「课时不多」（与余额预警报表的默认阈值 3 一致），提醒联系学校续费；剩余 0 节不加标签。没有课时包时这张卡片显示「还没有购买课程」。
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>近期课程</h2><span class="grow"></span><a href="parent-schedule.html">全部课表</a></div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>周四 10-15</b> 18:30–20:00 <span class="tag tag-info">今天</span></div>
+        <div>四年级数学提高班 · 小学数学（四年级）</div>
+        <div class="meta">张伟 · 东湖校区 A101</div>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>周六 10-17</b> 09:00–10:30 <span class="tag tag-warning">请假待审批</span></div>
+        <div>四年级英语阅读班 · 少儿英语阅读</div>
+        <div class="meta">陈静 · 东湖校区 B203</div>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>周日 10-18</b> 14:00–15:30 <span class="tag tag-danger">已取消</span></div>
+        <div>四年级数学提高班 · 小学数学（四年级）</div>
+        <div class="meta">停课原因：教师外出培训，课程已顺延</div>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>周二 10-20</b> 18:30–20:00</div>
+        <div>四年级数学提高班 · 小学数学（四年级）</div>
+        <div class="meta">刘洋（代课，原张伟） · 东湖校区 A101</div>
+      </div>
+    </div>
+  </div>
+  <div class="proto-note">
+    取 <code>GET /api/parent/schedule?from=今天&amp;to=今天+6天&amp;student_id=128</code>（只取当前孩子的），按日期、开始时间升序，最多显示 5 条，更多的去「全部课表」。
+    每行：日期（星期 + 月-日）与上课时间、班级名与课程名、教师、校区与教室（<code>teacher_name</code>、<code>campus_name</code>、<code>room_name</code>）；今天的课加 <code>tag-info</code>「今天」。课次已取消（<code>cancelled</code>，即停课）加 <code>tag-danger</code>「已取消」并显示停课原因 <code>cancel_reason</code>；请假状态 <code>leave_status</code>：待审批 <code>tag-warning</code>「请假待审批」、已批准 <code>tag-success</code>「请假已批准」、已驳回 <code>tag-danger</code>「请假已驳回」，已取消的请假不显示。有代课（<code>original_teacher_id</code> 不为空）时教师名后加「（代课，原 <code>original_teacher_name</code>）」。
+    点一行进课表页这一周（<code>parent-schedule.html?student_id=128&amp;from=2026-10-12</code>），在那里请假或取消请假。
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>公告</h2></div>
+    <div class="list-item">
+      <div class="grow">
+        <div><span class="tag tag-info">置顶</span> <b>国庆后课程安排调整通知</b></div>
+        <div class="meta">2026-10-08 10:00 · 全校</div>
+        <p style="margin: var(--space-2) 0 0">10 月 8 日起周末班上课时间不变，周三晚班改为 18:30 开始。因节假日停课的课次已按原课表顺延，请在「课表」里查看孩子的最新安排。如有疑问请联系班主任。</p>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>东湖校区停车场施工提醒</b></div>
+        <div class="meta">2026-10-12 17:30 · 东湖校区</div>
+      </div>
+      <button class="btn-link" type="button">展开</button>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>秋季学期期中测评安排</b></div>
+        <div class="meta">2026-10-05 09:00 · 全校</div>
+      </div>
+      <button class="btn-link" type="button">展开</button>
+    </div>
+  </div>
+  <div class="proto-note">
+    来自 <code>GET /api/announcements/visible</code>（接口已只返回家长能看的、校区匹配的），置顶的在前、再按发布时间降序，照接口顺序显示，不按当前孩子再过滤。每条显示标题、发布时间 <code>published_at</code>（北京时间）、范围（<code>campus_name</code>，为 <code>null</code> 时写「全校」）；置顶的加 <code>tag-info</code>「置顶」。
+    置顶的默认展开正文，其他的点「展开」在原地显示正文（再点「收起」），正文按纯文本显示、保留换行。没有公告详情页。
+  </div>
+
+  <div class="proto-states">
+    <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+    <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+    <section><h3>只绑定了一个孩子</h3>
+      <div class="proto-note">不显示 <code>.child-switch</code>，第一张卡片直接是孩子姓名。</div>
+    </section>
+    <section><h3>还没有绑定孩子</h3><div class="card state"><div class="title">还没有绑定孩子</div>请联系学校的课程顾问，把你的账号绑定到孩子名下</div>
+      <div class="proto-note"><code>GET /api/parent/children</code> 返回空数组时整页只显示这一块（课表、作业、成绩页同样显示这一块）；公告仍显示在下面。</div></section>
+    <section><h3>近期没有课</h3><div class="card"><div class="card-header"><h2>近期课程</h2><span class="grow"></span><a href="parent-schedule.html">全部课表</a></div><div class="state"><div class="title">未来 7 天没有课</div>可以在「课表」里查看其他周</div></div></section>
+    <section><h3>还没有购买课程</h3><div class="card"><div class="card-header"><h2>课时</h2></div><div class="state"><div class="title">还没有购买课程</div>报名缴费后课时会显示在这里</div></div></section>
+    <section><h3>没有公告</h3><div class="card"><div class="card-header"><h2>公告</h2></div><div class="state"><div class="title">暂时没有公告</div></div></div></section>
+    <section><h3>出错</h3><div class="card state"><div class="title">加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div>
+      <div class="proto-note">每张卡片单独取数据、单独显示出错，一张失败不影响其他卡片。</div></section>
+    <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>家长端只给家长账号使用<br><a class="btn" href="dashboard.html">返回工作台</a></div>
+      <div class="proto-note">员工账号打开 <code>/parent</code> 下的任何页面时只显示这一块，不跳转。网址里的 <code>student_id</code> 不是自己的孩子时不报错，改用第一个孩子。</div></section>
+  </div>
+</main>
+</body>
+</html>

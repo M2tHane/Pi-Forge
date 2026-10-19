@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>通知中心 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-043。员工端通知中心：当前用户自己的站内通知，全部与未读筛选、标为已读、全部标为已读，点通知进对应的对象。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">王芳（课程顾问）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">所有员工角色都能用（只看自己的通知）；侧栏没有这个入口，从顶栏的「通知」进来，侧栏不高亮任何一项。家长的通知在家长端 parent-notifications.html，家长打开这个页面显示无权限（按钮「返回家长端」）。</div>
+
+    <div class="page-header">
+      <h1>通知中心</h1>
+      <span class="grow"></span>
+      <button class="btn">全部标为已读</button>
+    </div>
+    <div class="proto-note">「全部标为已读」调用 <code>POST /api/notifications/read-all</code>（204），成功后刷新列表与顶栏未读数，提示「已全部标为已读」；未读数为 0 时按钮禁用。</div>
+
+    <div class="tabs"><a href="notifications.html" class="on">全部</a><a href="notifications.html">未读（3）</a></div>
+    <div class="proto-note">页签写进网址参数：「全部」不带参数，「未读」是 <code>?unread=true</code>（同 <code>GET /api/notifications</code> 的 <code>unread</code> 参数）。「未读」后面的数字来自 <code>GET /api/notifications/unread-count</code>，和顶栏角标一致。</div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>状态</th><th>标题</th><th>内容</th><th>时间</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag tag-warning">未读</span></td><td><a href="refund-detail.html">退费已审批</a></td><td>学员李子涵的退费 ¥1,280.00 已由财务赵敏批准</td><td>2026-10-17 16:20</td><td class="ops"><a class="btn-link" href="refund-detail.html">查看</a><button class="btn-link">标为已读</button></td></tr>
+            <tr><td><span class="tag tag-warning">未读</span></td><td><a href="leaves.html">请假已审批</a></td><td>张一鸣 2026-10-21 18:30 四年级数学提高班的请假被驳回：本班请假次数已满</td><td>2026-10-17 10:05</td><td class="ops"><a class="btn-link" href="leaves.html">查看</a><button class="btn-link">标为已读</button></td></tr>
+            <tr><td><span class="tag tag-warning">未读</span></td><td><a href="lesson-detail.html">课程变动</a></td><td>四年级数学提高班 第 9 次课改到 2026-10-22 18:30，教室 A102</td><td>2026-10-16 09:12</td><td class="ops"><a class="btn-link" href="lesson-detail.html">查看</a><button class="btn-link">标为已读</button></td></tr>
+            <tr class="muted"><td><span class="tag">已读</span></td><td><a href="my-pay.html">工资单已确认</a></td><td>你 2026-09 的课酬 ¥6,840.00 已确认</td><td>2026-10-08 11:00</td><td class="ops"><a class="btn-link" href="my-pay.html">查看</a></td></tr>
+            <tr class="muted"><td><span class="tag">已读</span></td><td><a href="leaves.html">请假已审批</a></td><td>王雨桐 2026-10-14 18:30 四年级数学提高班的请假已批准</td><td>2026-10-12 15:40</td><td class="ops"><a class="btn-link" href="leaves.html">查看</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 27 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 2 页</span><button class="btn btn-sm">下一页</button></div>
+    </div>
+    <div class="proto-note">
+      数据来自 <code>GET /api/notifications</code>（分页，按 <code>id</code> 降序，即最新的在前）；页码与页签写进网址参数（<code>?unread=true&amp;page=2</code>）。标题与内容照接口的 <code>title</code>（按类型固定，就是下面的中文名）、<code>body</code> 显示，不另设「类型」列；已读的整行 <code>.muted</code>。示例里混合了不同角色才会收到的类型，实际每个人只会收到和自己有关的。<br>
+      点标题或「查看」去接口给的 <code>link</code>（页面路径，页面不自己拼）。员工会收到的类型与 <code>link</code>：<br>
+      · 课程变动（<code>lesson_changed</code>，调课、代课、停课；教师收到）→ <code>/lessons/&lt;id&gt;</code>，即 lesson-detail.html；<br>
+      · 请假已审批（<code>leave_reviewed</code>；请假的创建人收到）→ <code>/leaves</code>，即 leaves.html；<br>
+      · 退费已审批（<code>refund_reviewed</code>；发起退费的人收到）→ <code>/refunds/&lt;id&gt;</code>，即 refund-detail.html；<br>
+      · 工资单已确认（<code>payroll_confirmed</code>；教师收到）→ <code>/my/pay?month=&lt;月份&gt;</code>，即 my-pay.html；<br>
+      · 作业已批改、订单已支付只发给家长，在家长端通知里。<br>
+      点「查看」或标题：未读的先调用 <code>POST /api/notifications/:id/read</code>（204），再跳转。「标为已读」只对未读的显示，成功后这一行变为已读、顶栏未读数减一，在「未读」页签下这一行消失。返回 404（不是自己的通知）时提示接口的 <code>message</code> 并刷新列表。<br>
+      顶栏的未读数：每次打开或切换页面时取 <code>GET /api/notifications/unread-count</code>；超过 99 显示 99+。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有通知）</h3><div class="card state"><div class="title">还没有通知</div>调课、请假审批、退费审批、工资单确认这类和你有关的事情会通知你</div></section>
+      <section><h3>未读页签下没有通知</h3><div class="card state"><div class="title">没有未读通知</div><a class="btn" href="notifications.html">查看全部通知</a></div><div class="proto-note">这时「全部标为已读」禁用。</div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">通知加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（家长打开）</h3><div class="card state"><div class="title">没有权限查看</div>家长请在家长端查看通知<br><a class="btn" href="parent-notifications.html">返回家长端</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

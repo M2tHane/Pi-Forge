@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课表 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-023。全校课表的周视图：按校区、教师、教室、班级、学员、状态筛选，点课次进课次详情。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">李娜（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html" class="on">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+<div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的（PRD 的权限表）。课表（课次）admin、academic、sales、finance 可以看全部，teacher 只看到自己的课次（代课的课次属于代课教师），parent 没有这个页面。</div>
+    <div class="page-header">
+      <h1>课表</h1>
+      <span class="grow"></span>
+      <button class="btn">上一周</button>
+      <span>2026-10-12 至 2026-10-18</span>
+      <button class="btn">下一周</button>
+      <button class="btn">本周</button>
+    </div>
+
+    <form class="toolbar">
+      <select class="select"><option>全部校区</option><option>东湖校区</option><option>光谷校区</option></select>
+      <select class="select"><option>全部教师</option><option>刘建国</option><option>陈静</option><option>周敏</option><option>张伟</option><option>王磊</option></select>
+      <select class="select"><option>全部教室</option><option>东湖校区 A101</option><option>东湖校区 A102</option><option>东湖校区 B203</option><option>光谷校区 B201</option></select>
+      <select class="select"><option>全部班级</option><option>三年级数学提高班</option><option>二年级英语启蒙班</option><option>五年级语文阅读班</option></select>
+      <input class="input search" placeholder="学员姓名或学号（看他要上的课）">
+      <select class="select"><option>全部状态</option><option>待上课</option><option>已完成</option><option>已取消</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+
+<div class="week">
+  <div class="head"></div>
+  <div class="head">周一 10-12</div>
+  <div class="head">周二 10-13</div>
+  <div class="head">周三 10-14</div>
+  <div class="head today">周四 10-15</div>
+  <div class="head">周五 10-16</div>
+  <div class="head">周六 10-17</div>
+  <div class="head">周日 10-18</div>
+  <div class="hour">08:00</div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="hour">09:00</div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"><a class="lesson-chip" href="lesson-detail.html">09:00–10:30 三年级数学提高班 第 11 次 · A101 · 刘建国</a></div>
+  <div class="cell"></div>
+  <div class="hour">10:00</div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"><a class="lesson-chip" href="lesson-detail.html">10:00–11:30 二年级英语启蒙班 第 19 次 · B203 · 陈静</a></div>
+  <div class="cell"><a class="lesson-chip" href="lesson-detail.html">10:30–12:00 四年级奥数班 第 7 次 · A101 · 李强（代 张伟）</a></div>
+  <div class="hour">11:00</div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="hour">12:00</div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="hour">13:00</div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="hour">14:00</div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"><a class="lesson-chip" href="lesson-detail.html">14:00–15:30 初一物理衔接班 第 4 次 · B201 · 王磊</a></div>
+  <div class="cell"></div>
+  <div class="hour">15:00</div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="hour">16:00</div>
+  <div class="cell"><a class="lesson-chip completed" href="lesson-detail.html">16:30–18:00 二年级英语启蒙班 第 17 次 · B203 · 陈静</a></div>
+  <div class="cell"></div>
+  <div class="cell"><a class="lesson-chip completed" href="lesson-detail.html">16:30–18:00 二年级英语启蒙班 第 18 次 · B203 · 陈静</a></div>
+  <div class="cell"><a class="lesson-chip" href="lesson-detail.html">16:30–18:00 初一物理衔接班 第 3 次 · B201 · 王磊</a></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="hour">17:00</div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="hour">18:00</div>
+  <div class="cell"></div>
+  <div class="cell"><a class="lesson-chip completed" href="lesson-detail.html">18:30–20:00 五年级语文阅读班 第 11 次 · A102 · 周敏</a></div>
+  <div class="cell"><a class="lesson-chip" href="lesson-detail.html">18:30–20:00 三年级数学提高班 第 10 次 · A101 · 刘建国</a><a class="lesson-chip completed" href="lesson-detail.html">18:30–20:00 四年级奥数班 第 6 次 · A102 · 张伟</a></div>
+  <div class="cell"></div>
+  <div class="cell"><a class="lesson-chip cancelled" href="lesson-detail.html">18:30–20:00 五年级语文阅读班 第 12 次 · A102 · 周敏（已停课）</a></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="hour">19:00</div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="hour">20:00</div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+</div>
+    <div class="proto-note">
+      <b>取数：</b><code>GET /api/lessons?from=2026-10-12&amp;to=2026-10-18</code>（周一到周日，按北京时间），再带上筛选：<code>campus_id</code>、<code>teacher_id</code>、<code>room_id</code>、<code>class_id</code>、<code>student_id</code>、<code>status</code>（<code>scheduled</code> 待上课 | <code>completed</code> 已完成 | <code>cancelled</code> 已取消）。接口不分页，直接返回这一周的数组。
+      <b>网址参数：</b><code>?from=2026-10-12&amp;campus_id=1&amp;teacher_id=2&amp;room_id=3&amp;class_id=12&amp;student_id=128&amp;status=scheduled</code>，<code>from</code> 是这一周的周一（不是周一时页面改成那一周的周一；<code>to</code> 总是 from 加 6 天，不写进网址），不带时是今天所在的周；「上一周」「下一周」把 <code>from</code> 加减 7 天并保留其他筛选，「本周」去掉 <code>from</code>。刷新后停留在同一周、同样的筛选。
+      <b>周课表：</b>表头是周一到周日与日期，今天的表头加 <code>.today</code>；左侧每格一小时（08:00 到 20:00，这一周有更早或更晚的课时把范围扩到能放下所有课次）；课次放在开始时间所在的那一格，同一格里按开始时间、编号排列。课次块写「开始–结束 班级名 第 N 次 · 教室 · 上课教师」，代课写「代课教师（代 原教师）」，原教师是 <code>original_teacher_name</code>。待上课是默认样式；已完成（已点名）加 <code>.completed</code>；已取消加 <code>.cancelled</code>（划线）。点课次块进课次详情 <code>lesson-detail.html</code>。
+      <b>筛选下拉：</b>校区来自 <code>GET /api/campuses</code>；教师 <code>GET /api/teachers?page_size=100</code>（选了校区时带 <code>campus_id</code>）；教室 <code>GET /api/rooms</code>（同上）；班级 <code>GET /api/classes?status=active&amp;page_size=100</code>（同上；超过 100 条再逐页取完）；学员用输入框搜 <code>GET /api/students?q=…</code>，选中后带 <code>student_id</code>，输入框显示「李子涵 S000128」。teacher 角色不显示「教师」下拉。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div><div class="proto-note">切换周或筛选时，周课表的位置显示骨架，表头与筛选条照常显示。</div></section>
+      <section><h3>这一周没有课次</h3><div class="card state"><div class="title">这一周没有课次</div>班级发布后，课次会出现在课表里<br><a class="btn btn-primary" href="classes.html">去班级</a></div><div class="proto-note">带了筛选时说明改为「这一周没有符合条件的课次」，按钮改为「清除筛选」。只有 admin、academic 显示「去班级」。</div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">课表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看课表<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

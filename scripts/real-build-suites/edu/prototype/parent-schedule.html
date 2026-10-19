@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>家长端课表与请假 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-042 AC3、REQ-027。按周看当前孩子的课（GET /api/parent/schedule），给还没开始的课请假、取消自己提交的请假。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="parent-header">
+  <b>小树培训学校</b>
+  <span class="grow"></span>
+  <a href="parent-notifications.html">通知 <span class="badge">2</span></a>
+  <span>李建华</span>
+  <a href="login.html">退出</a>
+</header>
+<nav class="parent-nav">
+  <a href="parent-home.html">首页</a>
+  <a href="parent-schedule.html" class="on">课表</a>
+  <a href="parent-homeworks.html">作业</a>
+  <a href="parent-reports.html">成绩</a>
+  <a href="parent-notifications.html">通知</a>
+</nav>
+<main class="parent-page">
+  <div class="child-switch">
+    <a class="btn on" href="parent-schedule.html" aria-current="true">李子涵</a>
+    <a class="btn" href="parent-schedule.html">李子轩</a>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn" type="button">上一周</button>
+    <span class="grow" style="text-align: center"><b>2026-10-12 至 2026-10-18</b></span>
+    <button class="btn" type="button">下一周</button>
+    <button class="btn-link" type="button">回到本周</button>
+  </div>
+  <div class="proto-note">
+    当前孩子与周写进网址参数：<code>?student_id=128&amp;from=2026-10-12</code>（<code>from</code> 是那一周的周一，默认本周，北京时间）。页面请求 <code>GET /api/parent/schedule?from=2026-10-12&amp;to=2026-10-18&amp;student_id=128</code>，每节课带这个孩子最近一条请假的编号 <code>leave_id</code>、状态 <code>leave_status</code> 与审批意见 <code>leave_review_note</code>（取消请假用 <code>leave_id</code>）。
+    家长端是窄的单列，课表按天列出（不用员工端的周视图 <code>.week</code>）；没有课的日子不显示。
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>周一 10-12</h2></div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>18:30–20:00</b> <span class="tag tag-success">已完成</span></div>
+        <div>四年级数学提高班 · 小学数学（四年级）</div>
+        <div class="meta">张伟 · 东湖校区 A101</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>周四 10-15</h2><span class="tag tag-info">今天</span></div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>18:30–20:00</b></div>
+        <div>四年级数学提高班 · 小学数学（四年级）</div>
+        <div class="meta">张伟 · 东湖校区 A101</div>
+      </div>
+      <button class="btn btn-sm" type="button">请假</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>周六 10-17</h2></div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>09:00–10:30</b> <span class="tag tag-warning">请假待审批</span></div>
+        <div>四年级英语阅读班 · 少儿英语阅读</div>
+        <div class="meta">陈静 · 东湖校区 B203</div>
+      </div>
+      <button class="btn-link danger" type="button">取消请假</button>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>14:00–15:30</b> <span class="tag tag-danger">请假已驳回</span></div>
+        <div>英语阅读周末班 · 少儿英语阅读</div>
+        <div class="meta">陈静 · 东湖校区 B201</div>
+        <div class="meta">审批意见：本班请假次数已达上限</div>
+      </div>
+      <button class="btn btn-sm" type="button">请假</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>周日 10-18</h2></div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>14:00–15:30</b> <span class="tag tag-danger">已取消</span></div>
+        <div>四年级数学提高班 · 小学数学（四年级）</div>
+        <div class="meta">停课原因：教师外出培训，课程已顺延</div>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>16:00–17:30</b> <span class="tag tag-success">请假已批准</span></div>
+        <div>四年级英语阅读班 · 少儿英语阅读</div>
+        <div class="meta">刘洋（代课，原陈静） · 东湖校区 B203</div>
+      </div>
+      <button class="btn-link danger" type="button">取消请假</button>
+    </div>
+  </div>
+  <div class="proto-note">
+    每节课一行：上课时间、班级名与课程名、教师、校区与教室（<code>campus_name</code>、<code>room_name</code>）；有代课（<code>original_teacher_id</code> 不为空）时教师名后加「（代课，原 <code>original_teacher_name</code>）」。课次状态：<code>completed</code> 加 <code>tag-success</code>「已完成」，<code>cancelled</code>（停课）加 <code>tag-danger</code>「已取消」并显示停课原因，待上课的不加标签。
+    请假状态（<code>leave_status</code>）：待审批 <code>tag-warning</code>「请假待审批」、已批准 <code>tag-success</code>「请假已批准」、已驳回 <code>tag-danger</code>「请假已驳回」；有审批意见 <code>leave_review_note</code> 时显示「审批意见：…」。已取消的请假不显示标签，可以重新请假。
+    <b>「请假」按钮</b>只在课次是待上课、现在早于上课开始时间、且没有待审批或已批准的请假时显示。
+    <b>「取消请假」</b>只在请假是待审批或已批准、且现在早于上课开始时间时显示。只有提交这条请假的人能取消：别人（另一位家长或学校的员工）提交的，接口返回 403，确认框里显示接口的 message。
+  </div>
+
+  <div class="proto-dialog"><div class="dialog">
+    <div class="dialog-header">请假</div>
+    <div class="dialog-body">
+      <div class="alert alert-error">这节课已经开始，不能请假</div>
+      <dl class="desc">
+        <div class="item"><dt>孩子</dt><dd>李子涵</dd></div>
+        <div class="item"><dt>课程</dt><dd>四年级数学提高班</dd></div>
+        <div class="item"><dt>上课时间</dt><dd>2026-10-15 周四 18:30</dd></div>
+      </dl>
+      <div class="field" style="margin-top: var(--space-4)">
+        <label class="field-label" for="reason">请假原因<span class="required">*</span></label>
+        <textarea class="textarea invalid" id="reason" maxlength="200"></textarea>
+        <div class="field-hint">最多 200 个字</div>
+        <div class="field-error">请填写请假原因</div>
+      </div>
+      <div class="field-hint">请假需要学校审批；批准后这节课不扣课时，之后可以联系学校安排补课。</div>
+    </div>
+    <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">提交</button></div>
+  </div></div>
+  <div class="proto-note">
+    提交 <code>POST /api/leaves</code>，请求体 <code>{"student_id": 128, "lesson_id": 4602, "reason": "…"}</code>；原因去掉首尾空白后为空时不提交，提示「请填写请假原因」。提交中按钮禁用并显示「提交中…」。
+    成功后关闭弹窗、轻提示「已提交，等待学校审批」，这节课的标签变为「请假待审批」。接口返回 409（课已开始、孩子已停读、已有待审批或已批准的请假）或 400 时弹窗不关闭，接口的 message 显示在弹窗顶部的 <code>alert-error</code>，原因不清空。
+  </div>
+
+  <div class="proto-dialog"><div class="dialog">
+    <div class="dialog-header">取消请假</div>
+    <div class="dialog-body">确定取消李子涵 10-17 周六 09:00 四年级英语阅读班的请假吗？取消后这节课需要按时上课。</div>
+    <div class="dialog-footer"><button class="btn">不取消</button><button class="btn btn-danger">取消请假</button></div>
+  </div></div>
+  <div class="proto-note">
+    确认后调用 <code>POST /api/leaves/:id/cancel</code>（<code>:id</code> 是这节课的 <code>leave_id</code>）。成功后关闭弹窗、轻提示「已取消请假」，标签去掉，「请假」按钮重新出现。接口返回 409（课已开始或请假状态已变）或 403 时确认框不关闭，接口的 message 显示在确认框里的 <code>alert-error</code>，关闭后刷新这一周。
+  </div>
+
+  <div class="proto-states">
+    <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+    <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+    <section><h3>这一周没有课</h3><div class="card state"><div class="title">这一周没有课</div>可以切换到上一周或下一周查看<br><button class="btn">回到本周</button></div></section>
+    <section><h3>孩子已停读</h3>
+      <div class="proto-note">孩子停读后课表里一般没有新的课；如果还有，「请假」按钮仍显示，提交时接口返回 409，按上面的弹窗出错处理。</div>
+    </section>
+    <section><h3>还没有绑定孩子</h3><div class="card state"><div class="title">还没有绑定孩子</div>请联系学校的课程顾问，把你的账号绑定到孩子名下</div></section>
+    <section><h3>出错</h3><div class="card state"><div class="title">课表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+    <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>家长端只给家长账号使用<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>家长端作业 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-042 AC4、REQ-039。当前孩子所在班级的作业列表（GET /api/parent/students/:id/homeworks），展开一条可以交作业、修改未批改的提交、看分数与评语。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="parent-header">
+  <b>小树培训学校</b>
+  <span class="grow"></span>
+  <a href="parent-notifications.html">通知 <span class="badge">2</span></a>
+  <span>李建华</span>
+  <a href="login.html">退出</a>
+</header>
+<nav class="parent-nav">
+  <a href="parent-home.html">首页</a>
+  <a href="parent-schedule.html">课表</a>
+  <a href="parent-homeworks.html" class="on">作业</a>
+  <a href="parent-reports.html">成绩</a>
+  <a href="parent-notifications.html">通知</a>
+</nav>
+<main class="parent-page">
+  <div class="child-switch">
+    <a class="btn on" href="parent-homeworks.html" aria-current="true">李子涵</a>
+    <a class="btn" href="parent-homeworks.html">李子轩</a>
+  </div>
+
+  <div class="tabs">
+    <a href="parent-homeworks.html" class="on">全部</a>
+    <a href="parent-homeworks.html">未提交</a>
+    <a href="parent-homeworks.html">已提交</a>
+  </div>
+  <div class="proto-note">
+    网址参数 <code>?student_id=128&amp;status=todo</code>（<code>status</code> 是 <code>todo</code> 未提交、<code>done</code> 已提交，不带是全部）。接口不支持筛选，由页面按 <code>submission_id</code> 是否为空过滤。列表照接口顺序：截止日期降序、再按编号降序；不分页。
+  </div>
+
+  <div class="card">
+    <div class="list-item">
+      <div class="grow">
+        <div><b>第 12 讲 分数的加减 练习</b></div>
+        <div class="meta">四年级数学提高班 · 截止 2026-10-18</div>
+      </div>
+      <span class="tag tag-warning">未提交</span>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>Unit 5 阅读笔记</b></div>
+        <div class="meta">四年级英语阅读班 · 截止 2026-10-16</div>
+      </div>
+      <span class="tag tag-success">已提交</span> <span class="tag tag-warning">迟交</span>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>第 11 讲 小数乘法 练习</b></div>
+        <div class="meta">四年级数学提高班 · 截止 2026-10-11</div>
+      </div>
+      <span class="tag tag-info">已批改 92 分</span>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><b>Unit 4 单词抄写</b></div>
+        <div class="meta">四年级英语阅读班 · 截止 2026-10-09</div>
+      </div>
+      <span class="tag tag-danger">未提交 已过截止日期</span>
+    </div>
+  </div>
+  <div class="proto-note">
+    每行：作业标题、班级名、截止日期 <code>due_date</code>，右边是这个孩子的情况：没有 <code>submission_id</code> 时 <code>tag-warning</code>「未提交」（今天已晚于截止日期时 <code>tag-danger</code>「未提交 已过截止日期」，仍可以提交，会记为迟交）；有提交、<code>score</code> 为空时 <code>tag-success</code>「已提交」（<code>late</code> 为真时后面加 <code>tag-warning</code>「迟交」）；有分数时 <code>tag-info</code>「已批改 92 分」。
+    点一行在网址里加 <code>homework_id=301</code> 并在列表下方显示这条作业的详情（窄屏时详情占满一屏，返回键回到列表）。下面画三种详情。
+  </div>
+
+  <h2 style="margin: var(--space-6) 0 var(--space-3)">详情一：未提交（可以交作业）</h2>
+  <div class="card">
+    <div class="card-header"><h2>第 12 讲 分数的加减 练习</h2></div>
+    <div class="card-body">
+      <div class="meta">四年级数学提高班 · 截止 2026-10-18 · 布置于 2026-10-12</div>
+      <p style="white-space: pre-line">完成练习册第 34–36 页全部题目。
+第 5 题要求写出通分的过程。
+做完后把答案按题号写在下面，或写明"已拍照交给老师"。</p>
+      <div class="field">
+        <label class="field-label" for="c1">作业内容<span class="required">*</span></label>
+        <textarea class="textarea invalid" id="c1" maxlength="2000"></textarea>
+        <div class="field-hint">最多 2000 个字</div>
+        <div class="field-error">请填写作业内容</div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary">提交作业</button></div>
+    </div>
+  </div>
+  <div class="proto-note">
+    作业说明是这一项的 <code>content</code>（纯文本，保留换行），布置日期取 <code>created_at</code> 的北京日期。提交 <code>POST /api/homeworks/:id/submissions</code>，请求体 <code>{"student_id": 128, "content": "…"}</code>；内容去掉首尾空白后为空时不提交。提交中按钮禁用并显示「提交中…」。
+    成功后轻提示「已提交」，这一项变为「已提交」，详情变成下面的「详情二」。接口返回 409（这个孩子已经交过，例如另一位家长刚交了）或 400（孩子已不在这个班）时，接口的 message 显示在表单顶部的 <code>alert-error</code>，内容不清空。
+  </div>
+
+  <h2 style="margin: var(--space-6) 0 var(--space-3)">详情二：已提交、还没批改</h2>
+  <div class="card">
+    <div class="card-header"><h2>Unit 5 阅读笔记</h2><span class="grow"></span><span class="tag tag-warning">迟交</span></div>
+    <div class="card-body">
+      <div class="meta">四年级英语阅读班 · 截止 2026-10-16</div>
+      <p style="white-space: pre-line">读完 The Little Prince 第 5 章，写 5 句话的读书笔记。</p>
+      <dl class="desc">
+        <div class="item"><dt>提交时间</dt><dd>2026-10-17 20:15</dd></div>
+        <div class="item"><dt>提交人</dt><dd>李建华</dd></div>
+        <div class="item"><dt>批改</dt><dd>等待老师批改</dd></div>
+      </dl>
+      <p style="white-space: pre-line">The little prince lives on a small planet.
+He takes care of a rose every day. …</p>
+      <div class="form-actions"><button class="btn">修改</button></div>
+    </div>
+  </div>
+  <div class="proto-note">
+    提交时间 <code>submitted_at</code> 与迟交 <code>late</code>（为真时标题右边加 <code>tag-warning</code>「迟交」）直接来自列表项；提交内容、提交人等来自 <code>GET /api/submissions/:id</code>（<code>submission_id</code> 来自列表）。提交人显示 <code>submitted_by_name</code>。
+    <b>「修改」</b>只在还没批改、且提交人是自己时显示；点了把提交内容变成可编辑的文本框（同详情一），按钮变成「取消」「保存」。保存调用 <code>PATCH /api/submissions/:id</code> <code>{"content"}</code>，成功后轻提示「已保存」；返回 409（老师已经批改）时轻提示接口的 message 并刷新详情。
+  </div>
+
+  <h2 style="margin: var(--space-6) 0 var(--space-3)">详情三：已批改</h2>
+  <div class="card">
+    <div class="card-header"><h2>第 11 讲 小数乘法 练习</h2></div>
+    <div class="card-body">
+      <div class="meta">四年级数学提高班 · 截止 2026-10-11</div>
+      <div class="stats" style="margin-top: var(--space-3)">
+        <div class="stat"><div class="label">得分</div><div class="value">92</div><div class="sub">满分 100</div></div>
+      </div>
+      <dl class="desc">
+        <div class="item"><dt>提交时间</dt><dd>2026-10-10 21:02</dd></div>
+        <div class="item"><dt>批改时间</dt><dd>2026-10-12 10:30</dd></div>
+        <div class="item"><dt>提交人</dt><dd>李建华</dd></div>
+      </dl>
+      <div class="field-label" style="margin-top: var(--space-3)">老师评语</div>
+      <p>计算很准确，第 7 题小数点位置要再检查一下。</p>
+      <div class="field-label">提交内容</div>
+      <p style="white-space: pre-line">1. 3.6　2. 0.48　3. 12.5 …</p>
+    </div>
+  </div>
+  <div class="proto-note">得分 <code>score</code>（0–100）、评语 <code>comment</code>（为空时不显示「老师评语」）、批改时间 <code>graded_at</code>，都来自 <code>GET /api/submissions/:id</code>；列表里已提交的作业也显示 <code>late</code> 为真时的「迟交」。批改后不能修改，没有「修改」按钮。老师可以重新批改，页面显示最新一次。</div>
+
+  <div class="proto-states">
+    <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+    <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+    <section><h3>空（还没有作业）</h3><div class="card state"><div class="title">还没有作业</div>老师布置作业后会出现在这里</div></section>
+    <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">没有未提交的作业</div><a class="btn" href="parent-homeworks.html">查看全部</a></div></section>
+    <section><h3>提交中</h3><div class="form-actions"><button class="btn btn-primary" disabled>提交中…</button></div></section>
+    <section><h3>提交失败</h3><div class="alert alert-error">这个学员已经提交过这份作业</div></section>
+    <section><h3>作业不存在（网址里的 homework_id 不在列表里）</h3><div class="card state"><div class="title">这份作业不存在</div>可能已被老师删除，或孩子已不在这个班<br><a class="btn" href="parent-homeworks.html">返回作业列表</a></div></section>
+    <section><h3>还没有绑定孩子</h3><div class="card state"><div class="title">还没有绑定孩子</div>请联系学校的课程顾问，把你的账号绑定到孩子名下</div></section>
+    <section><h3>出错</h3><div class="card state"><div class="title">作业加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+    <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>家长端只给家长账号使用<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+  </div>
+</main>
+</body>
+</html>

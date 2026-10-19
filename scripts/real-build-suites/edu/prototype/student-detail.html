@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>学员详情 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-012、REQ-013、REQ-020、REQ-030、REQ-033。学员资料与家长、课时账户与流水、订单；第三期起有考勤，第四期起有余额。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">王芳（课程顾问）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html" class="on">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="crumbs"><a href="students.html">学员</a> / 李子涵</div>
+    <div class="page-header">
+      <h1>李子涵</h1>
+      <span class="meta">S000128</span>
+      <span class="tag tag-success">在读</span>
+      <span class="grow"></span>
+      <button class="btn-link danger">删除</button>
+      <button class="btn">编辑</button>
+      <a class="btn btn-primary" href="order-new.html">报名</a>
+    </div>
+    <div class="proto-note">
+      <code>GET /api/students/:id</code>（另带 <code>guardians</code>）。按钮按角色显示：「编辑」「删除」「绑定家长」「解绑」给 admin、academic、sales（学员读写）；「报名」给 admin、sales（订单读写），点了进报名下单页并带上这个学员（<code>order-new.html?student_id=128</code>）；finance、teacher 只读，不显示这些按钮。
+      停读的学员不显示「报名」（接口对停读学员下单返回 409）。「删除」只在接口允许时成功：有订单、课时包、分班或请假记录的学员返回 409「这个学员已有订单等记录，不能删除，可以改为停读」，显示在确认框里。
+    </div>
+
+    <div class="tabs"><a class="on" href="#">资料与家长</a><a href="#">课时</a><a href="#">订单</a><a href="#">考勤</a><a href="#">余额</a></div>
+    <div class="proto-note">
+      当前页签写进网址参数 <code>tab</code>：<code>profile</code>（默认）、<code>lessons</code>、<code>orders</code>、<code>attendance</code>、<code>wallet</code>，例如 <code>student-detail.html?tab=lessons</code>，刷新后停在同一页签；切换页签时才请求这个页签的数据。
+      <b>分期</b>：「资料与家长」「课时」「订单」第二期就有；<b>「考勤」第三期起才出现</b>；<b>「余额」第四期起才出现</b>，之前的期不显示这两个页签。
+      <b>按角色显示页签</b>（以权限表为准）：admin 全部；academic 没有「余额」；sales 全部；finance 没有「考勤」；teacher 只有「资料与家长」和「考勤」（只看到这个学员在自己班级里的考勤）。网址里的 <code>tab</code> 是当前角色看不到的页签时，显示「资料与家长」。
+    </div>
+    <div class="proto-note">下面依次画出每个页签的内容，实际一次只显示当前页签的那一块。</div>
+
+    <h2 style="margin: var(--space-6) 0 var(--space-3)">页签「资料与家长」（第二期，REQ-012、REQ-013）</h2>
+    <div class="card">
+      <div class="card-header"><h2>基本资料</h2></div>
+      <div class="card-body">
+        <dl class="desc">
+          <div class="item"><dt>学号</dt><dd>S000128</dd></div>
+          <div class="item"><dt>姓名</dt><dd>李子涵</dd></div>
+          <div class="item"><dt>性别</dt><dd>女</dd></div>
+          <div class="item"><dt>出生日期</dt><dd>2016-05-12</dd></div>
+          <div class="item"><dt>年级</dt><dd>四年级</dd></div>
+          <div class="item"><dt>学校</dt><dd>东湖小学</dd></div>
+          <div class="item"><dt>手机</dt><dd>138 0000 1234</dd></div>
+          <div class="item"><dt>所属校区</dt><dd>东湖校区</dd></div>
+          <div class="item"><dt>状态</dt><dd><span class="tag tag-success">在读</span></dd></div>
+          <div class="item"><dt>建档时间</dt><dd>2026-09-01 15:02</dd></div>
+          <div class="item"><dt>备注</dt><dd>对数字敏感，周六上午不方便</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>家长</h2><span class="meta">最多绑定 4 位</span><span class="grow"></span><button class="btn btn-sm">绑定家长</button></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>姓名</th><th>手机</th><th>关系</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>刘静</td><td>138 0000 1234</td><td>母亲</td><td class="ops"><button class="btn-link danger">解绑</button></td></tr>
+            <tr><td>李强</td><td>139 5555 1234</td><td>父亲</td><td class="ops"><button class="btn-link danger">解绑</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">家长列表取 <code>GET /api/students/:id</code> 返回的 <code>guardians</code>（按用户编号升序），姓名与手机是家长账号的。关系：父亲、母亲、其他。已绑定 4 位时「绑定家长」禁用，悬停提示「最多绑定 4 位家长」。没有家长时表格位置显示「还没有绑定家长」。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">编辑学员</div>
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">姓名<span class="required">*</span></label><input class="input" value="李子涵"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">性别</label><select class="select"><option>女</option><option>男</option><option>未知</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">出生日期</label><input class="input" type="date" value="2016-05-12"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">年级</label><select class="select"><option>四年级</option><option>（不填）</option><option>一年级</option><option>…</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">学校</label><input class="input" value="东湖小学"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">手机</label><input class="input" value="138 0000 1234"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">所属校区<span class="required">*</span></label><select class="select"><option>东湖校区</option><option>光谷校区</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">状态</label><select class="select"><option>在读</option><option>停读</option></select><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">备注</label><textarea class="textarea">对数字敏感，周六上午不方便</textarea><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">字段与学员列表的「新建学员」弹窗一致（<code>students.html</code>）。<code>PATCH /api/students/:id</code>，只提交改过的字段；出生日期不能晚于今天。保存成功后关闭弹窗、刷新资料并提示「已保存」。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">绑定家长</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">这个家长已经绑定了这个学员</div>
+        <div class="field"><label class="field-label">家长账号<span class="required">*</span></label><input class="input" placeholder="输入家长姓名或用户名搜索" value="李强"><div class="field-hint">只列启用的家长账号；还没有账号的，请管理员先在「用户」里创建</div><div class="field-error"></div></div>
+        <div class="field"><label class="field-label">关系<span class="required">*</span></label><select class="select"><option>父亲</option><option>母亲</option><option>其他</option></select><div class="field-error"></div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">绑定</button></div>
+    </div></div>
+    <div class="proto-note">家长账号的候选取 <code>GET /api/users/options?role=parent&amp;q=</code>（admin、academic、sales 都能用；只返回启用的家长，最多 20 条，输入时搜索，下拉显示「姓名 · 用户名 · 手机」）。提交 <code>POST /api/students/:id/guardians</code>，请求体 <code>{"user_id", "relation"}</code>。成功后关闭弹窗、家长列表多一行并提示「已绑定」；已绑定、已满 4 位（409）或账号不可用（400）时 <code>message</code> 显示在弹窗顶部。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">解绑家长</div>
+      <div class="dialog-body">确定解除「李强（父亲）」与李子涵的绑定吗？解绑后这位家长在家长端立即看不到这个孩子。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">解绑</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/students/:id/guardians/:user_id</code>。成功后这一行消失，提示「已解绑」。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除学员</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">这个学员已有订单等记录，不能删除，可以改为停读</div>
+        确定删除学员「李子涵（S000128）」吗？删除后不能恢复。
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/students/:id</code>。成功后回到学员列表（<code>students.html</code>）并提示「已删除」；409 时确认框不关闭，显示接口的 <code>message</code>（如上图）。</div>
+
+    <h2 style="margin: var(--space-6) 0 var(--space-3)">页签「课时」（第二期，REQ-020）</h2>
+    <div class="card">
+      <div class="card-header"><h2>课时账户</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>课程</th><th class="num">购买</th><th class="num">转入</th><th class="num">消课</th><th class="num">退费</th><th class="num">转出</th><th class="num">剩余课时</th><th class="num">剩余价值</th></tr></thead>
+          <tbody>
+            <tr><td>三年级数学提高</td><td class="num">10</td><td class="num">0</td><td class="num">6</td><td class="num">0</td><td class="num">4</td><td class="num">0</td><td class="num">¥0.00</td></tr>
+            <tr><td>四年级数学提高</td><td class="num">20</td><td class="num">3</td><td class="num">6</td><td class="num">0</td><td class="num">0</td><td class="num">17</td><td class="num">¥1,942.88</td></tr>
+            <tr><td>少儿英语</td><td class="num">12</td><td class="num">0</td><td class="num">4</td><td class="num">0</td><td class="num">0</td><td class="num">8</td><td class="num">¥1,142.88</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note"><code>GET /api/students/:id/accounts</code>，每门有课时包的课程一行，按课程编号升序。「消课」已扣除点名更正退回的。剩余课时为 0 的课程照常显示。第二期还没有点名、退费、转课，这几列都是 0；第三、四期起才会有数字。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>课时包</h2><span class="grow"></span><select class="select"><option>全部课程</option><option>三年级数学提高</option><option>四年级数学提高</option><option>少儿英语</option></select></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>课程</th><th>来源</th><th class="num">课时数</th><th class="num">剩余</th><th class="num">实付金额</th><th class="num">已确认收入</th><th class="num">已退或转出</th><th class="num">剩余价值</th><th>生成时间</th></tr></thead>
+          <tbody>
+            <tr class="muted"><td>三年级数学提高</td><td><a href="order-detail.html">订单 OD000072</a></td><td class="num">10</td><td class="num">0</td><td class="num">¥1,000.00</td><td class="num">¥600.00</td><td class="num">¥400.00</td><td class="num">¥0.00</td><td>2026-09-01 15:10</td></tr>
+            <tr class="muted"><td>四年级数学提高</td><td><a href="course-transfers.html">转课 CT000002</a></td><td class="num">3</td><td class="num">0</td><td class="num">¥360.00</td><td class="num">¥360.00</td><td class="num">¥0.00</td><td class="num">¥0.00</td><td>2026-09-20 11:30</td></tr>
+            <tr><td>四年级数学提高</td><td><a href="order-detail.html">订单 OD000088</a></td><td class="num">20</td><td class="num">17</td><td class="num">¥2,285.72</td><td class="num">¥342.84</td><td class="num">¥0.00</td><td class="num">¥1,942.88</td><td>2026-10-15 15:02</td></tr>
+            <tr><td>少儿英语</td><td><a href="order-detail.html">订单 OD000088</a></td><td class="num">12</td><td class="num">8</td><td class="num">¥1,714.28</td><td class="num">¥571.40</td><td class="num">¥0.00</td><td class="num">¥1,142.88</td><td>2026-10-15 15:02</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      <code>GET /api/students/:id/packages</code>（课程下拉对应参数 <code>course_id</code>，写进网址 <code>?tab=lessons&amp;course_id=3</code>），按编号升序。来源：订单生成的显示「订单 + 单号」并链接订单详情；转课生成的显示「转课 + 单号」并链接转课页（<code>course-transfers.html</code>，第四期起）。
+      剩余价值 = 实付金额 − 已确认收入 − 已退或转出。剩余为 0 的包整行灰。消课时先扣生成最早的包（所以上面转课生成的包先扣完）。
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>课时流水</h2><span class="grow"></span><select class="select"><option>全部课程</option><option>三年级数学提高</option><option>四年级数学提高</option><option>少儿英语</option></select></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>时间</th><th>课程</th><th>原因</th><th class="num">课时变化</th><th>关联</th></tr></thead>
+          <tbody>
+            <tr><td>2026-09-01 15:10</td><td>三年级数学提高</td><td><span class="tag tag-success">购买</span></td><td class="num">+10</td><td><a href="order-detail.html">订单 OD000072</a></td></tr>
+            <tr><td>2026-09-05 10:00</td><td>三年级数学提高</td><td><span class="tag">消课</span></td><td class="num negative">-1</td><td><a href="lesson-detail.html">课次 2026-09-05 08:30</a></td></tr>
+            <tr><td colspan="5" class="meta">…（中间 5 条消课省略）</td></tr>
+            <tr><td>2026-09-20 11:30</td><td>三年级数学提高</td><td><span class="tag">转出</span></td><td class="num negative">-4</td><td><a href="course-transfers.html">转课 CT000002</a></td></tr>
+            <tr><td>2026-09-20 11:30</td><td>四年级数学提高</td><td><span class="tag tag-info">转入</span></td><td class="num">+3</td><td><a href="course-transfers.html">转课 CT000002</a></td></tr>
+            <tr><td>2026-10-15 15:02</td><td>四年级数学提高</td><td><span class="tag tag-success">购买</span></td><td class="num">+20</td><td><a href="order-detail.html">订单 OD000088</a></td></tr>
+            <tr><td>2026-10-15 15:02</td><td>少儿英语</td><td><span class="tag tag-success">购买</span></td><td class="num">+12</td><td><a href="order-detail.html">订单 OD000088</a></td></tr>
+            <tr><td>2026-10-17 10:05</td><td>四年级数学提高</td><td><span class="tag">消课</span></td><td class="num negative">-1</td><td><a href="lesson-detail.html">课次 2026-10-17 08:30</a></td></tr>
+            <tr><td>2026-10-17 16:40</td><td>四年级数学提高</td><td><span class="tag tag-info">更正退回</span></td><td class="num">+1</td><td><a href="lesson-detail.html">课次 2026-10-17 08:30</a></td></tr>
+            <tr><td>2026-10-17 16:40</td><td>四年级数学提高</td><td><span class="tag">消课</span></td><td class="num negative">-1</td><td><a href="lesson-detail.html">课次 2026-10-17 08:30</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      <code>GET /api/students/:id/ledger</code>（课程下拉对应 <code>course_id</code>），按编号升序（旧的在上），不分页。原因：购买、消课、更正退回、退费、转出、转入；消课、退费、转出是负数（红色带负号），其他带「+」。
+      课程名取 <code>course_name</code>。关联按 <code>ref_type</code> 链接：订单 → <code>order-detail.html</code>；点名 → 课次详情 <code>lesson-detail.html</code>（第三期起）；退费 → <code>refund-detail.html</code>、转课 → <code>course-transfers.html</code>（第四期起）。
+    </div>
+
+    <h2 style="margin: var(--space-6) 0 var(--space-3)">页签「订单」（第二期，REQ-019）</h2>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>单号</th><th>课程</th><th class="num">原价</th><th class="num">优惠</th><th class="num">应付</th><th>状态</th><th>支付方式</th><th>下单时间</th><th>支付时间</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><a href="order-detail.html">OD000088</a></td><td>四年级数学提高 20 节、少儿英语 12 节</td><td class="num">¥4,200.00</td><td class="num">¥200.00</td><td class="num">¥4,000.00</td><td><span class="tag tag-success">已支付</span></td><td>微信</td><td>2026-10-15 14:30</td><td>2026-10-15 15:02</td><td class="ops"><a class="btn-link" href="order-detail.html">查看</a><a class="btn-link" href="receipt.html">收据</a></td></tr>
+            <tr><td><a href="order-detail.html">OD000072</a></td><td>三年级数学提高 10 节</td><td class="num">¥1,000.00</td><td class="num">¥0.00</td><td class="num">¥1,000.00</td><td><span class="tag tag-success">已支付</span></td><td>现金</td><td>2026-09-01 15:05</td><td>2026-09-01 15:10</td><td class="ops"><a class="btn-link" href="order-detail.html">查看</a><a class="btn-link" href="receipt.html">收据</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 2 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 1 页</span><button class="btn btn-sm" disabled>下一页</button></div>
+    </div>
+    <div class="proto-note"><code>GET /api/orders?student_id=:id</code>，按编号降序，分页（页码写进网址 <code>?tab=orders&amp;page=2</code>）。列与订单列表相同（去掉学员列）；「收据」只在已支付的行显示。admin、sales 在这块右上角有「报名」（同页头的按钮）。</div>
+
+    <h2 style="margin: var(--space-6) 0 var(--space-3)">页签「考勤」（第三期起才出现，REQ-030）</h2>
+    <form class="toolbar">
+      <label class="field-label">课次日期</label><input class="input" type="date" value="2026-09-01"><span>至</span><input class="input" type="date" value="2026-10-31">
+      <select class="select"><option>全部课程</option><option>三年级数学提高</option><option>四年级数学提高</option><option>少儿英语</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+    <div class="stats">
+      <div class="stat"><div class="label">出勤</div><div class="value">14</div></div>
+      <div class="stat"><div class="label">迟到</div><div class="value">1</div></div>
+      <div class="stat"><div class="label">缺勤</div><div class="value">1</div></div>
+      <div class="stat"><div class="label">请假</div><div class="value">1</div></div>
+      <div class="stat"><div class="label">出勤率</div><div class="value">94%</div><div class="sub">（出勤 + 迟到）÷（出勤 + 迟到 + 缺勤），请假不计</div></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>日期</th><th>开始时间</th><th>班级</th><th>课程</th><th>考勤</th></tr></thead>
+          <tbody>
+            <tr><td>2026-10-10</td><td>08:30</td><td><a href="lesson-detail.html">四年级数学提高 1 班</a></td><td>四年级数学提高</td><td><span class="tag tag-success">出勤</span></td></tr>
+            <tr><td>2026-10-11</td><td>15:00</td><td><a href="lesson-detail.html">少儿英语周六班</a></td><td>少儿英语</td><td><span class="tag tag-info">迟到</span></td></tr>
+            <tr><td>2026-10-17</td><td>08:30</td><td><a href="lesson-detail.html">四年级数学提高 1 班</a></td><td>四年级数学提高</td><td><span class="tag tag-warning">请假</span></td></tr>
+            <tr><td>2026-10-18</td><td>15:00</td><td><a href="lesson-detail.html">少儿英语周六班</a></td><td>少儿英语</td><td><span class="tag tag-danger">缺勤</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      汇总 <code>GET /api/students/:id/attendance/summary</code>、明细 <code>GET /api/students/:id/attendance</code>，筛选相同：<code>from</code>、<code>to</code>（课次日期）、<code>course_id</code>，写进网址 <code>?tab=attendance&amp;from=2026-09-01&amp;to=2026-10-31</code>；默认不带日期（全部）。明细按日期、开始时间升序，不分页；点班级名进这节课的课次详情。出勤率没有可算的课次时显示「—」。
+      考勤标签：出勤（绿）、迟到（蓝）、请假（黄）、缺勤（红）。teacher 只看到这个学员在自己班级里的记录。家长在家长端用同样两个接口看自己孩子的考勤（不进这个页面）。
+    </div>
+
+    <h2 style="margin: var(--space-6) 0 var(--space-3)">页签「余额」（第四期起才出现，REQ-033）</h2>
+    <div class="stats">
+      <div class="stat"><div class="label">当前余额</div><div class="value">¥20.00</div><div class="sub">退费退到余额、转课零头会加到这里；可用于支付订单或取现</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>余额明细</h2><span class="grow"></span><button class="btn btn-sm">取现</button></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>时间</th><th>原因</th><th class="num">金额</th><th>关联</th></tr></thead>
+          <tbody>
+            <tr><td>2026-09-20 11:30</td><td>转课零头</td><td class="num">+¥40.00</td><td><a href="course-transfers.html">转课 CT000002</a></td></tr>
+            <tr><td>2026-10-08 09:15</td><td>取现</td><td class="num negative">-¥20.00</td><td><a href="payments.html">收款流水</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      <code>GET /api/students/:id/wallet</code>，明细按编号升序，不分页。原因：退费退到余额（关联退费详情）、转课零头（关联转课页）、用余额支付订单（负数，关联订单详情）、取现（负数，关联收款流水页 <code>payments.html</code>，只有 admin、finance 能打开）。
+      能看余额的：admin、sales、finance。「取现」只给 admin、finance；余额为 0 时禁用。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">余额取现</div>
+      <div class="dialog-body">
+        <p class="meta">李子涵（S000128）当前余额 ¥20.00</p>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">取现金额（元）<span class="required">*</span></label><input class="input invalid" value="30.00"><div class="field-error">余额不足</div></div>
+          <div class="field"><label class="field-label">退款方式<span class="required">*</span></label><select class="select"><option>现金</option><option>刷卡</option><option>微信</option><option>支付宝</option><option>转账</option></select><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">确认取现</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/students/:id/wallet/withdraw</code>，请求体 <code>{"amount", "method"}</code>（金额按元输入，提交时换算成分，至少 ¥0.01）。超过余额时接口返回 409，<code>message</code> 显示在金额下面。成功后关闭弹窗，用返回的余额刷新这一块，并提示「已取现 ¥20.00」。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>对象不存在（404）</h3><div class="card state"><div class="title">这个学员不存在</div>可能已被删除，或网址有误<br><a class="btn" href="students.html">返回学员列表</a></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>这个学员不在你的班级里<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+      <section><h3>出错（某个页签的数据加载失败）</h3><div class="card state"><div class="title">课时加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>停读的学员（页头）</h3>
+        <div class="page-header"><h1>陈思</h1><span class="meta">S000098</span><span class="tag tag-danger">停读</span><span class="grow"></span><button class="btn">编辑</button></div>
+        <div class="proto-note">停读不显示「报名」；改回在读在「编辑」里改状态。</div>
+      </section>
+      <section><h3>还没有课时</h3><div class="card state"><div class="title">还没有课时</div>报名并支付后，课时会出现在这里<br><a class="btn btn-primary" href="order-new.html">报名</a></div></section>
+      <section><h3>还没有订单</h3><div class="card state"><div class="title">还没有订单</div><a class="btn btn-primary" href="order-new.html">报名</a></div></section>
+      <section><h3>还没有考勤记录</h3><div class="card state"><div class="title">还没有考勤记录</div>分班并点名后会出现在这里</div></section>
+      <section><h3>余额为 0、还没有明细</h3><div class="stats"><div class="stat"><div class="label">当前余额</div><div class="value">¥0.00</div></div></div><div class="card state"><div class="title">还没有余额变动</div></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

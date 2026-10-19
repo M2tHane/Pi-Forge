@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>登录 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-002。员工与家长用同一个登录页；登录后员工进 /（工作台），家长进 /parent。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<main class="login-page">
+  <div class="card login-card">
+    <h1>小树培训学校教务系统</h1>
+    <div class="alert alert-error">用户名或密码不对</div>
+    <form>
+      <div class="field">
+        <label class="field-label" for="u">用户名<span class="required">*</span></label>
+        <input class="input" id="u" autocomplete="username" value="admin">
+        <div class="field-error"></div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="p">密码<span class="required">*</span></label>
+        <input class="input invalid" id="p" type="password" autocomplete="current-password">
+        <div class="field-error">请输入密码</div>
+      </div>
+      <button class="btn btn-primary" type="submit" style="width: 100%">登录</button>
+    </form>
+    <p class="meta" style="text-align: center">忘记密码请联系管理员</p>
+  </div>
+</main>
+<div class="proto-note" style="max-width: 40rem; margin: 0 auto">
+  原型说明：提交中按钮禁用并显示「登录中…」；接口 401 时在表单顶部显示 <code>alert-error</code>（内容是接口的 message），密码框清空、用户名保留。
+  从别的页面因为未登录跳过来时，登录成功后回到原来的页面（网址参数 <code>?next=</code>）；没有 next 时员工进工作台 <code>/</code>，家长进 <code>/parent</code>。
+</div>
+</body>
+</html>

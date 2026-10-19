@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>退费详情 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-031。退费单详情、批准（原路退回时选退款方式）、驳回、取消。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">赵敏（财务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html" class="on">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的。能打开这个页面的是 admin、sales、finance。</div>
+
+    <div class="crumbs"><a href="refunds.html">退费</a> / RF000012</div>
+    <div class="page-header">
+      <h1>退费单 RF000012</h1>
+      <span class="tag tag-warning">待审批</span>
+      <span class="grow"></span>
+      <button class="btn">取消退费单</button>
+      <button class="btn btn-danger">驳回</button>
+      <button class="btn btn-primary">批准</button>
+    </div>
+    <div class="proto-note">三个按钮都只在状态是「待审批」时显示。「批准」「驳回」只有 admin 与 finance 能看到（REQ-031 的审批权限）；「取消退费单」只有这张单的发起人（<code>created_by</code> 是自己）或 admin 能看到。sales 看别人发起的待审批单时一个按钮都没有。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>退费信息</h2></div>
+      <div class="card-body">
+        <dl class="desc">
+          <div class="item"><dt>单号</dt><dd>RF000012</dd></div>
+          <div class="item"><dt>状态</dt><dd><span class="tag tag-warning">待审批</span></dd></div>
+          <div class="item"><dt>学员</dt><dd><a href="student-detail.html">李子涵</a></dd></div>
+          <div class="item"><dt>课程</dt><dd>四年级数学提高</dd></div>
+          <div class="item"><dt>退课时数</dt><dd class="money">12 节</dd></div>
+          <div class="item"><dt>退费金额（预计）</dt><dd class="money">¥1,770.00</dd></div>
+          <div class="item"><dt>退到</dt><dd>原路退回</dd></div>
+          <div class="item"><dt>退款方式</dt><dd>—</dd></div>
+          <div class="item"><dt>发起人</dt><dd>王芳</dd></div>
+          <div class="item"><dt>发起时间</dt><dd>2026-10-16 10:20</dd></div>
+          <div class="item"><dt>审核人</dt><dd>—</dd></div>
+          <div class="item"><dt>审核时间</dt><dd>—</dd></div>
+          <div class="item"><dt>退费原因</dt><dd>家里搬家到外区，不方便继续上课</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="proto-note">数据来自 <code>GET /api/refunds/:id</code>。待审批时金额标「（预计）」，批准后去掉。退款方式只有已批准、原路退回的才有值，其他显示「—」。审核人、审核时间在批准或驳回后才有；已驳回的多一项「驳回原因」（见下方其他状态）。发起人、审核人显示 <code>created_by_name</code>、<code>reviewed_by_name</code>。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>这门课程当前的课时</h2><span class="grow"></span><span class="meta">剩余 26 节 · 剩余价值 ¥3,660.00</span></div>
+      <div class="card-body">
+        <div class="alert alert-info">从这门课程最晚生成、还有剩余课时的课时包开始往前退（按生成时间、编号从新到旧）：一个包的剩余课时全部退掉时，退这个包的全部剩余价值（实付 − 已确认收入 − 已退或转出）；只退一部分时，按「实付 × 退的课时 ÷ 这个包的总课时」计算，不足一分的舍去。各包相加就是退费金额。</div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>课时包</th><th>来源</th><th class="num">实付</th><th class="num">总课时</th><th class="num">剩余课时</th><th class="num">剩余价值</th><th class="num">本次退</th><th>算法</th><th class="num">退费金额</th></tr></thead>
+            <tbody>
+              <tr><td>2026-10-08 生成</td><td>订单 OD000156</td><td class="num">¥1,500.00</td><td class="num">10</td><td class="num">10</td><td class="num">¥1,500.00</td><td class="num">10</td><td>退完这个包的剩余，退全部剩余价值</td><td class="num">¥1,500.00</td></tr>
+              <tr><td>2026-09-02 生成</td><td>订单 OD000101</td><td class="num">¥2,700.00</td><td class="num">20</td><td class="num">16</td><td class="num">¥2,160.00</td><td class="num">2</td><td>¥2,700.00 × 2 ÷ 20，舍去不足一分</td><td class="num">¥270.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="field-hint">按现在的课时包重新估算：退 12 节，<span class="money">¥1,770.00</span>。批准时以那一刻的课时包为准。</div>
+      </div>
+    </div>
+    <div class="proto-note">只在待审批时显示这张卡片，帮审批人核对金额：剩余课时与剩余价值取 <code>GET /api/students/:student_id/accounts</code> 里这门课程的 <code>remaining</code>、<code>remaining_value</code>；逐包明细取 <code>GET /api/students/:student_id/packages?course_id=…</code>，算法同发起退费弹窗。重新估算的金额和单上的预计金额不同时，在下面加一条 <code>alert-warning</code>「发起后课时有变化，批准时按 ¥X 退」。剩余课时已少于退课时数时显示 <code>alert-error</code>「剩余课时只有 N 节，不够退 12 节，批准会失败」，「批准」按钮仍可点（以接口为准）。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">批准退费</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">剩余课时不足 12 节，不能批准</div>
+        <dl class="desc">
+          <div class="item"><dt>学员</dt><dd>李子涵</dd></div>
+          <div class="item"><dt>课程</dt><dd>四年级数学提高</dd></div>
+          <div class="item"><dt>退课时数</dt><dd>12 节</dd></div>
+          <div class="item"><dt>退费金额（预计）</dt><dd class="money">¥1,770.00</dd></div>
+          <div class="item"><dt>退到</dt><dd>原路退回</dd></div>
+        </dl>
+        <div class="field"><label class="field-label">退款方式<span class="required">*</span></label><select class="select invalid"><option>请选择</option><option>现金</option><option>刷卡</option><option>微信</option><option>支付宝</option><option>转账</option></select><div class="field-error">请选择退款方式</div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">批准并退款</button></div>
+    </div></div>
+    <div class="proto-note">
+      退到「原路退回」时必须选退款方式（<code>method</code>：现金 <code>cash</code>、刷卡 <code>card</code>、微信 <code>wechat</code>、支付宝 <code>alipay</code>、转账 <code>transfer</code>；没有「学员余额」），默认「请选择」，没选时提交前在字段下提示。退到「学员余额」时不显示退款方式，改为一行说明「金额会加到学员余额，可在学员详情的余额页签查看」，请求体 <code>{}</code>。<br>
+      提交 <code>POST /api/refunds/:id/approve</code>。成功后关闭弹窗，提示「已批准，退费 ¥1,770.00」（金额取接口返回的最终 <code>amount</code>），页面刷新为已批准状态：按钮消失、显示退款方式、审核人与审核时间，「这门课程当前的课时」卡片不再显示。原路退回会生成一条退费类型的收款流水（在 <code>payments.html</code> 能看到）；这门课程课时退完的学员会自动从这门课程的筹备中、开课中的班级退班；发起人会收到「退费已批准」的通知。409（已被处理、剩余课时不足）时弹窗不关闭，错误显示在弹窗顶部。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">驳回退费</div>
+      <div class="dialog-body">
+        <div class="field"><label class="field-label">驳回原因<span class="required">*</span></label><textarea class="textarea invalid"></textarea><div class="field-hint">1–200 个字，发起人能看到</div><div class="field-error">请填写驳回原因</div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">驳回</button></div>
+    </div></div>
+    <div class="proto-note">提交 <code>POST /api/refunds/:id/reject</code>，请求体 <code>{reason}</code>。成功后关闭弹窗、提示「已驳回」，页面刷新为已驳回状态，发起人收到「退费已驳回」的通知。409（已被处理）时错误显示在弹窗里。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">取消退费单</div>
+      <div class="dialog-body">确定取消退费单「RF000012」吗？取消后不能恢复，需要时重新发起。</div>
+      <div class="dialog-footer"><button class="btn">不取消</button><button class="btn btn-danger">取消退费单</button></div>
+    </div></div>
+    <div class="proto-note">确认后 <code>POST /api/refunds/:id/cancel</code>，成功后提示「已取消」，页面刷新为已取消状态（没有任何按钮）。409 时确认框不关闭，显示接口的 <code>message</code>。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>对象不存在（404）</h3><div class="card state"><div class="title">这张退费单不存在</div>可能网址有误<br><a class="btn" href="refunds.html">返回退费列表</a></div></section>
+      <section><h3>已批准（原路退回）</h3>
+        <div class="page-header"><h1>退费单 RF000010</h1><span class="tag tag-success">已批准</span></div>
+        <div class="card"><div class="card-body"><dl class="desc">
+          <div class="item"><dt>退费金额</dt><dd class="money">¥456.00</dd></div>
+          <div class="item"><dt>退到</dt><dd>原路退回</dd></div>
+          <div class="item"><dt>退款方式</dt><dd>微信</dd></div>
+          <div class="item"><dt>审核人</dt><dd>赵敏</dd></div>
+          <div class="item"><dt>审核时间</dt><dd>2026-10-09 15:10</dd></div>
+        </dl></div></div>
+        <div class="proto-note">已批准、已驳回、已取消的单没有任何操作按钮，也不显示「这门课程当前的课时」卡片。</div></section>
+      <section><h3>批准弹窗（退到学员余额）</h3><div class="proto-dialog"><div class="dialog">
+        <div class="dialog-header">批准退费</div>
+        <div class="dialog-body"><dl class="desc">
+          <div class="item"><dt>学员</dt><dd>陈思</dd></div>
+          <div class="item"><dt>退费金额（预计）</dt><dd class="money">¥684.00</dd></div>
+          <div class="item"><dt>退到</dt><dd>学员余额</dd></div>
+        </dl><div class="field-hint">金额会加到学员余额，可在学员详情的余额页签查看</div></div>
+        <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">批准</button></div>
+      </div></div></section>
+      <section><h3>已驳回</h3>
+        <div class="page-header"><h1>退费单 RF000009</h1><span class="tag tag-danger">已驳回</span></div>
+        <div class="card"><div class="card-body"><dl class="desc">
+          <div class="item"><dt>审核人</dt><dd>赵敏</dd></div>
+          <div class="item"><dt>审核时间</dt><dd>2026-10-05 17:40</dd></div>
+          <div class="item"><dt>驳回原因</dt><dd>一对一课程已排到 11 月，请先和家长确认是否调课</dd></div>
+        </dl></div></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看退费<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

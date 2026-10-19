@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>消课与出勤 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-047（AC1 消课统计、AC2 班级出勤）与 REQ-048（考勤导出）。两个页签：消课统计（GET /api/reports/consumption）、班级出勤（GET /api/reports/attendance）。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">5</span></a>
+  <a class="user" href="password.html">孙丽（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html" class="on">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的（PRD 的权限表）。「消课与出勤」入口给 admin、academic（教务）、finance（财务）；finance 只能看「消课统计」页签，看不到「班级出勤」页签与导出。</div>
+
+    <div class="page-header">
+      <h1>消课与出勤</h1>
+      <span class="grow"></span>
+    </div>
+
+    <div class="tabs">
+      <a href="report-consumption.html" class="on">消课统计</a>
+      <a href="report-consumption.html">班级出勤</a>
+    </div>
+    <div class="proto-note">当前页签写进网址参数 <code>?tab=consumption</code>（默认）或 <code>?tab=attendance</code>。两个页签各自的筛选参数互不影响；下面先画「消课统计」，再画「班级出勤」。</div>
+
+    <!-- 页签一：消课统计 -->
+    <form class="toolbar">
+      <label class="meta" for="from">课次日期</label>
+      <input class="input" id="from" type="date" value="2026-10-01">
+      <span class="meta">至</span>
+      <input class="input" type="date" value="2026-10-15">
+      <select class="select"><option>全部校区</option><option>东湖校区</option><option>光谷校区</option></select>
+      <select class="select"><option>全部教师</option><option>张伟</option><option>陈静</option><option>刘洋</option></select>
+      <select class="select"><option>全部课程</option><option>小学数学（四年级）</option><option>少儿英语阅读</option><option>创意美术</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="button">本月</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+    <div class="proto-note">
+      筛选写进网址参数，与接口一致：<code>?tab=consumption&amp;from=2026-10-01&amp;to=2026-10-15&amp;campus_id=1&amp;teacher_id=3&amp;course_id=2</code>。<code>from</code>、<code>to</code>（课次日期）必填，默认本月 1 日到今天（北京时间）；开始日期晚于结束日期时不发请求，提示「开始日期不能晚于结束日期」。
+      下拉选项来自 <code>GET /api/campuses</code>、<code>GET /api/teachers</code>、<code>GET /api/courses</code>（都带 <code>page_size=100</code>，超过再逐页取完；含停用的，停用的在名称后加「（停用）」，方便查历史）。
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="label">已点名课次</div><div class="value">142</div></div>
+      <div class="stat"><div class="label">停课课次</div><div class="value">6</div></div>
+      <div class="stat"><div class="label">扣课时人次</div><div class="value">1,236</div><div class="sub">出勤、迟到、缺勤各算一次</div></div>
+      <div class="stat"><div class="label">出勤率</div><div class="value">94%</div><div class="sub">（出勤 + 迟到）/（出勤 + 迟到 + 缺勤）</div></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="label">出勤</div><div class="value">1,102</div></div>
+      <div class="stat"><div class="label">迟到</div><div class="value">58</div></div>
+      <div class="stat warn"><div class="label">缺勤</div><div class="value">76</div></div>
+      <div class="stat"><div class="label">请假</div><div class="value">41</div><div class="sub">请假不扣课时</div></div>
+    </div>
+    <div class="proto-note">
+      数字依次是接口的 <code>lessons_completed</code>、<code>lessons_cancelled</code>、<code>consumed_lessons</code>，以及 <code>attendance</code> 的 <code>present</code>、<code>late</code>、<code>absent</code>、<code>leave</code>。「出勤率」由页面计算，四舍五入取整数；分母为 0 时显示「—」。缺勤大于 0 时卡片加 <code>.warn</code>。
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>按上课教师</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>教师</th><th class="num">已点名课次</th><th class="num">扣课时人次</th></tr></thead>
+          <tbody>
+            <tr><td><a href="teacher-detail.html">张伟</a></td><td class="num">48</td><td class="num">436</td></tr>
+            <tr><td><a href="teacher-detail.html">陈静</a></td><td class="num">52</td><td class="num">458</td></tr>
+            <tr><td><a href="teacher-detail.html">刘洋</a></td><td class="num">42</td><td class="num">342</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">来自 <code>by_teacher</code>，按教师编号升序（照接口顺序），不分页。按已点名课次的上课教师统计（代课的课算代课教师）。点教师姓名进教师详情。</div>
+
+    <!-- 页签二：班级出勤 -->
+    <h2 style="margin-top: var(--space-8); margin-bottom: var(--space-3)">页签「班级出勤」（<code>?tab=attendance</code>）</h2>
+    <form class="toolbar">
+      <select class="select" style="min-width: 30%"><option>选择班级</option><option selected>四年级数学提高班（CL000012）</option><option>四年级英语阅读班（CL000015）</option><option>一年级创意美术班（CL000021）</option></select>
+      <button class="btn" type="submit">查询</button>
+      <span class="grow"></span>
+      <a class="btn" href="#">导出 CSV</a>
+    </form>
+    <div class="proto-note">
+      班级必选，写进网址参数 <code>?tab=attendance&amp;class_id=12</code>；没选班级时不发请求，表格位置显示「选择一个班级查看每个学员的出勤」（见下方其他状态）。班级下拉来自 <code>GET /api/classes?page_size=100</code>（超过再逐页取完；全部状态，开课的在前，名称后带班级编号），可以输入名称或编号过滤。
+      「导出 CSV」：没选班级时禁用；点了下载 <code>GET /api/exports/attendance.csv?class_id=12</code>，文件名 <code>attendance-20261015.csv</code>，内容同下表（列：学号、姓名、出勤、迟到、缺勤、请假、出勤率）。下载失败时轻提示接口的 message。
+      <b>只有 admin 与 academic 能看到这个页签和导出按钮</b>；finance 只有「消课统计」，页签条也不显示。
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>四年级数学提高班</h2><span class="meta">CL000012 · 张伟 · 东湖校区</span></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>学号</th><th>学员</th><th class="num">出勤</th><th class="num">迟到</th><th class="num">缺勤</th><th class="num">请假</th><th class="num">出勤率</th></tr></thead>
+          <tbody>
+            <tr><td>S000128</td><td><a href="student-detail.html">李子涵</a></td><td class="num">10</td><td class="num">1</td><td class="num">0</td><td class="num">1</td><td class="num">100%</td></tr>
+            <tr><td>S000127</td><td><a href="student-detail.html">张一鸣</a></td><td class="num">8</td><td class="num">0</td><td class="num">2</td><td class="num">2</td><td class="num">80%</td></tr>
+            <tr><td>S000119</td><td><a href="student-detail.html">王若溪</a></td><td class="num">9</td><td class="num">2</td><td class="num">1</td><td class="num">0</td><td class="num">92%</td></tr>
+            <tr><td>S000104</td><td><a href="student-detail.html">赵晨阳</a></td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">2</td><td class="num">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">来自 <code>GET /api/reports/attendance?class_id=12</code>：这个班每个有点名记录的学员一行（含已退班的；学号 <code>no</code>、姓名 <code>name</code>），按学员编号升序，不分页。出勤率为 <code>null</code>（出勤、迟到、缺勤都是 0）时显示「—」。点学员姓名进学员详情。卡片标题的班级信息来自 <code>GET /api/classes/:id</code>。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3>
+        <div class="stats"><div class="stat"><div class="skeleton-row"></div></div><div class="stat"><div class="skeleton-row"></div></div><div class="stat"><div class="skeleton-row"></div></div><div class="stat"><div class="skeleton-row"></div></div></div>
+        <div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+      </section>
+      <section><h3>消课统计：这段时间没有点名的课次</h3>
+        <div class="card state"><div class="title">这段时间没有已点名的课次</div>换一个日期范围或清除筛选<br><button class="btn">清除筛选</button></div>
+        <div class="proto-note">数字卡片照常显示（多为 0，出勤率「—」）；「按上课教师」卡片里显示这块。</div>
+      </section>
+      <section><h3>班级出勤：还没选班级</h3>
+        <div class="card state"><div class="title">选择一个班级查看每个学员的出勤</div>在上方的下拉里选班级后点「查询」</div>
+      </section>
+      <section><h3>班级出勤：这个班还没有点名记录</h3>
+        <div class="card state"><div class="title">这个班还没有点名记录</div>点过名的课次会统计在这里</div>
+        <div class="proto-note">此时「导出 CSV」仍可用，导出的文件只有表头。</div>
+      </section>
+      <section><h3>日期填写错误（页面自己检查）</h3>
+        <div class="alert alert-error">开始日期不能晚于结束日期</div>
+      </section>
+      <section><h3>出错</h3><div class="card state"><div class="title">消课统计加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看消课与出勤报表<br><a class="btn" href="dashboard.html">返回工作台</a></div>
+        <div class="proto-note">课程顾问（sales）与教师打开 <code>/reports/consumption</code> 时内容区只显示这一块。</div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

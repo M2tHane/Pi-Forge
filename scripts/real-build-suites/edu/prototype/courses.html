@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课程 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-008。课程列表（搜索与筛选）、新建、编辑（含停用）、删除；admin、academic 能改，其他员工只读。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">孙丽（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html" class="on">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏同 students.html。权限：admin、academic 读写；sales、finance、teacher 只读（没有「新建课程」和操作列）；parent 不能用。</div>
+
+    <div class="page-header">
+      <h1>课程</h1>
+      <span class="grow"></span>
+      <button class="btn btn-primary">新建课程</button>
+    </div>
+
+    <form class="toolbar">
+      <input class="input search" placeholder="课程编号或名称">
+      <select class="select"><option>全部科目</option><option>数学</option><option>英语</option><option>语文</option><option>物理</option><option>编程（停用）</option></select>
+      <select class="select"><option>全部类型</option><option>班课</option><option>一对一</option></select>
+      <select class="select"><option>适合全部年级</option><option>一年级</option><option>…</option><option>十二年级</option></select>
+      <select class="select"><option>全部状态</option><option>启用</option><option>停用</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>编号</th><th>名称</th><th>科目</th><th>类型</th><th class="num">每节分钟</th><th class="num">每节单价</th><th class="num">默认课时</th><th class="num">每班最多人数</th><th>适合年级</th><th>状态</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>MATH-G3A</td><td>三年级数学提高</td><td>数学</td><td>班课</td><td class="num">90</td><td class="num money">¥150.00</td><td class="num">20</td><td class="num">20</td><td>三年级–四年级</td><td><span class="tag tag-success">启用</span></td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>ENG-1V1</td><td>英语一对一</td><td>英语</td><td>一对一</td><td class="num">60</td><td class="num money">¥300.00</td><td class="num">10</td><td class="num">1</td><td>一年级–九年级</td><td><span class="tag tag-success">启用</span></td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>CHN-G5R</td><td>五年级阅读与写作</td><td>语文</td><td>班课</td><td class="num">90</td><td class="num money">¥128.00</td><td class="num">16</td><td class="num">15</td><td>五年级–六年级</td><td><span class="tag tag-success">启用</span></td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>PHY-G8</td><td>初二物理同步</td><td>物理</td><td>班课</td><td class="num">120</td><td class="num money">¥180.00</td><td class="num">30</td><td class="num">30</td><td>八年级</td><td><span class="tag tag-success">启用</span></td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr class="muted"><td>CODE-01</td><td>少儿编程入门</td><td>编程</td><td>班课</td><td class="num">60</td><td class="num money">¥100.00</td><td class="num">24</td><td class="num">12</td><td>三年级–六年级</td><td><span class="tag tag-danger">停用</span></td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 23 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 2 页</span><button class="btn btn-sm">下一页</button></div>
+    </div>
+    <div class="proto-note">
+      <code>GET /api/courses</code>，按 <code>id</code> 升序；科目列显示 <code>subject_name</code>，每节单价从分换算成元，适合年级把 <code>grade_min</code>、<code>grade_max</code> 写成「三年级–四年级」（两个相同时只写一个）。<br>
+      筛选与页码写进网址参数：<code>?q=MATH&amp;subject_id=1&amp;type=group&amp;grade=3&amp;active=true&amp;page=1</code>，刷新后不变；搜索框去掉首尾空白后为空时不带 <code>q</code>；「适合全部年级」不带 <code>grade</code>（选了年级时只列 <code>grade_min ≤ 年级 ≤ grade_max</code> 的课程）。<br>
+      操作列与「新建课程」只给 admin、academic 显示；课程简介不在列表里显示，在编辑弹窗里看。停用、启用在编辑弹窗里改「状态」；停用的课程不能再用在新的订单、班级、试听、转课里。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog wide">
+      <div class="dialog-header">编辑课程</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">课程已有班级，不能修改类型和每节课分钟数</div>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">编号<span class="required">*</span></label><input class="input" value="MATH-G3A"><div class="field-hint">1–16 个字符，只能是字母、数字和 -，保存为大写，不能重复</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">名称<span class="required">*</span></label><input class="input" value="三年级数学提高"><div class="field-hint">1–40 个字符</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">科目<span class="required">*</span></label><select class="select"><option selected>数学</option><option>英语</option><option>语文</option><option>物理</option></select><div class="field-hint">只列启用的科目</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">类型<span class="required">*</span></label><select class="select invalid"><option>班课</option><option selected>一对一</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">每节课分钟数<span class="required">*</span></label><input class="input" type="number" value="90"><div class="field-hint">30–240，5 的倍数</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">每节课单价（元）<span class="required">*</span></label><input class="input" value="150.00"><div class="field-hint">0–100,000.00 元，最多两位小数；改了单价只影响之后的订单</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">默认课时数<span class="required">*</span></label><input class="input" type="number" value="20"><div class="field-hint">报名时默认的课时数，1–200</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">每班最多人数<span class="required">*</span></label><input class="input" type="number" value="1" disabled><div class="field-hint">班课 2–60；一对一固定为 1</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">适合年级（最低）<span class="required">*</span></label><select class="select"><option>一年级</option><option selected>三年级</option><option>…</option><option>十二年级</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">适合年级（最高）<span class="required">*</span></label><select class="select"><option>一年级</option><option selected>四年级</option><option>…</option><option>十二年级</option></select><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">简介</label><textarea class="textarea">面向三年级学生，系统讲解计算、应用题与几何初步，每节课配套练习。</textarea><div class="field-hint">最多 500 个字符</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">状态</label><select class="select"><option>启用</option><option>停用</option></select><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">
+      新建（<code>POST /api/courses</code>，标题「新建课程」，类型默认班课、每班最多人数空着）与编辑（<code>PATCH /api/courses/:id</code>，只发改过的字段）用同一个弹窗。字段 <code>code</code>、<code>name</code>、<code>subject_id</code>、<code>type</code>、<code>lesson_minutes</code>、<code>price_per_lesson</code>（按元输入，提交时乘 100 换成分）、<code>default_lessons</code>、<code>max_students</code>、<code>grade_min</code>、<code>grade_max</code>、<code>description</code>、<code>active</code>。<br>
+      类型选「一对一」时每班最多人数自动填 1 并禁用；改回「班课」时清空并可编辑。页面先校验：分钟数是 5 的倍数、最低年级不高于最高年级（「最低年级不能高于最高年级」，显示在最高年级下）。<br>
+      编号重复（409）显示在编号下；有班级的课程改类型或分钟数（409）显示在弹窗顶部（如上），不关闭弹窗。保存成功后关闭弹窗、刷新列表，轻提示「已保存」。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除课程</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">课程已有班级、订单或试听，不能删除，可以停用</div>
+        确定删除课程「三年级数学提高（MATH-G3A）」吗？删除后不能恢复。
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/courses/:id</code>。成功后关闭确认框、刷新列表，轻提示「已删除」；409 时确认框不关闭，接口的 <code>message</code> 显示在框里。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有课程）</h3><div class="card state"><div class="title">还没有课程</div>新建课程后才能报名收费和开班<br><button class="btn btn-primary">新建课程</button></div><div class="proto-note">没有写权限的角色不显示按钮。</div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">没有符合条件的课程</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">课程列表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看课程<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

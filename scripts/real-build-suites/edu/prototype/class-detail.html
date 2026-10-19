@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>班级详情 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-021、REQ-022、REQ-025、REQ-029。班级详情：基本信息、课次（按月）、学员（分班与退班），发布、结课、取消与删除。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">李娜（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html" class="on">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+<div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的（PRD 的权限表）。</div>
+    <div class="crumbs"><a href="classes.html">班级</a> / 三年级数学提高班</div>
+    <div class="page-header">
+      <h1>三年级数学提高班</h1>
+      <span class="tag tag-info">开课</span>
+      <span class="grow"></span>
+      <a class="btn" href="class-form.html">编辑</a>
+      <button class="btn">结课</button>
+      <button class="btn btn-danger">取消班级</button>
+    </div>
+    <div class="proto-note">
+      右上角按钮只给 admin、academic，按班级状态显示：<b>筹备</b>：「编辑」「删除」「取消班级」和主按钮「发布」；<b>开课</b>：「编辑」（只能改名称）「结课」「取消班级」；<b>结课、已取消</b>：没有按钮。
+      「结课」在还有待上课的课次时禁用，悬停提示「还有 30 节课没有上完」；「取消班级」在已有已完成的课次时禁用，悬停提示「已有点过名的课次，不能取消，请等全部上完后结课」（都按课次页签取到的全部课次判断，接口仍会校验，409 时在确认框里显示 <code>message</code>）。
+      sales、finance 只读；teacher 只能打开自己任课的班级（别人的显示无权限），也是只读。
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>基本信息</h2></div>
+      <div class="card-body">
+        <dl class="desc">
+          <div class="item"><dt>班级编号</dt><dd>CL000012</dd></div>
+          <div class="item"><dt>课程</dt><dd>三年级数学提高（班课，每节 90 分钟）</dd></div>
+          <div class="item"><dt>校区</dt><dd>东湖校区</dd></div>
+          <div class="item"><dt>教室</dt><dd>A101</dd></div>
+          <div class="item"><dt>教师</dt><dd><a href="teacher-detail.html">刘建国</a></dd></div>
+          <div class="item"><dt>学期</dt><dd>2026 秋季学期</dd></div>
+          <div class="item"><dt>每周上课</dt><dd>周三 18:30–20:00、周六 09:00–10:30</dd></div>
+          <div class="item"><dt>在班 / 容量</dt><dd class="money">18 / 24</dd></div>
+          <div class="item"><dt>总课次</dt><dd class="money">40</dd></div>
+          <div class="item"><dt>开课日期</dt><dd>2026-09-05</dd></div>
+          <div class="item"><dt>结课日期（最后一节课）</dt><dd>2027-01-27</dd></div>
+          <div class="item"><dt>创建时间</dt><dd>2026-08-20 10:15</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="proto-note">数据来自 <code>GET /api/classes/:id</code>。结束时间由开始时间加课程每节分钟数算出。结课日期发布前为空，显示「发布后生成」。</div>
+
+    <div class="tabs" style="margin-top: var(--space-6)"><a class="on" href="class-detail.html">课次</a><a href="class-detail.html">学员（18）</a></div>
+    <div class="proto-note">页签写进网址参数 <code>?tab=lessons</code>（默认）或 <code>?tab=students</code>。下面依次画出两个页签的内容，实际一次只显示一个。</div>
+
+    <div class="demo">页签「课次」</div>
+    <form class="toolbar" style="margin-top: var(--space-3)">
+      <select class="select"><option>全部状态</option><option>待上课</option><option>已完成</option><option>已取消</option></select>
+      <span class="meta">共 40 节：已完成 9，待上课 30，已取消 1</span>
+    </form>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th class="num">次序</th><th>日期</th><th>时间</th><th>教室</th><th>上课教师</th><th>状态</th><th>停课原因</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td class="num">9</td><td>2026-10-10 周六</td><td>09:00–10:30</td><td>A101</td><td>刘建国</td><td><span class="tag tag-success">已完成</span></td><td></td><td class="ops"><a class="btn-link" href="lesson-detail.html">详情</a><a class="btn-link" href="attendance.html">点名记录</a></td></tr>
+            <tr><td class="num">10</td><td>2026-10-14 周三</td><td>18:30–20:00</td><td>A101</td><td>刘建国</td><td><span class="tag tag-warning">待上课</span></td><td></td><td class="ops"><a class="btn-link" href="lesson-detail.html">详情</a><a class="btn-link" href="attendance.html">点名</a></td></tr>
+            <tr><td class="num">11</td><td>2026-10-17 周六</td><td>09:00–10:30</td><td>A101</td><td>刘建国</td><td><span class="tag tag-warning">待上课</span></td><td></td><td class="ops"><a class="btn-link" href="lesson-detail.html">详情</a></td></tr>
+            <tr><td class="num">12</td><td>2026-10-21 周三</td><td>18:30–20:00</td><td>A102</td><td>刘建国</td><td><span class="tag tag-warning">待上课</span></td><td></td><td class="ops"><a class="btn-link" href="lesson-detail.html">详情</a></td></tr>
+            <tr class="muted"><td class="num">13</td><td>2026-10-24 周六</td><td>09:00–10:30</td><td>A101</td><td>刘建国</td><td><span class="tag tag-danger">已取消</span></td><td>教师外出培训</td><td class="ops"><a class="btn-link" href="lesson-detail.html">详情</a></td></tr>
+            <tr><td class="num">14</td><td>2026-10-28 周三</td><td>18:30–20:00</td><td>A101</td><td>张伟（代 刘建国）</td><td><span class="tag tag-warning">待上课</span></td><td></td><td class="ops"><a class="btn-link" href="lesson-detail.html">详情</a></td></tr>
+            <tr><td class="num">15</td><td>2026-10-31 周六</td><td>09:00–10:30</td><td>A101</td><td>刘建国</td><td><span class="tag tag-warning">待上课</span></td><td></td><td class="ops"><a class="btn-link" href="lesson-detail.html">详情</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      数据来自 <code>GET /api/lessons?class_id=12</code>（带 <code>class_id</code> 时不给 <code>from</code>、<code>to</code>，一次取回这个班的全部课次，不分页），按日期、开始时间升序；表格上方按状态计数。状态筛选写进网址参数 <code>?tab=lessons&amp;status=scheduled</code>，在页面上过滤（也可以带给接口）。图里只画了 10 月的几行。
+      状态：待上课（<code>scheduled</code>）、已完成（<code>completed</code>，即已点名）、已取消（<code>cancelled</code>，整行 <code>muted</code>，显示停课原因）。代课的课次教师写「代课教师（代 原教师）」，原教师是 <code>original_teacher_name</code>。
+      「点名」只在待上课、日期不晚于今天的课次显示（admin、academic 与这个班的教师），进 <code>attendance.html</code>；已完成的课次显示「点名记录」，也进点名页（查看与更正）。调课、代课、停课在课次详情里做。
+    </div>
+
+    <div class="demo" style="margin-top: var(--space-6)">页签「学员」</div>
+    <div class="toolbar" style="margin-top: var(--space-3)"><span class="meta">当前在班 18 人，容量 24 人</span><span class="grow"></span><button class="btn btn-primary">添加学员</button></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>学号</th><th>姓名</th><th>入班日期</th><th class="num">课时余额（节）</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>S000105</td><td><a href="student-detail.html">王雨桐</a></td><td>2026-09-05</td><td class="num">22</td><td class="ops"><button class="btn-link danger">退班</button></td></tr>
+            <tr><td>S000112</td><td><a href="student-detail.html">赵晨阳</a></td><td>2026-09-05</td><td class="num">2</td><td class="ops"><button class="btn-link danger">退班</button></td></tr>
+            <tr><td>S000119</td><td><a href="student-detail.html">孙可欣</a></td><td>2026-09-05</td><td class="num">31</td><td class="ops"><button class="btn-link danger">退班</button></td></tr>
+            <tr><td>S000128</td><td><a href="student-detail.html">李子涵</a></td><td>2026-09-12</td><td class="num">28</td><td class="ops"><button class="btn-link danger">退班</button></td></tr>
+            <tr><td>S000127</td><td><a href="student-detail.html">张一鸣</a></td><td>2026-10-10</td><td class="num">40</td><td class="ops"><button class="btn-link danger">退班</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      数据来自 <code>GET /api/classes/:id/students</code>（不分页，按入班日期、学员编号升序），只列当前在班的学员。课时余额是这门课程的剩余课时。点姓名进学员详情。
+      「添加学员」与「退班」只给 admin、academic，并且只在筹备、开课的班级显示；在班人数已等于容量时「添加学员」禁用，提示「班级已满」。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">发布班级</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">2026-09-09 教师刘建国 18:30–20:00 已有课次（四年级奥数班 第 3 次课）</div>
+        <p>发布后班级状态变为「开课」，并从 2026-09-05 起按每周上课时间（周三 18:30、周六 09:00）生成 40 个课次，节假日自动跳过。</p>
+        <p class="meta">发布后只能修改班级名称；课程、教室、教师与上课时间的变动要在课次上调课、代课或停课。</p>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">发布</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/classes/:id/publish</code>。成功后关闭弹窗，刷新本页（状态变为开课、显示结课日期、课次页签有数据）并提示「已发布，生成 40 个课次」。返回 409（教师或教室时间冲突、不在教师可上课时间内、课程/教师/教室/校区已停用）时弹窗不关，在框内 <code>alert-error</code> 显示接口的 <code>message</code>（里面写明第一处冲突的日期与原因）；什么都不会生成。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">添加学员</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">学员在 2026-10-17 09:00–10:30 已有别的课（二年级英语启蒙班 第 18 次课）</div>
+        <div class="field"><label class="field-label">学员<span class="required">*</span></label><input class="input" placeholder="输入姓名、学号或手机号搜索" value="张一鸣"><div class="field-hint">S000127 张一鸣 · 六年级 · 光谷校区 · 三年级数学提高 余额 40 节</div><div class="field-error"></div></div>
+        <div class="field"><label class="field-label">入班日期</label><input class="input" type="date" value="2026-10-15"><div class="field-hint">默认今天；从这天起的课次算应到学员</div><div class="field-error"></div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">添加</button></div>
+    </div></div>
+    <div class="proto-note">学员搜索用 <code>GET /api/students?q=…&amp;status=active</code>（只列在读的学员，最多显示 20 个候选）；选中后用 <code>GET /api/students/:id/accounts</code> 在提示里显示这门课程的课时余额。提交 <code>POST /api/classes/:id/students</code>，请求体 <code>{"student_id", "join_date"}</code>（入班日期没改时也带上今天）。成功后关闭弹窗、刷新学员列表与在班人数并提示「已加入班级」。返回 409（课时余额不足 1 节、已在班里、班级已满、学员停读、时间与他别的课重叠、班级状态不对）时弹窗不关，在框内显示接口的 <code>message</code>。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">退班</div>
+      <div class="dialog-body">确定让「赵晨阳」从三年级数学提高班退班吗？退班日期是今天（2026-10-15），今天以后的课次不再算他的应到；已点名的记录和课时不变。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">退班</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/classes/:id/students/:student_id</code>，成功（204）后刷新学员列表并提示「已退班」。退班后可以再次添加。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">结课</div>
+      <div class="dialog-body">确定结束「三年级数学提高班」吗？结课后班级不能再修改，在班的 18 名学员全部退班（退班日期是今天），剩余课时不变。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">结课</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/classes/:id/finish</code>，只有开课且全部课次都已完成或已取消时能结课。成功后刷新本页（状态「结课」、按钮消失）并提示「已结课」；返回 409 时在框内显示接口的 <code>message</code>。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">取消班级</div>
+      <div class="dialog-body">
+        <p>取消后班级不能再修改，全部待上课的课次一并取消（停课原因同下面填写的原因），在班学员全部退班，课时不变。已有点过名的课次时不能取消。</p>
+        <div class="field"><label class="field-label">取消原因<span class="required">*</span></label><textarea class="textarea">报名人数不足，合并到二班</textarea><div class="field-hint">1–200 个字符</div><div class="field-error"></div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">返回</button><button class="btn btn-danger">取消班级</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/classes/:id/cancel</code>，请求体 <code>{"reason"}</code>，原因记到班级的 <code>cancel_reason</code>，取消的课次的停课原因也是它。筹备的班级直接取消；开课的班级要求还没有已完成的课次。成功后刷新本页（状态「已取消」、按钮消失）并提示「班级已取消」；返回 409（已有点过名的课次、状态不对）时在框内显示接口的 <code>message</code>。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除班级</div>
+      <div class="dialog-body">确定删除班级「初一物理衔接班」（CL000015）吗？删除后不能恢复。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note">只有筹备的班级有「删除」。<code>DELETE /api/classes/:id</code> 成功后回到班级列表 <code>classes.html</code> 并提示「已删除」。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>班级不存在（404）</h3><div class="card state"><div class="title">这个班级不存在</div>可能已被删除，或网址有误<br><a class="btn" href="classes.html">返回班级列表</a></div></section>
+      <section><h3>无权限（403，例如教师打开别人的班级）</h3><div class="card state"><div class="title">没有权限查看</div>这个班级不在你的范围内<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+      <section><h3>筹备中的班级（标题行与课次页签）</h3>
+        <div class="page-header"><h1>初一物理衔接班</h1><span class="tag tag-warning">筹备</span><span class="grow"></span><a class="btn" href="class-form.html">编辑</a><button class="btn btn-danger">删除</button><button class="btn btn-danger">取消班级</button><button class="btn btn-primary">发布</button></div>
+        <div class="card state"><div class="title">还没有课次</div>发布班级后，按每周上课时间生成 24 个课次<br><button class="btn btn-primary">发布</button></div>
+        <div class="proto-note">筹备的班级结课日期显示「发布后生成」，课次页签不调接口，直接显示这一块（没有发布权限的角色不显示按钮）。学员可以在筹备时就加入。</div>
+      </section>
+      <section><h3>结课的班级</h3>
+        <div class="page-header"><h1>四年级数学暑期班</h1><span class="tag">结课</span></div>
+        <div class="proto-note">已结课、已取消的班级右上角没有任何按钮，学员页签没有「添加学员」与「退班」，并显示「班级已结课，学员已全部退班」的空状态。已取消的班级标签是 <code>tag-danger</code>「已取消」，并在基本信息里多一项「取消原因」（<code>cancel_reason</code>）。</div>
+      </section>
+      <section><h3>学员页签：还没有学员</h3><div class="card state"><div class="title">班里还没有学员</div>添加已报名这门课程的学员<br><button class="btn btn-primary">添加学员</button></div></section>
+      <section><h3>课次页签：按状态筛选后没有课次</h3><div class="card state"><div class="title">没有符合条件的课次</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>课次或学员加载失败</h3><div class="card state"><div class="title">课次加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>只读角色（sales、finance、teacher）</h3>
+        <div class="page-header"><h1>三年级数学提高班</h1><span class="tag tag-info">开课</span></div>
+        <div class="proto-note">只读角色看不到右上角按钮、「添加学员」与「退班」；teacher 在课次列表里仍有「点名」入口（自己的课次）。</div>
+      </section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

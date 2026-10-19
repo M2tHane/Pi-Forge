@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课酬标准 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-036。按教师与课程设置每节课酬，含课酬计算规则（无人出勤按一半）说明。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">赵敏（财务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html" class="on">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的。能看到「课酬标准」的只有 admin 与 finance（读写）。</div>
+
+    <div class="page-header">
+      <h1>课酬标准</h1>
+      <span class="grow"></span>
+      <button class="btn btn-primary">新建课酬标准</button>
+    </div>
+
+    <div class="alert alert-info">
+      一节课的课酬怎么算：这位教师这门课程有课酬标准时用这里的金额，没有时用教师档案里的「默认每节课酬」；<strong>这节课实到（出勤 + 迟到）人数为 0 时按一半计</strong>，不足一分的舍去（例如 ¥150.00 的课无人出勤计 ¥75.00，¥0.05 计 ¥0.02）。课酬算给点名时这节课的上课教师（代课时是代课教师），金额取生成或重新计算工资单那一刻的课酬标准，所以改了这里之后，还没确认的工资单要「重新计算」才会变。
+    </div>
+
+    <form class="toolbar">
+      <select class="select"><option>全部教师</option><option>刘洋</option><option>孙静</option><option>周明</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+    <div class="proto-note">教师下拉来自 <code>GET /api/teachers?page_size=100</code>（超过 100 位再逐页取）；选中后按 <code>teacher_id</code> 筛选，写进网址参数（<code>?teacher_id=3</code>）。</div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>教师</th><th>课程</th><th class="num">每节课酬</th><th class="num">教师默认每节课酬</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><a href="teacher-detail.html">刘洋</a></td><td>四年级数学提高</td><td class="num">¥200.00</td><td class="num">¥180.00</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td><a href="teacher-detail.html">孙静</a></td><td>小学英语阅读</td><td class="num">¥150.00</td><td class="num">¥150.00</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td><a href="teacher-detail.html">孙静</a></td><td>小学语文写作</td><td class="num">¥160.00</td><td class="num">¥150.00</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+            <tr><td><a href="teacher-detail.html">周明</a></td><td>初中物理一对一</td><td class="num">¥100.00</td><td class="num">¥90.00</td><td class="ops"><button class="btn-link">编辑</button><button class="btn-link danger">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">数据来自 <code>GET /api/pay-rates</code>，返回数组、不分页（没有分页条），按 <code>id</code> 升序。教师名、课程名用接口带的 <code>teacher_name</code>、<code>course_name</code>；教师默认每节课酬（<code>pay_per_lesson</code>）由页面用 <code>GET /api/teachers?page_size=100</code> 对上教师编号显示。点教师名进教师详情（<code>teacher-detail.html</code>，那里可以改默认每节课酬）。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">新建课酬标准</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">刘洋 的 四年级数学提高 已有课酬标准</div>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">教师<span class="required">*</span></label><select class="select"><option>刘洋</option><option>孙静</option><option>周明</option></select><div class="field-hint">默认每节课酬 ¥180.00</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">课程<span class="required">*</span></label><select class="select"><option>四年级数学提高</option><option>小学英语阅读</option><option>初中物理一对一</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">每节课酬（元）<span class="required">*</span></label><input class="input invalid" value="12000"><div class="field-hint">0 到 10,000.00 元，最多两位小数</div><div class="field-error">每节课酬不能超过 ¥10,000.00</div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">新建与编辑用同一个弹窗。新建 <code>POST /api/pay-rates</code>，请求体 <code>{teacher_id, course_id, amount}</code>；编辑时标题是「编辑课酬标准」，教师与课程显示为禁用的下拉（不能改），只能改每节课酬，<code>PATCH /api/pay-rates/:id</code> 请求体 <code>{amount}</code>。金额按元输入、提交时换算成分；课程下拉来自 <code>GET /api/courses?page_size=100</code>。选了教师后在教师下方显示他的默认每节课酬作参考。保存成功后关闭弹窗、提示「已保存」、刷新列表。同一教师同一课程已有一条（409）时显示在弹窗顶部。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除课酬标准</div>
+      <div class="dialog-body">确定删除 刘洋 · 四年级数学提高 的课酬标准（¥200.00）吗？删除后这位教师这门课按默认每节课酬 ¥180.00 计算。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note">确认后 <code>DELETE /api/pay-rates/:id</code>（204），成功后关闭确认框、提示「已删除」、刷新列表；失败时确认框不关闭，显示接口的 <code>message</code>。已确认的工资单不受影响，草稿工资单重新计算后才变。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有课酬标准）</h3><div class="card state"><div class="title">还没有课酬标准</div>没有设置时，所有课都按教师的默认每节课酬计算<br><button class="btn btn-primary">新建课酬标准</button></div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">这位教师没有单独的课酬标准</div>他的课都按默认每节课酬计算<br><button class="btn">清除筛选</button></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">课酬标准加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看课酬标准<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

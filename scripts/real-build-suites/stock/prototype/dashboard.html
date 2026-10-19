@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>看板 · 小仓库进销存（原型）</title><link rel="stylesheet" href="theme.css"></head>
+<body>
+  <header class="top"><b>小仓库进销存</b><span class="grow"></span><span>张三（仓管员 clerk）</span><a href="login.html">退出</a></header>
+  <div class="frame">
+    <nav class="side">
+      <a href="dashboard.html" class="on">看板</a>
+      <a href="products.html">商品</a>
+      <a href="categories.html">分类</a>
+      <a href="partners.html">往来单位</a>
+      <a href="warehouses.html">仓库</a>
+      <a href="stock.html">库存</a>
+      <a href="purchase-orders.html">采购单</a>
+      <a href="sales-orders.html">销售单</a>
+      <a href="transfers.html">调拨</a>
+      <a href="reports.html">报表</a>
+      <a href="users.html">用户（admin）</a>
+    </nav>
+    <main>
+      <h1>看板</h1>
+      <div class="cards">
+        <div class="card"><small>启用的商品</small><strong>128</strong></div>
+        <div class="card"><small>启用的仓库</small><strong>3</strong></div>
+        <div class="card warn"><small>低于安全库存</small><strong>7</strong><a href="stock.html">去看看 →</a></div>
+        <div class="card"><small>未完成采购单</small><strong>4</strong></div>
+        <div class="card"><small>未完成销售单</small><strong>9</strong></div>
+        <div class="card"><small>库存金额</small><strong>¥ 86,320.50</strong></div>
+      </div>
+      <h2>低于安全库存的商品</h2>
+      <table><tr><th>SKU</th><th>名称</th><th>库存合计</th><th>安全库存</th></tr>
+        <tr><td>A-1001</td><td>A4 打印纸</td><td class="num">12</td><td class="num">50</td></tr>
+        <tr><td>B-2003</td><td>中性笔（黑）</td><td class="num">30</td><td class="num">100</td></tr></table>
+      <p class="note">第一期没有报表接口时，看板只显示欢迎语和导航；第三期接上 /api/reports/dashboard 与 /api/stock/summary?low=true。</p>
+      <h2 class="states-title">其他状态</h2>
+      <section class="state"><h3>第一期（还没有报表接口）</h3>
+        <p class="welcome">你好，张三。从左侧导航开始：维护商品、分类、往来单位和仓库。</p>
+      </section>
+      <section class="state"><h3>加载中</h3>
+        <div class="cards"><div class="card"><small>启用的商品</small><strong>…</strong></div><div class="card"><small>启用的仓库</small><strong>…</strong></div><div class="card"><small>……</small><strong>…</strong></div></div>
+        <table><tr><th>SKU</th><th>名称</th><th>库存合计</th><th>安全库存</th></tr><tr><td colspan="4" class="msg">加载中…</td></tr></table>
+      </section>
+      <section class="state"><h3>全新系统（数字都是 0）</h3>
+        <div class="cards"><div class="card"><small>启用的商品</small><strong>0</strong></div><div class="card"><small>启用的仓库</small><strong>0</strong></div><div class="card"><small>低于安全库存</small><strong>0</strong></div><div class="card"><small>未完成采购单</small><strong>0</strong></div><div class="card"><small>未完成销售单</small><strong>0</strong></div><div class="card"><small>库存金额</small><strong>¥ 0.00</strong></div></div>
+        <table><tr><th>SKU</th><th>名称</th><th>库存合计</th><th>安全库存</th></tr><tr><td colspan="4" class="msg">没有低于安全库存的商品。</td></tr></table>
+      </section>
+      <section class="state"><h3>加载出错</h3>
+        <div class="alert">看板加载失败：服务暂时不可用（API 的 message） <button>重试</button></div>
+        <p class="note">卡片和表格都不显示旧数据或假数据。</p>
+      </section>
+
+    </main>
+  </div>
+</body></html>

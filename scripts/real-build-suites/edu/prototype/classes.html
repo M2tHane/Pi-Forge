@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>班级 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-021。班级列表：筛选、分页、进详情、编辑与删除筹备中的班级。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">李娜（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html" class="on">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+<div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的（PRD 的权限表）。</div>
+    <div class="page-header">
+      <h1>班级</h1>
+      <span class="grow"></span>
+      <a class="btn btn-primary" href="class-form.html">新建班级</a>
+    </div>
+    <div class="proto-note">「新建班级」只有 admin、academic 能看到；sales、finance 只读（只能查看）；teacher 只看到自己任课的班级（<code>teacher_id</code> 是自己绑定的教师档案），也是只读。</div>
+
+    <form class="toolbar">
+      <input class="input search" placeholder="班级名称或编号">
+      <select class="select"><option>全部状态</option><option>筹备</option><option>开课</option><option>结课</option><option>已取消</option></select>
+      <select class="select"><option>全部课程</option><option>三年级数学提高</option><option>二年级英语启蒙</option><option>五年级语文阅读</option></select>
+      <select class="select"><option>全部校区</option><option>东湖校区</option><option>光谷校区</option></select>
+      <select class="select"><option>全部教师</option><option>刘建国</option><option>陈静</option><option>周敏</option></select>
+      <select class="select"><option>全部学期</option><option>2026 秋季学期</option><option>2026 暑期</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>编号</th><th>班级名称</th><th>课程</th><th>校区</th><th>教室</th><th>教师</th><th>学期</th><th>每周上课</th><th class="num">在班 / 容量</th><th class="num">总课次</th><th>开课日期</th><th>结课日期</th><th>状态</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>CL000015</td><td><a href="class-detail.html">初一物理衔接班</a></td><td>初一物理衔接</td><td>光谷校区</td><td>B201</td><td>王磊</td><td>2026 秋季学期</td><td>周四 16:30、周六 14:00</td><td class="num">0 / 20</td><td class="num">24</td><td>2026-10-22</td><td>—</td><td><span class="tag tag-warning">筹备</span></td><td class="ops"><a class="btn-link" href="class-detail.html">查看</a><a class="btn-link" href="class-form.html">编辑</a><button class="btn-link danger">删除</button></td></tr>
+            <tr><td>CL000012</td><td><a href="class-detail.html">三年级数学提高班</a></td><td>三年级数学提高</td><td>东湖校区</td><td>A101</td><td>刘建国</td><td>2026 秋季学期</td><td>周三 18:30、周六 09:00</td><td class="num">18 / 24</td><td class="num">40</td><td>2026-09-05</td><td>2027-01-27</td><td><span class="tag tag-info">开课</span></td><td class="ops"><a class="btn-link" href="class-detail.html">查看</a><a class="btn-link" href="class-form.html">编辑</a></td></tr>
+            <tr><td>CL000011</td><td><a href="class-detail.html">二年级英语启蒙班</a></td><td>二年级英语启蒙</td><td>东湖校区</td><td>B203</td><td>陈静</td><td>2026 秋季学期</td><td>周一 16:30、周三 16:30、周六 10:00</td><td class="num">12 / 16</td><td class="num">48</td><td>2026-09-07</td><td>2026-12-30</td><td><span class="tag tag-info">开课</span></td><td class="ops"><a class="btn-link" href="class-detail.html">查看</a><a class="btn-link" href="class-form.html">编辑</a></td></tr>
+            <tr><td>CL000006</td><td><a href="class-detail.html">四年级数学暑期班</a></td><td>四年级数学提高</td><td>东湖校区</td><td>A101</td><td>刘建国</td><td>2026 暑期</td><td>周二 09:00、周四 09:00</td><td class="num">0 / 24</td><td class="num">16</td><td>2026-07-07</td><td>2026-08-27</td><td><span class="tag">结课</span></td><td class="ops"><a class="btn-link" href="class-detail.html">查看</a></td></tr>
+            <tr class="muted"><td>CL000004</td><td><a href="class-detail.html">五年级作文周末班</a></td><td>五年级语文阅读</td><td>光谷校区</td><td>B202</td><td>周敏</td><td>—</td><td>周日 10:00</td><td class="num">0 / 20</td><td class="num">12</td><td>2026-07-05</td><td>—</td><td><span class="tag tag-danger">已取消</span></td><td class="ops"><a class="btn-link" href="class-detail.html">查看</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 15 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 1 页</span><button class="btn btn-sm">下一页</button></div>
+    </div>
+    <div class="proto-note">
+      数据来自 <code>GET /api/classes</code>，按 <code>id</code> 降序（新建的在前），分页。页码与筛选写进网址参数，参数名与接口一致：<code>?page=1&amp;status=active&amp;course_id=3&amp;campus_id=1&amp;teacher_id=2&amp;term_id=1&amp;q=数学</code>，刷新后不变；搜索框匹配名称或编号，去掉首尾空白后为空时不带 <code>q</code>。
+      下拉的选项分别来自 <code>GET /api/courses?page_size=100</code>、<code>GET /api/campuses</code>、<code>GET /api/teachers?page_size=100</code>（超过 100 条再逐页取完）、<code>GET /api/terms</code>（teacher 角色不显示「教师」下拉）。状态：筹备 <code>tag-warning</code>、开课 <code>tag-info</code>、结课 <code>tag</code>、已取消 <code>tag-danger</code>。
+      「每周上课」由 <code>schedule</code> 按星期升序写成「周三 18:30」；「学期」列是 <code>term_name</code>，没有学期写「—」；发布前 <code>end_date</code> 为空写「—」。
+      点名称或「查看」进班级详情。行内操作只给 admin、academic：「编辑」只在筹备、开课的班级显示（开课的只能改名称）；「删除」只在筹备的班级显示。已取消的整行加 <code>muted</code>。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除班级</div>
+      <div class="dialog-body">确定删除班级「初一物理衔接班」（CL000015）吗？删除后不能恢复。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/classes/:id</code>，只有筹备的班级能删。成功后关闭确认框、刷新列表并提示「已删除」；返回 409（例如班级已经发布）时确认框不关，在框内 <code>alert-error</code> 显示接口的 <code>message</code>。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有班级）</h3><div class="card state"><div class="title">还没有班级</div>新建班级并发布后，课次会出现在课表里<br><a class="btn btn-primary" href="class-form.html">新建班级</a></div><div class="proto-note">没有新建权限的角色（sales、finance、teacher）不显示按钮；teacher 的说明改为「你还没有任课的班级」。</div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">没有符合条件的班级</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">班级列表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看班级<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

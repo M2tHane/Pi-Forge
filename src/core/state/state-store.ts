@@ -1,0 +1,1183 @@
+// .forge/ 的唯一读写入口：文件锁、schema 校验、转移校验、事务日志、事件追加、git 提交。
+import {
+  closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync,
+  readSync, rmSync, statSync, truncateSync, unlinkSync, writeFileSync,
+} from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import lockfile from 'proper-lockfile';
+import { MIGRATIONS, SCHEMA_VERSION, migrationChain, type Migration } from './migrations.ts';
+import {
+  validate, isLightFlow, type FlowFile, type MergeQueueFile, type RunFile, type KnowledgeFile, type ModelPausesFile, type SchemaKind, type StageStatus, type StateFile,
+  type TaskFile, type TaskStatus, type FlowEvent, type NotesFile,
+} from './schemas.ts';
+import {
+  flowLimits, planStageTransition, planTransition, poolLimit, poolOf, type Facts, type StageTrigger, type TaskPatch, type Trigger,
+} from './state-machine.ts';
+import {
+  EventCache, GENESIS_HASH, appendEvents, buildEvent, commitStateRef, readEvents, readLastEvent, sha256, untrackStateDir, verifyChain, type EventInput,
+} from './event-log.ts';
+import { depStatus } from './dag.ts';
+
+export const FLOW_DIRNAME = '.forge';
+const JOURNAL = 'tx.json';
+const LOCK = '.lock';
+const UNTRACKED = new Set(['state.json', 'events.jsonl', JOURNAL]);
+const GITIGNORE = `${LOCK}\n${JOURNAL}\n*.tmp\n`;
+
+export class StateError extends Error {
+  readonly details: string[];
+  constructor(message: string, details: string[] = []) {
+    super(details.length ? `${message}：${details.join('；')}` : message);
+    this.name = 'StateError';
+    this.details = details;
+  }
+}
+
+/** 重新派发时同一个池里持有租约的任务已到上限：任务保持 in_progress 无租约，有空位后再派 */
+export class PoolFullError extends StateError {
+  constructor(message: string) { super(message); this.name = 'PoolFullError'; }
+}
+
+const newerFormat = (from: number, to: number) => new StateError(`.forge/ 是更新版本的 pi-forge 写入的（格式 ${from}，当前只支持到 ${to}），请升级 pi-forge`);
+
+export interface StoreLimits {
+  max_attempts: number; max_parallel: number; max_continuations?: number;
+  max_parallel_aux?: number; max_parallel_backend?: number; max_merge_failures?: number;
+  review_max_rounds?: number;
+}
+
+export interface StoreOptions {
+  now?: () => Date;
+  git?: boolean;
+  limits?: Partial<StoreLimits>;
+  /** 仅测试用：模拟写入中途崩溃 */
+  faultInjection?: 'after-journal' | 'mid-apply';
+  /** 仅测试用：替换格式版本与迁移链 */
+  schemaVersion?: number;
+  migrations?: Migration[];
+}
+
+interface Journal {
+  files: { rel: string; content: string }[];
+  /** 要删除的文件（迁移时清掉已不存在的任务类型） */
+  deletes?: string[];
+  events: FlowEvent[];
+  state: StateFile;
+  message: string;
+}
+
+type StagedEvent = Omit<EventInput, 'ts'> & { ts?: string };
+
+const TASK_PATCH_KEYS = new Set(['lease', 'worktree', 'branch', 'base_sha', 'timeout_review', 'timeout_progress']);
+
+export const flowRel = (flow: string) => `flows/${flow}/flow.json`;
+export const taskRel = (flow: string, task: string) => `flows/${flow}/tasks/${task}.json`;
+export const handoffRel = (flow: string, task: string) => `flows/${flow}/handoff/${task}.md`;
+export const evidenceRel = (flow: string, task: string) => `flows/${flow}/evidence/${task}`;
+export const runRel = (run: string) => `runs/${run}.json`;
+export const stageEvidenceRel = (flow: string, stage: string) => `flows/${flow}/evidence/stage-${stage}`;
+/** handoff 追加一段（`## <时间> <actor>` 开头） */
+const putHandoff = (tx: Tx, flow: string, task: string, text: string, actor: string) => {
+  const rel = handoffRel(flow, task);
+  tx.putText(rel, `${tx.readText(rel) ?? ''}\n## ${tx.ts} ${actor}\n\n${text.trim()}\n`);
+};
+const MQ_REL = 'merge-queue.json';
+export const KNOWLEDGE_REL = 'knowledge.json';
+/** 任务的结构化笔记：同一任务的所有运行共用一份 */
+export const taskNotesRel = (flow: string, task: string) => `flows/${flow}/notes/${task}.json`;
+/** 主 agent 的结构化笔记：跨流程保留 */
+export const MAIN_NOTES_REL = 'notes/main.json';
+export const MODEL_PAUSES_REL = 'model-pauses.json';
+
+export function schemaKindOf(rel: string): SchemaKind | null {
+  if (rel === MQ_REL) return 'merge-queue';
+  if (/^flows\/[^/]+\/flow\.json$/.test(rel)) return 'flow';
+  if (/^flows\/[^/]+\/tasks\/[^/]+\.json$/.test(rel)) return 'task';
+  if (/^runs\/[^/]+\.json$/.test(rel)) return 'run';
+  if (rel === KNOWLEDGE_REL) return 'knowledge';
+  if (rel === MODEL_PAUSES_REL) return 'model-pauses';
+  if (rel === MAIN_NOTES_REL || /^flows\/[^/]+\/notes\/[^/]+\.json$/.test(rel)) return 'notes';
+  return null;
+}
+
+/** 一次事务内的暂存写入。只能在 StateStore.transaction 回调中使用。 */
+export class Tx {
+  readonly writes = new Map<string, { kind: SchemaKind | null; content: string; value?: unknown }>();
+  readonly deletes = new Set<string>();
+  readonly events: StagedEvent[] = [];
+  activeFlow: string | null | undefined = undefined;
+
+  private readonly store: StateStore;
+  readonly ts: string;
+  constructor(store: StateStore, ts: string) {
+    this.store = store;
+    this.ts = ts;
+  }
+
+  readJson<T>(rel: string): T | null {
+    const staged = this.writes.get(rel);
+    if (staged) return structuredClone(staged.value) as T;
+    return this.store.readJsonRel<T>(rel);
+  }
+
+  readText(rel: string): string | null {
+    const staged = this.writes.get(rel);
+    if (staged) return staged.content;
+    const abs = this.store.abs(rel);
+    return existsSync(abs) ? readFileSync(abs, 'utf8') : null;
+  }
+
+  /** 写入带 version 的 JSON。value.version 必须等于当前版本（新文件忽略），写入时自动加 1。 */
+  putJson<T extends { version: number }>(rel: string, kind: SchemaKind, value: T): T {
+    const current = this.readJson<{ version: number }>(rel);
+    if (current && value.version !== current.version) {
+      throw new StateError(`版本冲突：${rel} 当前版本 ${current.version}，写入基于版本 ${value.version}，请重新读取后再试`);
+    }
+    const next = { ...structuredClone(value), version: current ? current.version + 1 : 1 };
+    this.writes.set(rel, { kind, content: `${JSON.stringify(next, null, 2)}\n`, value: next });
+    return next;
+  }
+
+  putText(rel: string, content: string): void {
+    this.writes.set(rel, { kind: null, content });
+  }
+  /** 删除文件（提交时与写入一起落盘；只在迁移里用） */
+  deleteFile(rel: string): void {
+    this.writes.delete(rel);
+    this.deletes.add(rel);
+  }
+
+  readFlow(flow: string): FlowFile {
+    return this.must(this.readJson<FlowFile>(flowRel(flow)), `流程 ${flow} 不存在`);
+  }
+  readTask(flow: string, task: string): TaskFile {
+    return this.must(this.readJson<TaskFile>(taskRel(flow, task)), `任务 ${flow}/${task} 不存在`);
+  }
+  readMergeQueue(): MergeQueueFile {
+    return this.must(this.readJson<MergeQueueFile>(MQ_REL), '合并队列文件缺失');
+  }
+  putFlow(f: FlowFile) { return this.putJson(flowRel(f.id), 'flow', f); }
+  putTask(flow: string, t: TaskFile) { return this.putJson(taskRel(flow, t.id), 'task', t); }
+  putMergeQueue(q: MergeQueueFile) { return this.putJson(MQ_REL, 'merge-queue', q); }
+  putRun(r: RunFile) { return this.putJson(runRel(r.run_id), 'run', r); }
+
+  event(e: StagedEvent): void { this.events.push(e); }
+  setActiveFlow(id: string | null): void { this.activeFlow = id; }
+
+  private must<T>(v: T | null, msg: string): T {
+    if (v === null) throw new StateError(msg);
+    return v;
+  }
+}
+
+export interface TransitionRequest {
+  to: TaskStatus;
+  trigger: Trigger;
+  actor: string;
+  facts?: Partial<Facts>;
+  patch?: TaskPatch;
+  evidence?: string;
+  /** 附加到事件的数据 */
+  data?: Record<string, unknown>;
+}
+
+export interface CreateFlowInput {
+  mode: FlowFile['mode'];
+  title: string;
+  stages: string[];
+  base_sha: string | null;
+  actor?: string;
+}
+
+export type TaskInput = Pick<TaskFile, 'id' | 'stage' | 'kind' | 'title' | 'role' | 'scopes' | 'depends_on' | 'inputs' | 'writes' | 'verify'>
+  & Partial<Omit<TaskFile, 'id' | 'stage' | 'kind' | 'title' | 'role' | 'scopes' | 'depends_on' | 'inputs' | 'writes' | 'verify' | 'status' | 'lease' | 'created_by' | 'version'>>;
+
+export interface IntegrityReport { ok: boolean; errors: string[] }
+
+export interface ViolationInput {
+  flow: string | null;
+  task: string | null;
+  run: string;
+  role: string;
+  tool: string;
+  rule: string;
+  reason: string;
+  /** 被阻断调用的摘要（如 bash 命令），不含文件内容 */
+  detail?: string;
+}
+
+type StageTransitionRequest = { to: StageStatus; trigger: StageTrigger; actor: string; reason?: string; needs_human?: boolean; note?: string; data?: Record<string, unknown>; delegated?: boolean };
+
+export class StateStore {
+  readonly flowDir: string;
+  private readonly now: () => Date;
+  private readonly git: boolean;
+  readonly limits: StoreLimits;
+  readonly root: string;
+  private readonly opts: StoreOptions;
+  /** 读缓存：按 inode、mtime、大小失效（写入都是临时文件 + rename，inode 必变） */
+  private readonly jsonCache = new Map<string, { ino: number; mtimeMs: number; size: number; value: unknown }>();
+  private readonly eventCache = new EventCache();
+  private migrated = false;
+
+  constructor(root: string, opts: StoreOptions = {}) {
+    this.root = root;
+    this.opts = opts;
+    this.flowDir = path.join(root, FLOW_DIRNAME);
+    this.now = opts.now ?? (() => new Date());
+    this.git = opts.git ?? true;
+    this.limits = { max_attempts: 3, max_parallel: 2, ...opts.limits };
+  }
+
+  /** 初始化 .forge/ 骨架。已存在时不覆盖。 */
+  static async init(root: string, opts: StoreOptions = {}): Promise<StateStore> {
+    if (opts.git ?? true) {
+      try {
+        execFileSync('git', ['rev-parse', '--git-dir'], { cwd: root, stdio: 'ignore' });
+      } catch {
+        throw new StateError(`${root} 不是 git 仓库，请先执行 git init`);
+      }
+    }
+    const store = new StateStore(root, opts);
+    if (existsSync(path.join(store.flowDir, 'state.json'))) return store;
+    mkdirSync(store.flowDir, { recursive: true });
+    await store.transaction((tx) => {
+      tx.putText('.gitignore', GITIGNORE);
+      for (const d of ['flows', 'runs', 'fixes']) tx.putText(`${d}/.gitkeep`, '');
+      tx.putMergeQueue({ queue: [], merging: null, version: 1 });
+      tx.setActiveFlow(null);
+      tx.event({ flow: null, actor: 'engine', type: 'note', reason: '初始化 .forge/' });
+    });
+    return store;
+  }
+
+  abs(rel: string): string {
+    return path.join(this.flowDir, ...rel.split('/'));
+  }
+
+  // —— 读取（无锁；写入用 rename 保证原子可见） ——
+
+  readJsonRel<T>(rel: string): T | null {
+    const abs = this.abs(rel);
+    let st;
+    try { st = statSync(abs); } catch { this.jsonCache.delete(rel); return null; }
+    const hit = this.jsonCache.get(rel);
+    if (hit && hit.ino === st.ino && hit.mtimeMs === st.mtimeMs && hit.size === st.size) return structuredClone(hit.value) as T;
+    let value: unknown;
+    try {
+      value = JSON.parse(readFileSync(abs, 'utf8'));
+    } catch {
+      throw new StateError(`${FLOW_DIRNAME}/${rel} 不是合法 JSON，请执行 /forge doctor`);
+    }
+    this.jsonCache.set(rel, { ino: st.ino, mtimeMs: st.mtimeMs, size: st.size, value });
+    return structuredClone(value) as T;
+  }
+
+  readState(): StateFile {
+    const s = this.readJsonRel<StateFile>('state.json');
+    if (!s) throw new StateError('尚未初始化，请执行 /forge-init');
+    return s;
+  }
+  readFlow(id: string): FlowFile {
+    const f = this.readJsonRel<FlowFile>(flowRel(id));
+    if (!f) throw new StateError(`流程 ${id} 不存在`);
+    return f;
+  }
+  listFlows(): string[] {
+    const dir = this.abs('flows');
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir).filter((d) => existsSync(path.join(dir, d, 'flow.json'))).sort();
+  }
+  readTask(flow: string, id: string): TaskFile {
+    const t = this.readJsonRel<TaskFile>(taskRel(flow, id));
+    if (!t) throw new StateError(`任务 ${flow}/${id} 不存在`);
+    return t;
+  }
+  listTasks(flow: string): TaskFile[] {
+    const dir = this.abs(`flows/${flow}/tasks`);
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir).filter((f) => f.endsWith('.json')).sort()
+      .map((f) => this.readTask(flow, f.slice(0, -5)));
+  }
+  readMergeQueue(): MergeQueueFile {
+    const q = this.readJsonRel<MergeQueueFile>(MQ_REL);
+    if (!q) throw new StateError('合并队列文件缺失，请执行 /forge doctor');
+    return q;
+  }
+  readHandoff(flow: string, task: string): string {
+    const abs = this.abs(handoffRel(flow, task));
+    return existsSync(abs) ? readFileSync(abs, 'utf8') : '';
+  }
+  /** 全部事件（增量缓存：只解析新追加的部分） */
+  readEvents(): FlowEvent[] {
+    return this.eventCache.read(this.abs('events.jsonl')).events;
+  }
+
+  // —— 事务 ——
+
+  async transaction<T>(fn: (tx: Tx) => T | Promise<T>): Promise<T> {
+    if (!existsSync(this.flowDir)) throw new StateError('尚未初始化，请执行 /forge-init');
+    const release = await lockfile.lock(this.flowDir, {
+      lockfilePath: path.join(this.flowDir, LOCK),
+      retries: { retries: 200, factor: 1.2, minTimeout: 5, maxTimeout: 100 },
+      stale: 15_000,
+    });
+    try {
+      this.recoverLocked();
+      const { last, state } = this.assertHeadConsistent();
+      const tx = new Tx(this, this.now().toISOString());
+      if (state) this.migrateLocked(tx, state.schema_version);
+      const result = await fn(tx);
+      if (!tx.events.length) throw new StateError('每次状态写入都必须附带事件');
+      this.commitLocked(tx, last, state);
+      return result;
+    } finally {
+      await release();
+    }
+  }
+
+  get schemaVersion(): number { return this.opts.schemaVersion ?? SCHEMA_VERSION; }
+
+  /** 旧格式的 .forge/ 迁移到当前格式（恢复时显式调用；任何写入前也会自动迁移）。返回执行的迁移说明，已是最新时为空 */
+  async migrate(): Promise<string[]> {
+    const s = this.readJsonRel<StateFile>('state.json');
+    if (!s || s.schema_version === this.schemaVersion) return [];
+    if (s.schema_version > this.schemaVersion) throw newerFormat(s.schema_version, this.schemaVersion);
+    let done: string[] = [];
+    await this.transaction((tx) => {
+      done = tx.events.filter((e) => e.data?.['migration']).map((e) => e.reason ?? '');
+      if (!tx.events.length) tx.event({ flow: null, actor: 'engine', type: 'note', reason: '.forge/ 格式已是最新' });
+    });
+    return done;
+  }
+
+  /** 在事务内执行迁移：流程、任务、提案按版本链改写，附一条事件 */
+  private migrateLocked(tx: Tx, from: number): void {
+    const to = this.schemaVersion;
+    if (from === to) return;
+    if (from > to) throw newerFormat(from, to);
+    const { steps, missing } = migrationChain(from, to, this.opts.migrations ?? MIGRATIONS);
+    if (missing !== null) throw new StateError(`.forge/ 的格式 ${missing} 无法迁移到 ${to}：请用旧版本 pi-forge 完成或放弃进行中的流程（/forge doctor）`);
+    type Json = Record<string, unknown>;
+    for (const id of this.listFlows()) {
+      let flow = tx.readJson<Json>(flowRel(id))!;
+      const tasks = this.listTasks(id).map((t) => t as unknown as Json);
+      let ts = tasks;
+      for (const m of steps) {
+        if (m.flow) flow = m.flow(flow);
+        const before = ts;
+        if (m.drop) for (const t of ts.filter((x) => m.drop!(x))) tx.deleteFile(taskRel(id, String(t['id'])));
+        if (m.drop) ts = ts.filter((t) => !m.drop!(t));
+        if (m.task) ts = ts.map((t) => m.task!(t, flow));
+        if (m.finish) flow = m.finish(flow, before);
+      }
+      tx.putJson(flowRel(id), 'flow', flow as unknown as FlowFile);
+      for (const t of ts) tx.putJson(taskRel(id, String(t['id'])), 'task', t as unknown as TaskFile);
+    }
+    tx.event({ flow: null, actor: 'engine', type: 'note', reason: `.forge/ 格式 ${from} → ${to}：${steps.map((m) => m.description).join('；')}`, data: { migration: { from, to } } });
+  }
+
+  /** 重放未完成的事务日志（若有）。 */
+  async recover(): Promise<boolean> {
+    const release = await lockfile.lock(this.flowDir, { lockfilePath: path.join(this.flowDir, LOCK), retries: 50 });
+    try {
+      return this.recoverLocked();
+    } finally {
+      await release();
+    }
+  }
+
+  private recoverLocked(): boolean {
+    const jp = this.abs(JOURNAL);
+    if (!existsSync(jp)) return false;
+    const journal = JSON.parse(readFileSync(jp, 'utf8')) as Journal;
+    this.applyJournal(journal, false);
+    unlinkSync(jp);
+    this.gitCommit(`${journal.message}（重放）`);
+    return true;
+  }
+
+  /** 事务前校验：只读事件日志的最后一条，与 state.json 比较（耗时与事件数无关；完整校验见 verifyIntegrity） */
+  private assertHeadConsistent() {
+    const { event: last, error } = readLastEvent(this.abs('events.jsonl'));
+    const state = this.readJsonRel<StateFile>('state.json');
+    const head = last?.hash ?? GENESIS_HASH;
+    const seq = last?.seq ?? 0;
+    const bad = !!error || (state ? state.events_head !== head || state.version !== seq : !!last);
+    if (bad) throw new StateError('状态完整性校验失败（state.json 与 events.jsonl 不一致），请执行 /forge doctor', error ? [error] : []);
+    return { last, state };
+  }
+
+  private commitLocked(tx: Tx, last: FlowEvent | null, state: StateFile | null): void {
+    const schemaErrors: string[] = [];
+    for (const [rel, w] of tx.writes) {
+      if (w.kind) schemaErrors.push(...validate(w.kind, w.value).map((e) => `${rel} ${e}`));
+    }
+    if (schemaErrors.length) throw new StateError('schema 校验失败', schemaErrors);
+
+    const entities: Record<string, string> = {};
+    for (const [rel, w] of tx.writes) entities[rel] = sha256(w.content);
+
+    const built: FlowEvent[] = [];
+    tx.events.forEach((e, i) => {
+      const isLast = i === tx.events.length - 1;
+      const input: EventInput = { ...e, ts: e.ts ?? tx.ts };
+      if (isLast && tx.writes.size) input.entities = entities;
+      if (isLast && tx.activeFlow !== undefined) input.active_flow = tx.activeFlow;
+      const ev = buildEvent(built.at(-1) ?? last, input);
+      const errs = validate('event', ev);
+      if (errs.length) throw new StateError('事件 schema 校验失败', errs);
+      built.push(ev);
+    });
+    const tail = built.at(-1)!;
+    const nextState: StateFile = {
+      schema_version: this.schemaVersion,
+      version: tail.seq,
+      active_flow: tx.activeFlow !== undefined ? tx.activeFlow : (state?.active_flow ?? null),
+      events_head: tail.hash,
+    };
+    const journal: Journal = {
+      files: [...tx.writes].map(([rel, w]) => ({ rel, content: w.content })),
+      ...(tx.deletes.size ? { deletes: [...tx.deletes] } : {}),
+      events: built,
+      state: nextState,
+      message: describe(built),
+    };
+    atomicWrite(this.abs(JOURNAL), JSON.stringify(journal));
+    if (this.opts.faultInjection === 'after-journal') throw new Error('fault injected: after-journal');
+    this.applyJournal(journal, this.opts.faultInjection === 'mid-apply');
+    unlinkSync(this.abs(JOURNAL));
+    this.gitCommit(journal.message);
+  }
+
+  private applyJournal(j: Journal, fault: boolean): void {
+    j.files.forEach((f, i) => {
+      atomicWrite(this.abs(f.rel), f.content);
+      if (fault && i === 0) throw new Error('fault injected: mid-apply');
+    });
+    for (const rel of j.deletes ?? []) rmSync(this.abs(rel), { force: true });
+    const ep = this.abs('events.jsonl');
+    if (existsSync(ep) && !endsWithNewline(ep)) {
+      // 去掉崩溃留下的不完整末行（少见，才读全文）
+      const raw = readFileSync(ep, 'utf8');
+      truncateSync(ep, Buffer.byteLength(raw.slice(0, raw.lastIndexOf('\n') + 1)));
+    }
+    const lastSeq = readLastEvent(ep).event?.seq ?? 0;
+    appendEvents(ep, j.events.filter((e) => e.seq > lastSeq));
+    atomicWrite(this.abs('state.json'), `${JSON.stringify(j.state, null, 2)}\n`);
+  }
+
+  /** 状态提交到 refs/pi-forge/state，不进入主分支历史；早期版本留在分支上的 .forge/ 先迁移出去 */
+  private gitCommit(message: string): void {
+    if (!this.git) return;
+    if (!this.migrated) {
+      untrackStateDir(this.root, FLOW_DIRNAME);
+      this.migrated = true;
+    }
+    commitStateRef(this.root, FLOW_DIRNAME, message);
+  }
+
+  // —— 业务写入 ——
+
+  async createFlow(input: CreateFlowInput): Promise<FlowFile> {
+    return this.transaction((tx) => {
+      const state = this.readState();
+      if (state.active_flow) {
+        const cur = tx.readFlow(state.active_flow);
+        if (!isFinished(cur)) {
+          throw new StateError(`已有进行中的流程 ${cur.id}（${cur.title}），同一时间只允许一个；请使用 /forge-resume 继续`);
+        }
+      }
+      const id = `${input.mode === 'build' ? 'B' : 'F'}-${String(Math.max(0, ...this.usedFlowNumbers()) + 1).padStart(3, '0')}`;
+      const flow = tx.putFlow({
+        id, mode: input.mode, title: input.title, stages: input.stages, stage: input.stages[0]!,
+        stage_status: 'active', integration_branch: `flow/${id}/integration`, base_sha: input.base_sha,
+        approvals: {}, created_at: tx.ts, version: 1,
+      });
+      tx.setActiveFlow(id);
+      tx.event({ flow: id, actor: input.actor ?? 'human', type: 'transition', from: 'none', to: 'active',
+        data: { entity: 'flow', mode: input.mode, stage: flow.stage } });
+      return flow;
+    });
+  }
+
+  /**
+   * 用过的流程编号：.forge 里的流程，加上仓库里 flow/<编号>/ 下的分支。.forge 丢了（它被 info/exclude 忽略，git clean -xfd 会删掉）而分支还在时，
+   * 编号从头开始会撞上旧流程的同名分支并直接复用：旧集成分支上没审查过的提交随 S0 批准进了主分支
+   */
+  private usedFlowNumbers(): number[] {
+    const nums = this.listFlows().map((id) => Number(id.slice(2)));
+    try {
+      const refs = execFileSync('git', ['for-each-ref', '--format=%(refname)', 'refs/heads/flow/'], { cwd: this.root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      for (const m of refs.matchAll(/^refs\/heads\/flow\/[A-Z]-(\d+)\//gm)) nums.push(Number(m[1]));
+    } catch { /* 不是 git 仓库 */ }
+    return nums;
+  }
+
+  /** 轻流程（fix、change）：不占用活动流程指针（可在 build 流程等待审批时运行）；同一时间只允许一个未结束的轻流程，fix 与 change 互斥 */
+  async createLightFlow(mode: 'fix' | 'change', title: string, mainBranch: string, baseSha: string): Promise<FlowFile> {
+    return this.transaction((tx) => {
+      const open = this.listFlows().map((id) => tx.readFlow(id)).find((f) => isLightFlow(f) && !isFinished(f));
+      if (open) throw new StateError(`已有进行中的${open.mode === 'change' ? '小改动' : '修复'} ${open.id}「${open.title}」，请等它完成或执行 /forge abort`);
+      const id = `${mode === 'fix' ? 'X' : 'C'}-${String(Math.max(0, ...this.usedFlowNumbers()) + 1).padStart(3, '0')}`;
+      const flow = tx.putFlow({
+        id, mode, title, stages: ['X1'], stage: 'X1', stage_status: 'active', integration_branch: mainBranch,
+        base_sha: baseSha, approvals: {}, created_at: tx.ts, version: 1,
+      });
+      tx.event({ flow: id, actor: 'human', type: 'transition', from: 'none', to: 'active', data: { entity: 'flow', mode } });
+      return flow;
+    });
+  }
+
+  /** 未结束的轻流程（若有） */
+  openLightFlow(): FlowFile | null {
+    return this.listFlows().map((id) => this.readFlow(id)).find((f) => isLightFlow(f) && !isFinished(f)) ?? null;
+  }
+
+  async writeFixLog(name: string, content: string, flow: string): Promise<string> {
+    if (!/^[\w.-]+\.md$/.test(name)) throw new StateError(`fix 日志文件名不合法：${name}`);
+    return this.transaction((tx) => {
+      const rel = `fixes/${name}`;
+      tx.putText(rel, content);
+      tx.event({ flow, actor: 'engine', type: 'note', reason: 'fix 日志', evidence: rel });
+      return rel;
+    });
+  }
+
+  listFixLogs(): string[] {
+    const dir = this.abs('fixes');
+    return existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.md')).sort() : [];
+  }
+
+  /**
+   * tasks 给函数时在事务里（持锁）求值：新任务的编号要看已有任务时用它，同时新建的两个任务不会拿到同一个编号。
+   * handoffs：新任务的说明，和任务同一个事务写入（不会有建出来却没有说明的任务）
+   */
+  async addTasks(flow: string, tasks: readonly TaskInput[] | (() => readonly TaskInput[]), actor: string, handoffs: Record<string, string> = {}): Promise<TaskFile[]> {
+    return this.transaction((tx) => {
+      tx.readFlow(flow);
+      const out = (typeof tasks === 'function' ? tasks() : tasks).map((t) => this.putNewTask(tx, flow, t, actor));
+      for (const [task, text] of Object.entries(handoffs)) putHandoff(tx, flow, task, text, actor);
+      tx.event({ flow, actor, type: 'note', reason: `新增任务 ${out.length} 个`, data: { tasks: out.map((t) => t.id) } });
+      return out;
+    });
+  }
+
+  private putNewTask(tx: Tx, flow: string, t: TaskInput, actor: string): TaskFile {
+    if (tx.readJson(taskRel(flow, t.id))) throw new StateError(`任务 ${flow}/${t.id} 已存在`);
+    const task: TaskFile = {
+      ...structuredClone(t),
+      ac: [...(t.ac ?? [])], verify: [...t.verify], status: 'pending', attempts: 0, violations: 0,
+      review_rounds: 0, merge_failures: 0, blocked_by: null,
+      lease_expirations: 0, lease: null, impl_run: null, branch: t.branch ?? null, worktree: t.worktree ?? null, base_sha: t.base_sha ?? null,
+      blocked_reason: null, last_failure: null, created_by: actor, version: 1,
+      ...(t.merge_fix_for ? { merge_fix_for: t.merge_fix_for } : {}),
+      ...(t.conflict_files ? { conflict_files: [...t.conflict_files] } : {}),
+      ...(t.sync_main ? { sync_main: t.sync_main } : {}),
+
+      ...(t.fork_from_task ? { fork_from_task: t.fork_from_task } : {}),
+      ...(t.shared?.length ? { shared: [...t.shared] } : {}),
+
+      ...(t.size ? { size: t.size } : {}),
+    };
+    return tx.putTask(flow, task);
+  }
+
+  async transitionTask(flowId: string, taskId: string, req: TransitionRequest): Promise<TaskFile> {
+    return this.transaction((tx) => this.transitionInTx(tx, flowId, taskId, req));
+  }
+
+  /** 事务内的任务转移（供需要在同一事务里改多个实体的方法复用） */
+  private transitionInTx(tx: Tx, flowId: string, taskId: string, req: TransitionRequest): TaskFile {
+    {
+      const flow = tx.readFlow(flowId);
+      const task = tx.readTask(flowId, taskId);
+      const others = this.listTasks(flowId).filter((t) => t.id !== taskId);
+      const mq = tx.readMergeQueue();
+      const key = (e: { flow: string; task: string }) => `${e.flow}/${e.task}`;
+      const me = `${flowId}/${taskId}`;
+      const merging = mq.merging ? key(mq.merging) : null;
+
+      const statusOf = new Map(others.map((t) => [t.id, depStatus(t)]));
+      const eligible = mq.queue.find((e) => {
+        const candidate = e.flow === flowId ? (e.task === taskId ? task : others.find((t) => t.id === e.task)) : this.readTask(e.flow, e.task);
+        return candidate?.status === 'queued_merge';
+      });
+      const facts: Facts = {
+        ...req.facts,
+        now: this.now(),
+        limits: flowLimits(this.limits, flow),
+        actor: req.actor,
+        // 以下由程序推导，覆盖调用方传入的同名字段
+        // stage-qa 在门禁进行中（awaiting_gate）运行，其余 task 只在阶段 active 时派发
+        // 架构师咨询（主会话签收前也可能提问）与 merge-fix（咨询合并、/forge sync 冲突时生成）在阶段的任何状态都可以派发
+        stage_active: flow.stage === task.stage && (flow.stage_status === 'active' || (task.kind === 'qa' && flow.stage_status === 'awaiting_gate') || ((task.kind === 'consult' || task.kind === 'merge-fix') && flow.stage_status !== 'done' && flow.stage_status !== 'aborted')),
+        status_of: statusOf,
+        // 各池分别计数（state-machine.poolOf）：backend、frontend、aux（审查与验收）、其余
+        running_count: others.filter((t) => t.status === 'in_progress' && poolOf(t) === poolOf(task)).length,
+        merging_other: merging && merging !== me ? merging : null,
+        queue_head: eligible ? key(eligible) === me : false,
+      };
+      const plan = planTransition(task, req.to, req.trigger, facts, req.patch);
+      if (!plan.ok) throw new StateError(`转移被拒（${me} ${task.status} -> ${req.to}）`, plan.errors);
+
+      const saved = tx.putTask(flowId, plan.task);
+      this.applyQueueEffects(tx, mq, flowId, taskId, task.status, plan.to);
+      tx.event({
+        flow: flowId, actor: req.actor, type: 'transition', task: taskId, from: task.status, to: plan.to,
+        trigger: req.trigger,
+        ...(facts.reason || plan.task.blocked_reason ? { reason: facts.reason ?? plan.task.blocked_reason! } : {}),
+        ...(req.evidence ? { evidence: req.evidence } : {}),
+        ...(req.data ? { data: req.data } : {}),
+      });
+      return saved;
+    }
+  }
+
+  private applyQueueEffects(tx: Tx, mq: MergeQueueFile, flow: string, task: string, from: TaskStatus, to: TaskStatus) {
+    const same = (e: { flow: string; task: string }) => e.flow === flow && e.task === task;
+    let changed = false;
+    if (to === 'queued_merge' && from !== 'merging') {
+      if (!mq.queue.some(same)) mq.queue.push({ flow, task, enqueued_at: tx.ts });
+      changed = true;
+    } else if (to === 'queued_merge' && from === 'merging') {
+      mq.merging = null;
+      mq.queue = [{ flow, task, enqueued_at: tx.ts }, ...mq.queue.filter((e) => !same(e))];
+      changed = true;
+    } else if (to === 'merging') {
+      mq.queue = mq.queue.filter((e) => !same(e));
+      mq.merging = { flow, task, started_at: tx.ts };
+      changed = true;
+    } else if (from === 'merging' || from === 'queued_merge') {
+      if (mq.merging && same(mq.merging)) mq.merging = null;
+      mq.queue = mq.queue.filter((e) => !same(e));
+      if (mq.suspended?.some(same)) mq.suspended = mq.suspended.filter((e) => !same(e));
+      changed = true;
+    }
+    if (changed) tx.putMergeQueue(mq);
+  }
+
+  /**
+   * 合并时出现 writes 内的文本冲突：原任务保持 merging 但让出合并名额，同一事务内新增 merge-fix 任务并记录 merge_conflict 事件。
+   */
+  async suspendMerge(flow: string, task: string, fix: TaskInput, conflicts: string[]): Promise<TaskFile> {
+    return this.transaction((tx) => {
+      const t = tx.readTask(flow, task);
+      if (t.status !== 'merging') throw new StateError(`任务 ${task} 不在 merging 状态，不能挂起合并`);
+      const mq = tx.readMergeQueue();
+      if (!mq.merging || mq.merging.flow !== flow || mq.merging.task !== task) throw new StateError(`${task} 不是当前正在合并的任务`);
+      if (tx.readJson(taskRel(flow, fix.id))) throw new StateError(`任务 ${flow}/${fix.id} 已存在`);
+      const m = this.putNewTask(tx, flow, { ...fix, kind: 'merge-fix', merge_fix_for: task, for_task: task, conflict_files: [...conflicts] }, 'merge-queue');
+      mq.merging = null;
+      mq.suspended = [...(mq.suspended ?? []), { flow, task, merge_fix: fix.id, since: tx.ts }];
+      tx.putMergeQueue(mq);
+      tx.event({ flow, task, actor: 'merge-queue', type: 'merge_conflict', reason: `文本冲突在 writes 内，生成 ${fix.id}`,
+        data: { conflicts, merge_fix: fix.id } });
+      return m;
+    });
+  }
+
+
+
+  /** 修改非状态字段（租约、worktree、base_sha 等）。状态只能经 transitionTask 改变。 */
+  async updateTask(flow: string, id: string, patch: TaskPatch, ev: { actor: string; type: 'dispatch' | 'note' | 'lease_expired'; reason?: string; data?: Record<string, unknown> }): Promise<TaskFile> {
+    const bad = Object.keys(patch).filter((k) => !TASK_PATCH_KEYS.has(k));
+    if (bad.length) throw new StateError(`updateTask 不能修改字段：${bad.join('、')}；状态变更请走转移表`);
+    return this.transaction((tx) => {
+      const t = tx.readTask(flow, id);
+      const next = tx.putTask(flow, { ...t, ...structuredClone(patch) });
+      tx.event({ flow, task: id, ...ev });
+      return next;
+    });
+  }
+
+  /** 为 in_progress 且没有租约的任务取得租约（重新派发）。在事务内检查，避免并发重复派发。 */
+  async acquireLease(flow: string, id: string, lease: NonNullable<TaskFile['lease']>, actor: string, data: Record<string, unknown> = {}): Promise<TaskFile> {
+    return this.transaction((tx) => {
+      const t = tx.readTask(flow, id);
+      if (t.lease) throw new StateError(`任务 ${id} 已有运行中的 run ${t.lease.run_id}`);
+      if (t.status !== 'in_progress') throw new StateError(`任务 ${id} 当前是 ${t.status}，不能取得租约`);
+      if (t.timeout_review && !t.timeout_review.decision) throw new StateError(`任务 ${id} 运行超时，等主会话复核后才能继续`);
+      // 审查打回、合并退回、咨询回答后等路径回到 in_progress 再派发：和第一次派发一样受池的上限约束，
+      // 否则前端页面被打回时会和正在跑的前端修复同时改前端。只数持有租约的（没租约的在排队，不占名额）
+      const limit = poolLimit(poolOf(t), flowLimits(this.limits, tx.readFlow(flow)));
+      const running = this.listTasks(flow).filter((x) => x.id !== id && x.lease && poolOf(x) === poolOf(t)).length;
+      if (running >= limit) throw new PoolFullError(`任务 ${id} 所在的池已有 ${running} 个任务在运行（上限 ${limit}），等有空位再派发`);
+      // 超时复核的决定在这次派发中用掉
+      const { timeout_review: _review, ...rest } = t;
+      const next = tx.putTask(flow, { ...rest, lease });
+      tx.event({ flow, task: id, actor, type: 'dispatch', data: { run: lease.run_id, role: lease.role, ...data } });
+      return next;
+    });
+  }
+
+  /**
+   * 续租（心跳）：校验 run 与 token 后把租约到期时间延长到 expiresAt。租约已被收回、已过期或 token 不符时拒绝；
+   * 只延长不缩短。由子进程在工具调用时按需调用（剩余不足一半时），避免每次调用都产生状态提交。
+   */
+  async renewLease(flow: string, id: string, runId: string, tokenHash: string, expiresAt: string, actor: string): Promise<TaskFile> {
+    return this.transaction((tx) => {
+      const t = tx.readTask(flow, id);
+      const l = t.lease;
+      if (!l || l.run_id !== runId || l.token_hash !== tokenHash) throw new StateError(`任务 ${id} 的租约不属于 run ${runId}，不能续租`);
+      if (this.now().getTime() >= Date.parse(l.expires_at)) throw new StateError(`任务 ${id} 的租约已过期，不能续租`);
+      if (t.status !== 'in_progress') throw new StateError(`任务 ${id} 当前是 ${t.status}，不能续租`);
+      if (Date.parse(expiresAt) <= Date.parse(l.expires_at)) return t;
+      const next = tx.putTask(flow, { ...t, lease: { ...l, expires_at: expiresAt } });
+      tx.event({ flow, task: id, actor, type: 'note', reason: '续租', data: { run: runId, from: l.expires_at, to: expiresAt } });
+      return next;
+    });
+  }
+
+  async appendHandoff(flow: string, task: string, text: string, actor: string): Promise<void> {
+    await this.transaction((tx) => {
+      tx.readTask(flow, task);
+      putHandoff(tx, flow, task, text, actor);
+      tx.event({ flow, task, actor, type: 'note', reason: 'handoff' });
+    });
+  }
+
+  async saveEvidence(flow: string, task: string, name: string, content: string, actor: string): Promise<string> {
+    if (!/^[\w.-]+$/.test(name) || name.startsWith('.')) throw new StateError(`evidence 文件名不合法：${name}`);
+    return this.transaction((tx) => {
+      tx.readTask(flow, task);
+      const rel = `${evidenceRel(flow, task)}/${name}`;
+      tx.putText(rel, content);
+      tx.event({ flow, task, actor, type: 'note', reason: 'evidence', evidence: rel });
+      return rel;
+    });
+  }
+
+  async createRun(run: Omit<RunFile, 'version'>): Promise<RunFile> {
+    return this.transaction((tx) => {
+      if (tx.readJson(runRel(run.run_id))) throw new StateError(`run ${run.run_id} 已存在`);
+      const saved = tx.putRun({ ...run, version: 1 });
+      tx.event({ flow: run.flow, ...(run.task ? { task: run.task } : {}), actor: 'dispatcher', type: 'dispatch',
+        data: { run: run.run_id, role: run.role, model: run.model } });
+      return saved;
+    });
+  }
+
+  /** 更新 run 记录（结束时间、token、模型、结果）。 */
+  async updateRun(id: string, patch: Partial<Pick<RunFile, 'ended_at' | 'tokens' | 'model' | 'outcome' | 'pid' | 'session_file' | 'cost' | 'turns' | 'warned_at'>>, actor: string, reason?: string): Promise<RunFile> {
+    return this.transaction((tx) => {
+      const run = tx.readJson<RunFile>(runRel(id));
+      if (!run) throw new StateError(`run ${id} 不存在`);
+      const saved = tx.putRun({ ...run, ...patch });
+      tx.event({ flow: run.flow, ...(run.task ? { task: run.task } : {}), actor, type: 'note', reason: reason ?? 'run 更新',
+        data: { run: id, ...(patch.outcome ? { outcome: patch.outcome } : {}) } });
+      return saved;
+    });
+  }
+
+  listRuns(): RunFile[] {
+    const dir = this.abs('runs');
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir).filter((f) => f.endsWith('.json')).sort().map((f) => this.readRun(f.slice(0, -5)));
+  }
+
+  readRun(id: string): RunFile {
+    const r = this.readJsonRel<RunFile>(runRel(id));
+    if (!r) throw new StateError(`run ${id} 不存在`);
+    return r;
+  }
+
+  /** 记一次被 guard 拦下的操作（只记账：运行与任务上的违规计数、一条 violation 事件） */
+  async recordViolation(v: ViolationInput): Promise<{ count: number }> {
+    return this.transaction((tx) => {
+      const count = this.readEvents().filter((e) => e.type === 'violation' && e.data?.['run'] === v.run).length + 1;
+      tx.event({
+        flow: v.flow, ...(v.task ? { task: v.task } : {}), actor: `run:${v.run}`, type: 'violation', reason: v.reason,
+        data: { run: v.run, role: v.role, tool: v.tool, rule: v.rule, count, ...(v.detail ? { detail: v.detail } : {}) },
+      });
+      const run = tx.readJson<RunFile>(runRel(v.run));
+      if (run) { run.violations = count; tx.putRun(run); }
+      if (v.flow && v.task) {
+        const task = tx.readTask(v.flow, v.task);
+        task.violations += 1;
+        tx.putTask(v.flow, task);
+      }
+      return { count };
+    });
+  }
+
+  /** 项目级知识库（跨流程）；尚无条目时返回空库 */
+  readKnowledge(): KnowledgeFile {
+    return this.readJsonRel<KnowledgeFile>(KNOWLEDGE_REL) ?? { entries: [], version: 0 };
+  }
+
+  /** 修改知识库：mutate 在事务内收到当前库（可原地修改），返回值原样返回；业务校验见 core/engine/knowledge.ts */
+  async writeKnowledge<T>(mutate: (k: KnowledgeFile, ts: string) => T, event: { actor: string; flow?: string | null; task?: string; reason: string; data?: Record<string, unknown> }): Promise<T> {
+    return this.transaction((tx) => {
+      const cur = tx.readJson<KnowledgeFile>(KNOWLEDGE_REL);
+      const k: KnowledgeFile = cur ?? { entries: [], version: 1 };
+      const result = mutate(k, tx.ts);
+      tx.putJson(KNOWLEDGE_REL, 'knowledge', k);
+      tx.event({ flow: event.flow ?? null, ...(event.task ? { task: event.task } : {}), actor: event.actor, type: 'note', reason: event.reason, ...(event.data ? { data: event.data } : {}) });
+      return result;
+    });
+  }
+
+  /** 项目级模型暂停记录（跨流程）；没有时返回空表 */
+  readModelPauses(): ModelPausesFile {
+    return this.readJsonRel<ModelPausesFile>(MODEL_PAUSES_REL) ?? { pauses: [], version: 0 };
+  }
+
+  /** 修改模型暂停记录：mutate 在事务内收到当前记录（可原地修改）；业务规则见 core/engine/model-pause.ts */
+  async writeModelPauses<T>(mutate: (f: ModelPausesFile, ts: string) => T, event: { actor: string; flow?: string | null; task?: string; reason: string; data?: Record<string, unknown> }): Promise<T> {
+    return this.transaction((tx) => {
+      const cur = tx.readJson<ModelPausesFile>(MODEL_PAUSES_REL);
+      const f: ModelPausesFile = cur ?? { pauses: [], version: 1 };
+      const result = mutate(f, tx.ts);
+      tx.putJson(MODEL_PAUSES_REL, 'model-pauses', f);
+      tx.event({ flow: event.flow ?? null, ...(event.task ? { task: event.task } : {}), actor: event.actor, type: 'note', reason: event.reason, ...(event.data ? { data: event.data } : {}) });
+      return result;
+    });
+  }
+
+  /** 结构化笔记（taskNotesRel 或 MAIN_NOTES_REL）；还没有时返回 null */
+  readNotes(rel: string): NotesFile | null {
+    return this.readJsonRel<NotesFile>(rel);
+  }
+
+  /** 修改结构化笔记：mutate 在事务内收到当前笔记（没有时为空笔记，可原地修改）；业务校验见 core/engine/notes.ts */
+  async writeNotes<T>(rel: string, mutate: (n: NotesFile, ts: string) => T, event: { actor: string; flow?: string | null; task?: string; reason: string }): Promise<T> {
+    if (schemaKindOf(rel) !== 'notes') throw new StateError(`不是笔记文件：${rel}`);
+    return this.transaction((tx) => {
+      const cur = tx.readJson<NotesFile>(rel);
+      const n: NotesFile = cur ?? { goal: [], done: [], todo: [], current: [], decisions: [], pitfalls: [], updated_at: tx.ts, version: 1 };
+      const result = mutate(n, tx.ts);
+      n.updated_at = tx.ts;
+      tx.putJson(rel, 'notes', n);
+      tx.event({ flow: event.flow ?? null, ...(event.task ? { task: event.task } : {}), actor: event.actor, type: 'note', reason: event.reason });
+      return result;
+    });
+  }
+
+  /** 流程的需求说明（/forge-build --from、/forge-fix --from 给出的文件内容），写进需求阶段任务的 handoff */
+  async saveFlowBrief(flow: string, markdown: string): Promise<void> {
+    await this.transaction((tx) => {
+      tx.readFlow(flow);
+      tx.putText(`flows/${flow}/brief.md`, markdown);
+      tx.event({ flow, actor: 'human', type: 'note', reason: '需求摘要' });
+    });
+  }
+
+  readFlowBrief(flow: string): string {
+    const abs = this.abs(`flows/${flow}/brief.md`);
+    return existsSync(abs) ? readFileSync(abs, 'utf8') : '';
+  }
+
+  async saveStageEvidence(flow: string, stage: string, name: string, content: string, actor: string): Promise<string> {
+    if (!/^[\w.-]+$/.test(name) || name.startsWith('.')) throw new StateError(`evidence 文件名不合法：${name}`);
+    return this.transaction((tx) => {
+      tx.readFlow(flow);
+      const rel = `${stageEvidenceRel(flow, stage)}/${name}`;
+      tx.putText(rel, content);
+      tx.event({ flow, actor, type: 'note', reason: 'stage evidence', evidence: rel, data: { stage } });
+      return rel;
+    });
+  }
+
+  async recordEvent(e: StagedEvent): Promise<void> {
+    await this.transaction((tx) => tx.event(e));
+  }
+
+  /** 持锁时按最新状态算出要记的事件再写入：同时进来的两次调用，后一次看得到前一次记下的事件；没有要记的就什么也不写 */
+  async recordEventsWith<T>(compute: () => { events: StagedEvent[]; result: T }): Promise<T> {
+    const none = new Error('没有要记的事件');
+    let result!: T;
+    try {
+      return await this.transaction((tx) => {
+        const r = compute();
+        result = r.result;
+        if (!r.events.length) throw none;
+        for (const e of r.events) tx.event(e);
+        return r.result;
+      });
+    } catch (e) { if (e === none) return result; throw e; }
+  }
+
+  async transitionStage(flowId: string, req: StageTransitionRequest): Promise<FlowFile> {
+    return this.transaction((tx) => this.stageTransitionInTx(tx, flowId, req));
+  }
+
+  private stageTransitionInTx(tx: Tx, flowId: string, req: StageTransitionRequest): FlowFile {
+    const flow = tx.readFlow(flowId);
+    const errors = planStageTransition(flow.stage_status, req.to, req.trigger, req);
+    if (errors.length) throw new StateError(`阶段转移被拒（${flowId} ${flow.stage} ${flow.stage_status} -> ${req.to}）`, errors);
+    const from = flow.stage_status;
+    flow.stage_status = req.to;
+    if (req.trigger === 'approve') flow.approvals[flow.stage] = { by: 'human', at: tx.ts, ...(req.note ? { note: req.note } : {}) };
+    const next = tx.putFlow(flow);
+    if (req.to === 'aborted' && !isLightFlow(flow)) tx.setActiveFlow(null);
+    // 中止的流程不再合并：清掉它在合并队列里的条目，否则排在队首或占着合并名额时，之后的流程一个任务也合不进去
+    if (req.to === 'aborted') {
+      const mq = tx.readMergeQueue();
+      const other = (e: { flow: string }) => e.flow !== flowId;
+      if (mq.queue.some((e) => !other(e)) || (mq.merging && !other(mq.merging)) || mq.suspended?.some((e) => !other(e))) {
+        tx.putMergeQueue({ ...mq, queue: mq.queue.filter(other), merging: mq.merging && other(mq.merging) ? mq.merging : null, ...(mq.suspended ? { suspended: mq.suspended.filter(other) } : {}) });
+      }
+    }
+    const type = req.trigger === 'approve' ? 'approval' : req.trigger.startsWith('gate_') ? 'gate_result' : 'transition';
+    tx.event({ flow: flowId, actor: req.actor, type, from, to: req.to, trigger: req.trigger,
+      data: { ...req.data, entity: 'stage', stage: flow.stage }, ...(req.reason ? { reason: req.reason } : {}) });
+    if (req.to === 'active' && ['awaiting_human', 'needs_human'].includes(from)) {
+      tx.event({ flow: flowId, actor: req.actor, type: 'stage_reopened', from, to: 'active', trigger: req.trigger,
+        reason: req.reason, data: { stage: flow.stage } });
+    }
+    return next;
+  }
+
+  /** 直接写入批次阶段与顺序（不经架构批准；测试用来搭批次），事件和状态在一个事务提交。 */
+  async setStages(flowId: string, stages: NonNullable<FlowFile['s_stages']>, actor = 'engine'): Promise<FlowFile> {
+    return this.transaction((tx) => {
+      const flow = tx.readFlow(flowId);
+      if (new Set(stages.map((s) => s.id)).size !== stages.length) throw new StateError('S 阶段编号重复');
+      const fixed = flow.stages.filter((s) => !(flow.s_stages ?? []).some((v) => v.id === s));
+      const next = tx.putFlow({ ...flow, s_stages: structuredClone(stages), stages: [...fixed, ...stages.map((s) => s.id)] });
+      tx.event({ flow: flowId, actor, type: 'stages_planned', data: { stages } });
+      return next;
+    });
+  }
+
+  /** 打回架构阶段：退回 active 并记下返工意见，在同一事务里（分两步时中途中断，S0 回到 active 却没有返工任务，打回意见也丢了） */
+  async rejectForRework(flowId: string, req: StageTransitionRequest & { to: 'active' }, reason: string): Promise<FlowFile> {
+    return this.transaction((tx) => {
+      this.stageTransitionInTx(tx, flowId, req);
+      const next = tx.putFlow({ ...tx.readFlow(flowId), plan_rework: { reason, at: tx.ts } });
+      tx.event({ flow: flowId, actor: req.actor, type: 'note', reason: `架构需要返工：${reason}`.slice(0, 500), data: { plan_rework: 'open' } });
+      return next;
+    });
+  }
+
+  /** 新建 S0 的 architect 任务：同一事务内写任务说明、清掉返工标记（分开写时中途中断，同一条打回意见会被返工两次） */
+  async addArchitectTask(flowId: string, input: TaskInput, brief: string): Promise<TaskFile> {
+    return this.transaction((tx) => {
+      const { plan_rework: rework, ...flow } = tx.readFlow(flowId);
+      const task = this.putNewTask(tx, flowId, input, 'engine');
+      putHandoff(tx, flowId, task.id, brief, 'engine');
+      tx.event({ flow: flowId, actor: 'engine', type: 'note', reason: `新增 architect 任务 ${task.id}`, data: { tasks: [task.id] } });
+      if (rework) {
+        tx.putFlow(flow);
+        tx.event({ flow: flowId, actor: 'engine', type: 'note', reason: '架构返工已开始', data: { plan_rework: 'cleared' } });
+      }
+      return task;
+    });
+  }
+
+  /**
+   * 批准架构阶段并落地计划：同一事务内写入批次阶段（stages_planned）、新增 task 与它们的初始笔记、记下锁定契约的提交，
+   * 再批准 S0、进入第 1 批。放在一个事务里，就不会出现计划已落地、S0 却还在等批准的状态（那时打回不会派架构师返工，
+   * 再批准也不会按新计划重新生成）。只能在 S0 等待批准时调用。
+   */
+  async materializePlan(flowId: string, input: { stages: NonNullable<FlowFile['s_stages']>; tasks: readonly TaskInput[]; contractsBase: string; maxParallelBackend?: number }): Promise<FlowFile> {
+    return this.transaction((tx) => {
+      const flow = tx.readFlow(flowId);
+      if (flow.stage !== 'S0' || flow.stage_status !== 'awaiting_human') throw new StateError(`计划只能在 S0 等待批准时落地（当前 ${flow.stage} ${flow.stage_status}）`);
+      if (new Set(input.stages.map((st) => st.id)).size !== input.stages.length) throw new StateError('S 阶段编号重复');
+      tx.putFlow({ ...flow, s_stages: structuredClone(input.stages), stages: [...flow.stages, ...input.stages.map((st) => st.id)], contracts_base: input.contractsBase,
+        ...(input.maxParallelBackend ? { max_parallel_backend: input.maxParallelBackend } : {}) });
+      tx.event({ flow: flowId, actor: 'human', type: 'stages_planned', data: { stages: input.stages } });
+      const added = input.tasks.map((t) => this.putNewTask(tx, flowId, t, 'engine'));
+      tx.event({ flow: flowId, actor: 'engine', type: 'note', reason: `计划已落地：${input.stages.length} 个批次阶段、${added.length} 个 task；契约锁定于 ${input.contractsBase.slice(0, 8)}`,
+        data: { tasks: added.map((t) => t.id), contracts_base: input.contractsBase } });
+      this.stageTransitionInTx(tx, flowId, { to: 'done', trigger: 'approve', actor: 'human' });
+      return this.advanceInTx(tx, flowId, 'human');
+    });
+  }
+
+  /** 设置本流程的预算（仅用户；覆盖 workflow.yaml 的 budget） */
+  async setFlowBudget(flowId: string, budget: NonNullable<FlowFile['budget']>): Promise<FlowFile> {
+    return this.transaction((tx) => {
+      const flow = tx.readFlow(flowId);
+      const next = tx.putFlow({ ...flow, budget });
+      tx.event({ flow: flowId, actor: 'human', type: 'approval', reason: '设置流程预算', data: { budget } });
+      return next;
+    });
+  }
+
+  /** 实施阶段闸门失败后的一轮自动修复：同一事务内记下轮次、新增修复任务与 handoff */
+  async addGateRound(flowId: string, round: NonNullable<FlowFile['gate_rounds']>[number], tasks: readonly TaskInput[], handoffs: Record<string, string>): Promise<FlowFile> {
+    return this.transaction((tx) => {
+      const f = tx.readFlow(flowId);
+      const saved = tx.putFlow({ ...f, gate_rounds: [...(f.gate_rounds ?? []), round] });
+      const added = tasks.map((t) => this.putNewTask(tx, flowId, t, 'engine'));
+      for (const [task, text] of Object.entries(handoffs)) putHandoff(tx, flowId, task, text, 'engine');
+      tx.event({ flow: flowId, actor: 'engine', type: 'note', reason: `阶段 ${round.stage} 的 ${round.command} 未通过，记一轮修复${round.tasks.length ? `：${round.tasks.join('、')}` : ''}`, data: { tasks: [...new Set([...round.tasks, ...added.map((t) => t.id)])] } });
+      return saved;
+    });
+  }
+
+  /** 记录用户带进来的输入（第六轮接收） */
+  async setIntake(flowId: string, intake: NonNullable<FlowFile['intake']>, actor: string, reason: string): Promise<FlowFile> {
+    return this.transaction((tx) => {
+      const saved = tx.putFlow({ ...tx.readFlow(flowId), intake });
+      tx.event({ flow: flowId, actor, type: 'note', reason, data: { intake: { prd: intake.prd, prototype_path: intake.prototype_path, files: intake.files.length } } });
+      return saved;
+    });
+  }
+
+  /** 记录主分支同步状态（不属于阶段状态机，只是流程上的标记） */
+  async setFlowSync(flowId: string, sync: NonNullable<FlowFile['sync']>, actor: string, reason: string): Promise<FlowFile> {
+    return this.transaction((tx) => {
+      const flow = tx.readFlow(flowId);
+      const next = tx.putFlow({ ...flow, sync });
+      tx.event({ flow: flowId, actor, type: sync.status === 'conflict' ? 'merge_conflict' : 'note', reason,
+        data: { sync: sync.status, stage: sync.stage, main: sync.main_sha, ...(sync.files ? { files: sync.files } : {}), ...(sync.task ? { task: sync.task } : {}) } });
+      return next;
+    });
+  }
+
+  async advanceStage(flowId: string, actor: string): Promise<FlowFile> {
+    return this.transaction((tx) => this.advanceInTx(tx, flowId, actor));
+  }
+
+  /** 阶段转 done 并进入下一阶段（最后一个阶段时结束流程），在同一事务里：分两步时中间失败会停在 done，没有命令能走出来 */
+  async finishStage(flowId: string, req: StageTransitionRequest & { to: 'done' }): Promise<FlowFile> {
+    return this.transaction((tx) => { this.stageTransitionInTx(tx, flowId, req); return this.advanceInTx(tx, flowId, req.actor); });
+  }
+
+  private advanceInTx(tx: Tx, flowId: string, actor: string): FlowFile {
+    const flow = tx.readFlow(flowId);
+    if (flow.stage_status !== 'done') throw new StateError(`当前阶段 ${flow.stage} 尚未 done（${flow.stage_status}），不能进入下一阶段`);
+    const idx = flow.stages.indexOf(flow.stage);
+    // 跳过的阶段（第五轮：没有界面时跳过原型）
+    const nextStage = flow.stages[idx + 1];
+    if (!nextStage) {
+      if (!isLightFlow(flow)) tx.setActiveFlow(null);
+      tx.event({ flow: flowId, actor, type: 'transition', from: flow.stage, to: 'finished', data: { entity: 'flow' } });
+      return flow;
+    }
+    const from = flow.stage;
+    flow.stage = nextStage;
+    flow.stage_status = 'active';
+    const next = tx.putFlow(flow);
+    tx.event({ flow: flowId, actor, type: 'transition', from, to: flow.stage, data: { entity: 'stage' } });
+    return next;
+  }
+
+  /**
+   * 记录完整性错误。状态不一致时普通事务会被拒绝，这里直接在事件日志末尾追加一条 integrity_error（链接到最后一条可解析的事件），
+   * 不更新 state.json，因此不一致会继续被检出，直到用户处理。
+   */
+  async appendIntegrityError(errors: string[], actor = 'resume'): Promise<void> {
+    const release = await lockfile.lock(this.flowDir, { lockfilePath: path.join(this.flowDir, LOCK), retries: 50 });
+    try {
+      const ep = this.abs('events.jsonl');
+      const last = readEvents(ep).events.at(-1) ?? null;
+      const ev = buildEvent(last, {
+        ts: this.now().toISOString(), flow: null, actor, type: 'integrity_error',
+        reason: errors.slice(0, 20).join('；').slice(0, 4000), data: { count: errors.length },
+      });
+      if (existsSync(ep)) {
+        const raw = readFileSync(ep, 'utf8');
+        if (raw.length && !raw.endsWith('\n')) truncateSync(ep, Buffer.byteLength(raw.slice(0, raw.lastIndexOf('\n') + 1)));
+      }
+      appendEvents(ep, [ev]);
+    } finally {
+      await release();
+    }
+  }
+
+  // —— 完整性 ——
+
+  async verifyIntegrity(): Promise<IntegrityReport> {
+    const release = await lockfile.lock(this.flowDir, { lockfilePath: path.join(this.flowDir, LOCK), retries: 50 });
+    try {
+      return this.verifyLocked();
+    } finally {
+      await release();
+    }
+  }
+
+  private verifyLocked(): IntegrityReport {
+    const errors: string[] = [];
+    if (existsSync(this.abs(JOURNAL))) errors.push('存在未完成的事务日志 tx.json，请执行 /forge-resume 重放');
+
+    const { events, errors: readErrs } = readEvents(this.abs('events.jsonl'));
+    errors.push(...readErrs);
+    const chain = verifyChain(events);
+    errors.push(...chain.errors);
+
+    let state: StateFile | null = null;
+    try {
+      state = this.readJsonRel<StateFile>('state.json');
+    } catch (e) {
+      errors.push((e as Error).message);
+    }
+    if (!state) errors.push('state.json 缺失');
+    else {
+      errors.push(...validate('state', state));
+      if (state.events_head !== chain.head) errors.push('state.json 的 events_head 与事件日志末尾不符');
+      if (state.version !== chain.lastSeq) errors.push(`state.json 的 version ${state.version} 与事件序号 ${chain.lastSeq} 不符`);
+      let active: string | null = null;
+      for (const e of events) if (e.active_flow !== undefined) active = e.active_flow;
+      if (state.active_flow !== active) errors.push(`state.json 的 active_flow 与事件记录不符（应为 ${active ?? 'null'}）`);
+    }
+
+    const expected = new Map<string, string>();
+    for (const e of events) for (const [rel, h] of Object.entries(e.entities ?? {})) expected.set(rel, h);
+    const onDisk = new Set(walk(this.flowDir).filter((rel) => !UNTRACKED.has(rel) && !rel.endsWith('.tmp')));
+    for (const [rel, h] of expected) {
+      const abs = this.abs(rel);
+      if (!existsSync(abs)) { errors.push(`${rel} 已被删除`); continue; }
+      const buf = readFileSync(abs);
+      if (sha256(buf) !== h) errors.push(`${rel} 内容与事件日志记录的哈希不符，可能被篡改`);
+      const kind = schemaKindOf(rel);
+      if (kind) {
+        try {
+          errors.push(...validate(kind, JSON.parse(buf.toString('utf8'))).map((m) => `${rel} ${m}`));
+        } catch {
+          errors.push(`${rel} 不是合法 JSON`);
+        }
+      }
+    }
+    for (const rel of onDisk) if (!expected.has(rel)) errors.push(`${rel} 是未登记的文件（不是由引擎写入）`);
+    return { ok: errors.length === 0, errors };
+  }
+}
+
+export function isFinished(f: FlowFile): boolean {
+  return f.stage_status === 'aborted' || (f.stage_status === 'done' && f.stage === f.stages.at(-1));
+}
+
+function describe(events: FlowEvent[]): string {
+  const e = events[0]!;
+  const head = [e.flow, e.task, e.from && e.to ? `${e.from} -> ${e.to}` : e.type, e.reason].filter(Boolean).join(' ');
+  return events.length > 1 ? `${head}（+${events.length - 1}）` : head;
+}
+
+/** 文件为空或以换行结尾（只读最后一个字节） */
+function endsWithNewline(file: string): boolean {
+  const size = statSync(file).size;
+  if (!size) return true;
+  const fd = openSync(file, 'r');
+  try {
+    const b = Buffer.alloc(1);
+    readSync(fd, b, 0, 1, size - 1);
+    return b[0] === 0x0a;
+  } finally { closeSync(fd); }
+}
+
+function atomicWrite(abs: string, content: string): void {
+  mkdirSync(path.dirname(abs), { recursive: true });
+  const tmp = `${abs}.${process.pid}.tmp`;
+  writeFileSync(tmp, content);
+  const fd = openSync(tmp, 'r');
+  try { fsyncSync(fd); } finally { closeSync(fd); }
+  renameSync(tmp, abs);
+}
+
+function walk(dir: string, base = ''): string[] {
+  const out: string[] = [];
+  for (const name of readdirSync(dir)) {
+    if (!base && name === LOCK) continue;
+    const rel = base ? `${base}/${name}` : name;
+    const abs = path.join(dir, name);
+    if (statSync(abs).isDirectory()) out.push(...walk(abs, rel));
+    else out.push(rel);
+  }
+  return out;
+}

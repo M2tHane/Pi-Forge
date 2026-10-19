@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>教师详情 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-010、REQ-011。教师档案（查看、编辑、删除）与每周可上课时间（查看、整体替换）；teacher 只能改自己的可上课时间。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">孙丽（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html" class="on">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="crumbs"><a href="teachers.html">教师</a> / 刘洋</div>
+    <div class="page-header">
+      <h1>刘洋</h1>
+      <span class="tag tag-success">启用</span>
+      <span class="grow"></span>
+      <button class="btn">编辑</button>
+      <button class="btn btn-danger">删除</button>
+    </div>
+    <div class="proto-note">侧栏同 students.html，「教师」加 <code>.on</code>。数据来自 <code>GET /api/teachers/:id</code>。「编辑」「删除」只给 admin、academic 显示；sales、finance、teacher 只读。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>基本信息</h2></div>
+      <div class="card-body">
+        <dl class="desc">
+          <div class="item"><dt>姓名</dt><dd>刘洋</dd></div>
+          <div class="item"><dt>手机</dt><dd>139 0712 3301</dd></div>
+          <div class="item"><dt>所属校区</dt><dd>东湖校区</dd></div>
+          <div class="item"><dt>能教的科目</dt><dd>数学、物理</dd></div>
+          <div class="item"><dt>类型</dt><dd>全职</dd></div>
+          <div class="item"><dt>默认每节课酬</dt><dd class="money">¥200.00</dd></div>
+          <div class="item"><dt>登录账号</dt><dd>刘洋</dd></div>
+          <div class="item"><dt>状态</dt><dd><span class="tag tag-success">启用</span></dd></div>
+          <div class="item"><dt>建档时间</dt><dd>2026-08-21 14:10</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="proto-note">类型显示「全职」「兼职」；科目把 <code>subject_names</code> 用「、」连起来；课酬从分换算成元；登录账号显示绑定用户的姓名 <code>user_name</code>，<code>user_id</code> 为 <code>null</code> 时显示「未绑定」。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>每周可上课时间</h2><span class="grow"></span><button class="btn btn-sm">编辑时间</button></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>星期</th><th>可上课时段</th></tr></thead>
+          <tbody>
+            <tr><td>周一</td><td class="meta">—</td></tr>
+            <tr><td>周二</td><td>18:00–21:00</td></tr>
+            <tr><td>周三</td><td>14:00–17:00、18:00–21:00</td></tr>
+            <tr><td>周四</td><td>18:00–21:00</td></tr>
+            <tr><td>周五</td><td class="meta">—</td></tr>
+            <tr><td>周六</td><td>08:30–12:00、13:30–18:00</td></tr>
+            <tr><td>周日</td><td>08:30–12:00</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      数据来自 <code>GET /api/teachers/:id/availability</code>（已按星期、开始时间升序），页面按星期分成 7 行，同一天的多个时段用「、」连起来，没有时段的那天显示「—」。设置了时段后，排给这位教师的课（发布班级、调课、代课、停课顺延）必须完全落在当天的某个时段里；一条都没设置时任何时间都能排（见下面"没有设置"的状态）。<br>
+      「编辑时间」给 admin、academic 显示，teacher 只在看自己的档案时显示（<code>GET /api/auth/me</code> 的 <code>teacher_id</code> 等于这个档案的编号）。sales 只读。finance 不能看可上课时间（权限表"—"），这张卡片整张不显示，也不请求这个接口。
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>编辑每周可上课时间</h2></div>
+      <div class="card-body">
+        <div class="alert alert-error">周三 14:00–17:00 与 16:00–18:00 重叠</div>
+        <div class="alert alert-info">只影响之后排的课；已经排好的课次不受影响。</div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>星期</th><th>开始</th><th>结束</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><select class="select"><option>周一</option><option selected>周二</option><option>周三</option><option>周四</option><option>周五</option><option>周六</option><option>周日</option></select></td><td><input class="input" type="time" value="18:00"></td><td><input class="input" type="time" value="21:00"></td><td class="ops"><button class="btn-link danger">删除</button></td></tr>
+            <tr><td><select class="select"><option>周一</option><option>周二</option><option selected>周三</option><option>周四</option><option>周五</option><option>周六</option><option>周日</option></select></td><td><input class="input invalid" type="time" value="14:00"></td><td><input class="input invalid" type="time" value="17:00"></td><td class="ops"><button class="btn-link danger">删除</button></td></tr>
+            <tr><td><select class="select"><option>周一</option><option>周二</option><option selected>周三</option><option>周四</option><option>周五</option><option>周六</option><option>周日</option></select></td><td><input class="input invalid" type="time" value="16:00"></td><td><input class="input invalid" type="time" value="18:00"></td><td class="ops"><button class="btn-link danger">删除</button></td></tr>
+            <tr><td><select class="select"><option>周一</option><option>周二</option><option>周三</option><option>周四</option><option>周五</option><option selected>周六</option><option>周日</option></select></td><td><input class="input" type="time" value="08:30"></td><td><input class="input" type="time" value="12:00"></td><td class="ops"><button class="btn-link danger">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-body">
+        <button class="btn btn-sm">添加时段</button> <span class="meta">共 4 条，最多 30 条</span>
+        <div class="form-actions"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+      </div>
+    </div>
+    <div class="proto-note">
+      点「编辑时间」后，上面的只读表格换成这张编辑卡片（同一个位置，不是弹窗），每行一个时段，按当前的列表填好。「添加时段」加一行（默认周一、空的开始与结束），满 30 条时禁用；「删除」去掉这一行；全部删掉再保存表示不限时间。<br>
+      页面先校验：开始与结束都要填，时刻格式 <code>HH:MM</code>；开始早于结束（「结束时间要晚于开始时间」）；同一天的时段不能重叠（首尾相接不算），有问题的行加 <code>.invalid</code>，在顶部 <code>alert-error</code> 写明哪天哪两段重叠（如上）。<br>
+      保存是 <code>PUT /api/teachers/:id/availability</code>，请求体 <code>{"slots": [{"weekday", "start", "end"}]}</code>，整体替换；400 时接口的 <code>message</code> 显示在顶部，不清空已填的内容；teacher 改别人的会 403（正常情况下按钮不显示）。成功后回到只读表格（用接口返回的列表），轻提示「可上课时间已保存」。「取消」放弃修改回到只读表格。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog wide">
+      <div class="dialog-header">编辑教师</div>
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">姓名<span class="required">*</span></label><input class="input" value="刘洋"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">手机</label><input class="input" value="139 0712 3301"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">所属校区<span class="required">*</span></label><select class="select"><option selected>东湖校区</option><option>光谷校区</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">类型<span class="required">*</span></label><select class="select"><option selected>全职</option><option>兼职</option></select><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">能教的科目<span class="required">*</span></label>
+            <div class="actions" style="justify-content: flex-start; flex-wrap: wrap">
+              <label class="checkbox"><input type="checkbox" checked> 数学</label>
+              <label class="checkbox"><input type="checkbox"> 英语</label>
+              <label class="checkbox"><input type="checkbox"> 语文</label>
+              <label class="checkbox"><input type="checkbox" checked> 物理</label>
+            </div>
+            <div class="field-hint">选 1–5 个，只列启用的科目（已选的停用科目也显示，名称后加「（停用）」）</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">默认每节课酬（元）</label><input class="input" value="200.00"><div class="field-hint">0–10,000.00 元，最多两位小数</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">绑定登录账号</label><input class="input" placeholder="输入用户名或姓名搜索"><select class="select invalid"><option>（不绑定）</option><option selected>liuyang（刘洋）</option><option>zhoulei（周磊）</option></select><div class="field-hint">只列启用的教师角色用户（当前绑定的那个总在选项里）</div><div class="field-error">这个用户已经绑定了别的教师档案</div></div>
+          <div class="field"><label class="field-label">状态</label><select class="select"><option selected>启用</option><option>停用</option></select><div class="field-hint">停用后不能再排新的班级、代课、试听</div><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">字段与校验同教师列表页的「新建教师」弹窗（teachers.html），填好原值；<code>PATCH /api/teachers/:id</code>，只发改过的字段。绑定登录账号 admin、academic 都能改，选项来自 <code>GET /api/users/options?role=teacher&amp;q=</code>（同新建弹窗）；选了已被别的档案绑定的账号时接口 409，错误显示在这一项下（如上）；选「（不绑定）」提交 <code>user_id: null</code>。保存成功后关闭弹窗、刷新基本信息，轻提示「已保存」。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除教师</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">教师「刘洋」已有班级或课次，不能删除，可以停用</div>
+        确定删除教师「刘洋」吗？删除后不能恢复，可上课时间一并删除。
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/teachers/:id</code>。成功后回到教师列表（teachers.html），轻提示「已删除」；409 时确认框不关闭，接口的 <code>message</code> 显示在框里（如上）。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>教师不存在（404）</h3><div class="card state"><div class="title">这位教师不存在</div>可能已被删除，或网址有误<br><a class="btn" href="teachers.html">返回教师列表</a></div></section>
+      <section><h3>没有设置可上课时间</h3><div class="card"><div class="card-header"><h2>每周可上课时间</h2><span class="grow"></span><button class="btn btn-sm">编辑时间</button></div><div class="state"><div class="title">还没有设置可上课时间</div>没有设置时，任何时间都可以给这位教师排课</div></div></section>
+      <section><h3>可上课时间加载失败</h3><div class="card"><div class="card-header"><h2>每周可上课时间</h2></div><div class="state"><div class="title">可上课时间加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></div></section>
+      <section><h3>教师看别人的档案（只读）</h3>
+        <div class="page-header"><h1>陈静</h1><span class="tag tag-success">启用</span></div>
+        <div class="card"><div class="card-header"><h2>每周可上课时间</h2></div><div class="card-body meta">周二 18:00–21:00、周六 08:30–12:00 …（同上面的只读表格）</div></div>
+        <div class="proto-note">teacher 看自己的档案时只有可上课时间卡片上有「编辑时间」，页面标题旁没有「编辑」「删除」。sales 看任何档案都同这里（只读）。</div>
+      </section>
+      <section><h3>财务看到的</h3><div class="proto-note">只有基本信息卡片，没有可上课时间卡片，也没有「编辑」「删除」。</div></section>
+      <section><h3>停用的教师</h3><div class="page-header"><h1>吴凯</h1><span class="tag tag-danger">停用</span><span class="grow"></span><button class="btn">编辑</button><button class="btn btn-danger">删除</button></div><div class="proto-note">停用后档案与可上课时间照常显示与修改；在编辑里把状态改回启用即可恢复。</div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

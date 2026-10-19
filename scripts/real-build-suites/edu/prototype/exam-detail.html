@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>考试详情 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-040。考试详情：考试信息、成绩统计、排名列表，以及整体录入（替换）成绩。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">周敏（教师）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html" class="on">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">示例是教师「周敏」打开自己班级的考试。侧栏照 admin 画全部入口，实际按角色只显示有权限的。</div>
+
+    <div class="crumbs"><a href="exams.html">考试</a> / 期中测验</div>
+    <div class="page-header">
+      <h1>期中测验</h1>
+      <span class="grow"></span>
+      <button class="btn">编辑</button>
+      <button class="btn btn-danger" disabled>删除</button>
+      <button class="btn btn-primary">录入成绩</button>
+    </div>
+    <div class="proto-note">「编辑」「删除」「录入成绩」只对 admin、academic 和这个班的教师显示（sales 只读，都不显示）；班级不是开课状态（按 <code>GET /api/classes/:id</code> 判断）时不显示「编辑」。已录入成绩（统计里的 <code>count</code> + <code>absent</code> 大于 0）时「删除」禁用（悬停提示「已录入成绩的考试不能删除」），「编辑」弹窗（同 exams.html）里考试日期与满分禁用；没有成绩时点「删除」弹确认框，成功后回到 exams.html 并提示「已删除」。点了以后下面的「成绩与排名」卡片换成「录入成绩」卡片（见下方），保存或取消后换回来；网址不变。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>考试信息</h2></div>
+      <div class="card-body">
+        <dl class="desc">
+          <div class="item"><dt>班级</dt><dd><a href="class-detail.html">四年级数学提高班</a></dd></div>
+          <div class="item"><dt>考试日期</dt><dd>2026-10-17</dd></div>
+          <div class="item"><dt>满分</dt><dd class="num">100</dd></div>
+          <div class="item"><dt>及格分</dt><dd class="num">60</dd></div>
+          <div class="item"><dt>创建时间</dt><dd>2026-10-15 09:20</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="proto-note">数据来自 <code>GET /api/exams/:id</code>。</div>
+
+    <div class="stats">
+      <div class="stat"><div class="label">参考人数</div><div class="value">11</div><div class="sub">缺考 1 人 · 未录入 0 人</div></div>
+      <div class="stat"><div class="label">平均分</div><div class="value">82.6</div></div>
+      <div class="stat"><div class="label">最高分</div><div class="value">98.5</div></div>
+      <div class="stat"><div class="label">最低分</div><div class="value">54</div></div>
+      <div class="stat warn"><div class="label">及格率</div><div class="value">91%</div><div class="sub">及格分 60</div></div>
+    </div>
+    <div class="proto-note">数据来自 <code>GET /api/exams/:id/stats</code>：参考人数是 <code>count</code>（有分数的人数），缺考是 <code>absent</code>，平均分保留一位小数，及格率是百分数。还没有分数（<code>count</code> 为 0）时平均分、最高分、最低分、及格率都显示「—」。及格率低于 100% 时加 <code>.warn</code>。「未录入」= 录入名单（<code>/roster</code>）人数 − 已录入（<code>/scores</code>）人数。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>成绩与排名</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th class="num">名次</th><th>姓名</th><th class="num">分数</th><th>及格</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td>张一鸣</td><td class="num">98.5</td><td><span class="tag tag-success">及格</span></td></tr>
+            <tr><td class="num">2</td><td>李子涵</td><td class="num">92</td><td><span class="tag tag-success">及格</span></td></tr>
+            <tr><td class="num">2</td><td>王雨桐</td><td class="num">92</td><td><span class="tag tag-success">及格</span></td></tr>
+            <tr><td class="num">4</td><td>赵可欣</td><td class="num">85</td><td><span class="tag tag-success">及格</span></td></tr>
+            <tr><td class="num">11</td><td>孙浩宇</td><td class="num">54</td><td><span class="tag tag-danger">不及格</span></td></tr>
+            <tr class="muted"><td class="num">—</td><td>刘浩然</td><td class="num">—</td><td><span class="tag">缺考</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      数据来自 <code>GET /api/exams/:id/scores</code>，只有已录入的学员（没录入的不出现），顺序照接口（名次升序，同分同名次，缺考排最后）。「及格」列由页面按 <code>score ≥ 及格分</code> 判断；缺考（<code>score</code> 为 <code>null</code>）名次与分数显示「—」，整行 <code>.muted</code>。分数最多一位小数，整数不补「.0」。
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>录入成绩</h2><span class="grow"></span><button class="btn">取消</button><button class="btn btn-primary">保存成绩</button></div>
+      <div class="card-body">
+        <div class="alert alert-error">学员「陈思」不是考试当天这个班的学员</div>
+        <div class="alert alert-info">保存会用下面的名单整体替换这次考试的成绩：不填分数、也不勾缺考的学员不保存（不计入统计）。</div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>姓名</th><th>学号</th><th>分数（满分 100）</th><th>缺考</th></tr></thead>
+          <tbody>
+            <tr><td>张一鸣</td><td>S000127</td><td><input class="input" value="98.5"><div class="field-error"></div></td><td><label class="checkbox"><input type="checkbox"> 缺考</label></td></tr>
+            <tr><td>李子涵</td><td>S000128</td><td><input class="input" value="92"><div class="field-error"></div></td><td><label class="checkbox"><input type="checkbox"> 缺考</label></td></tr>
+            <tr><td>王雨桐</td><td>S000131</td><td><input class="input invalid" value="92.25"><div class="field-error">最多一位小数</div></td><td><label class="checkbox"><input type="checkbox"> 缺考</label></td></tr>
+            <tr><td>刘浩然</td><td>S000135</td><td><input class="input" value="" disabled><div class="field-error"></div></td><td><label class="checkbox"><input type="checkbox" checked> 缺考</label></td></tr>
+            <tr><td>赵可欣</td><td>S000140</td><td><input class="input invalid" value="105"><div class="field-error">分数不能超过满分 100</div></td><td><label class="checkbox"><input type="checkbox"> 缺考</label></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      名单来自 <code>GET /api/exams/:id/roster</code>（考试日期当天在这个班的学员，带学号，按 <code>student_id</code> 升序）；已录入的按 <code>GET /api/exams/:id/scores</code> 带出原来的分数或勾上缺考，没录入的两项都空。勾「缺考」后分数框清空并禁用。<br>
+      页面先查：分数是 0 到满分的数、最多一位小数，错误写在这一格下面，有错时不提交。<br>
+      「保存成绩」调用 <code>PUT /api/exams/:id/scores</code>，请求体 <code>{"scores": [{"student_id", "score"}]}</code>：填了分数的传分数，勾缺考的传 <code>null</code>，都没有的不放进请求。接口返回 400（例如学员不是考试当天在班的）时不切换，把 <code>message</code> 显示在卡片顶部 <code>alert-error</code>。成功后切回「成绩与排名」（用接口返回的列表），重新取统计，提示「成绩已保存」。录入时离开页面要确认「成绩还没保存，确定离开吗？」。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>对象不存在（404）</h3><div class="card state"><div class="title">这次考试不存在</div>可能已被删除，或网址有误<br><a class="btn" href="exams.html">返回考试列表</a></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>这次考试不是你的班级的<br><a class="btn" href="exams.html">返回考试列表</a></div></section>
+      <section><h3>还没有录入成绩</h3>
+        <div class="stats"><div class="stat"><div class="label">参考人数</div><div class="value">0</div><div class="sub">缺考 0 人</div></div><div class="stat"><div class="label">平均分</div><div class="value">—</div></div><div class="stat"><div class="label">最高分</div><div class="value">—</div></div><div class="stat"><div class="label">最低分</div><div class="value">—</div></div><div class="stat"><div class="label">及格率</div><div class="value">—</div></div></div>
+        <div class="card state"><div class="title">还没有录入成绩</div>录入后会按分数自动排名<br><button class="btn btn-primary">录入成绩</button></div>
+        <div class="proto-note">sales 看到的没有按钮。</div>
+      </section>
+      <section><h3>出错</h3><div class="card state"><div class="title">成绩加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>保存中</h3><div class="card"><div class="card-header"><h2>录入成绩</h2><span class="grow"></span><button class="btn" disabled>取消</button><button class="btn btn-primary" disabled>保存中…</button></div></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

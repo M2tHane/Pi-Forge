@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>家长端通知 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-043。家长自己的站内通知（GET /api/notifications），可以只看未读、标为已读、全部标为已读，点了去相关页面。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="parent-header">
+  <b>小树培训学校</b>
+  <span class="grow"></span>
+  <a href="parent-notifications.html">通知 <span class="badge">2</span></a>
+  <span>李建华</span>
+  <a href="login.html">退出</a>
+</header>
+<nav class="parent-nav">
+  <a href="parent-home.html">首页</a>
+  <a href="parent-schedule.html">课表</a>
+  <a href="parent-homeworks.html">作业</a>
+  <a href="parent-reports.html">成绩</a>
+  <a href="parent-notifications.html" class="on">通知</a>
+</nav>
+<main class="parent-page">
+  <div class="toolbar">
+    <div class="tabs" style="margin-bottom: 0">
+      <a href="parent-notifications.html" class="on">全部</a>
+      <a href="parent-notifications.html">未读 2</a>
+    </div>
+    <span class="grow"></span>
+    <button class="btn btn-sm" type="button">全部标为已读</button>
+  </div>
+  <div class="proto-note">
+    网址参数 <code>?unread=true</code> 只看未读（接口参数同名），不带是全部；页码 <code>page</code>。未读数来自 <code>GET /api/notifications/unread-count</code>（同顶栏角标）。通知不按孩子区分，这一页不显示孩子切换条。
+    「全部标为已读」调用 <code>POST /api/notifications/read-all</code>，成功后列表里的「未读」标签全部去掉、顶栏角标消失，轻提示「已全部标为已读」；未读数为 0 时按钮禁用。
+  </div>
+
+  <div class="card">
+    <div class="list-item">
+      <div class="grow">
+        <div><span class="tag tag-info">未读</span> <b>课程变动</b></div>
+        <div>李子涵 10-18 周日 14:00 四年级数学提高班停课，原因：教师外出培训，课程已顺延。</div>
+        <div class="meta">2026-10-15 11:05</div>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div><span class="tag tag-info">未读</span> <b>作业已批改</b></div>
+        <div>李子涵的作业「第 11 讲 小数乘法 练习」已批改，得分 92。</div>
+        <div class="meta">2026-10-12 10:30</div>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div>请假已审批</div>
+        <div class="meta">李子涵 10-17 周六 14:00 英语阅读周末班的请假已驳回：本班请假次数已达上限。</div>
+        <div class="meta">2026-10-11 16:20</div>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="grow">
+        <div>订单已支付</div>
+        <div class="meta">李子涵的订单 OD001024 已支付 ¥3,840.00。</div>
+        <div class="meta">2026-10-08 15:10</div>
+      </div>
+    </div>
+  </div>
+  <div class="pager"><span class="total">共 23 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 2 页</span><button class="btn btn-sm">下一页</button></div>
+  <div class="proto-note">
+    按 <code>id</code> 降序（最新的在前），每页 20 条。每条：标题 <code>title</code>（按类型固定，家长会收到四种：课程变动、请假已审批、作业已批改、订单已支付）、正文 <code>body</code>（纯文本，写明孩子、课次日期、结果）、时间 <code>created_at</code>（北京时间）；未读（<code>read</code> 为假）的加 <code>tag-info</code>「未读」、标题加粗。
+    点一条：未读的先调用 <code>POST /api/notifications/:id/read</code>（失败不影响跳转），再进这条的 <code>link</code>：课程变动与请假已审批是 <code>/parent/schedule?from=&lt;课次所在周的周一&gt;</code>（<a href="parent-schedule.html">parent-schedule.html</a>，直接停在那一周），作业已批改是 <code>/parent/homeworks</code>（<a href="parent-homeworks.html">parent-homeworks.html</a>），订单已支付是 <code>/parent</code>（<a href="parent-home.html">parent-home.html</a>）。当前网址里有 <code>student_id</code> 时跳转后保留。
+  </div>
+
+  <div class="proto-states">
+    <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+    <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+    <section><h3>空（还没有通知）</h3><div class="card state"><div class="title">还没有通知</div>课程变动、请假审批、作业批改、订单支付时会通知你</div></section>
+    <section><h3>只看未读、没有未读</h3><div class="card state"><div class="title">没有未读通知</div><a class="btn" href="parent-notifications.html">查看全部</a></div></section>
+    <section><h3>全部已读</h3><div class="toolbar"><span class="grow"></span><button class="btn btn-sm" disabled>全部标为已读</button></div></section>
+    <section><h3>出错</h3><div class="card state"><div class="title">通知加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+    <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>家长端只给家长账号使用；员工的通知在<a href="notifications.html">通知中心</a><br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+  </div>
+</main>
+</body>
+</html>

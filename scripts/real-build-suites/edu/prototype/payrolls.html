@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工资单 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-037。工资单列表与按月生成。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">赵敏（财务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html" class="on">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的。能看到「工资单」的只有 admin 与 finance（读写）；教师看自己的课酬在「我的课酬」（<code>my-pay.html</code>）。</div>
+
+    <div class="page-header">
+      <h1>工资单</h1>
+      <span class="grow"></span>
+      <button class="btn btn-primary">生成工资单</button>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>月份</th><th class="num">教师数</th><th class="num">合计</th><th>状态</th><th>生成时间</th><th>确认时间</th><th>发放时间</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><a href="payroll-detail.html">2026-09</a></td><td class="num">3</td><td class="num">¥8,150.00</td><td><span class="tag tag-warning">草稿</span></td><td>2026-10-08 09:30</td><td>—</td><td>—</td><td class="ops"><a class="btn-link" href="payroll-detail.html">查看</a></td></tr>
+            <tr><td><a href="payroll-detail.html">2026-08</a></td><td class="num">3</td><td class="num">¥7,420.00</td><td><span class="tag tag-info">已确认</span></td><td>2026-09-05 10:12</td><td>2026-09-08 16:00</td><td>—</td><td class="ops"><a class="btn-link" href="payroll-detail.html">查看</a></td></tr>
+            <tr><td><a href="payroll-detail.html">2026-07</a></td><td class="num">2</td><td class="num">¥6,880.00</td><td><span class="tag">已发放</span></td><td>2026-08-04 09:00</td><td>2026-08-06 11:20</td><td>2026-08-10 10:00</td><td class="ops"><a class="btn-link" href="payroll-detail.html">查看</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 3 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 1 页</span><button class="btn btn-sm" disabled>下一页</button></div>
+    </div>
+    <div class="proto-note">数据来自 <code>GET /api/payrolls</code>（分页，页码写进网址参数 <code>page</code>），按月份降序。教师数是 <code>lines</code> 的行数。状态：草稿 <code>draft</code>、已确认 <code>confirmed</code>、已发放 <code>paid</code>。点月份或「查看」进工资单详情（<code>payroll-detail.html</code>，路径 <code>/payrolls/:id</code>）。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">生成工资单</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">2026-09 的工资单已经生成过了</div>
+        <div class="field"><label class="field-label">月份<span class="required">*</span></label><input class="input" type="month" value="2026-09"><div class="field-hint">按课次日期统计这个月已点名的课，给每位上过课的教师生成一行</div><div class="field-error"></div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">生成</button></div>
+    </div></div>
+    <div class="proto-note">月份默认上个月。提交 <code>POST /api/payrolls</code>，请求体 <code>{month}</code>（<code>YYYY-MM</code>）。成功（201）后关闭弹窗，直接进入新工资单的详情页（草稿）。这个月已有工资单（409）时错误显示在弹窗顶部，并在错误后面加一个「查看」链接到那张工资单的详情。这个月没有已点名的课次时也照样生成，是一张没有教师行、合计 ¥0.00 的草稿（详情页显示「这个月没有教师课酬」，可以等点名后重新计算）。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有工资单）</h3><div class="card state"><div class="title">还没有工资单</div>每月初为上个月生成工资单，核对调整后确认、发放<br><button class="btn btn-primary">生成工资单</button></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">工资单加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看工资单<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

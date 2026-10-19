@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课堂反馈 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-041。某个课次的课堂反馈：给这节课出勤、迟到的学员打分（1–5）写评语，保存后家长端可见。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">周敏（教师）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html" class="on">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">示例是教师「周敏」给自己的课次写反馈（从 my-schedule.html 或 lesson-detail.html 的「课堂反馈」进来）。侧栏照 admin 画全部入口，实际按角色只显示有权限的。</div>
+
+    <div class="crumbs"><a href="schedule.html">课表</a> / <a href="class-detail.html">四年级数学提高班</a> / <a href="lesson-detail.html">第 8 次课</a> / 课堂反馈</div>
+    <div class="page-header">
+      <h1>课堂反馈 · 四年级数学提高班 第 8 次课</h1>
+      <span class="grow"></span>
+      <button class="btn btn-primary">保存反馈</button>
+    </div>
+    <div class="proto-note">「保存反馈」只对这节课的教师（代课的课次是代课教师）、academic、admin 显示；sales 只读，看不到输入框和按钮。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>课次</h2></div>
+      <div class="card-body">
+        <dl class="desc">
+          <div class="item"><dt>班级</dt><dd><a href="class-detail.html">四年级数学提高班</a></dd></div>
+          <div class="item"><dt>课程</dt><dd>四年级数学</dd></div>
+          <div class="item"><dt>上课时间</dt><dd>2026-10-14 周三 18:30–20:00</dd></div>
+          <div class="item"><dt>教师</dt><dd>周敏</dd></div>
+          <div class="item"><dt>教室</dt><dd>A101</dd></div>
+          <div class="item"><dt>状态</dt><dd><span class="tag tag-success">已完成</span></dd></div>
+        </dl>
+        <h3>课堂内容</h3>
+        <p>分数加减法：同分母、异分母通分，练习册第 22–23 页。</p>
+      </div>
+    </div>
+    <div class="proto-note">课次信息与名单来自 <code>GET /api/lessons/:id</code>（含 <code>roster</code>），已有的反馈来自 <code>GET /api/lessons/:id/feedback</code>，页面按 <code>student_id</code> 合并。课堂内容是点名时填写的 <code>content</code>，为空时显示「—」。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>学员反馈</h2></div>
+      <div class="card-body"><div class="alert alert-error">学员「刘浩然」这节课没有出勤，不能写反馈</div></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>姓名</th><th>学号</th><th>点名</th><th>评分<span class="required">*</span></th><th>评语</th><th>最近更新</th></tr></thead>
+          <tbody>
+            <tr><td>张一鸣</td><td>S000127</td><td><span class="tag tag-success">出勤</span></td><td><select class="select"><option>（未评）</option><option>1 分</option><option>2 分</option><option>3 分</option><option>4 分</option><option selected>5 分</option></select><div class="field-error"></div></td><td><textarea class="textarea">课堂积极发言，通分步骤掌握得很好。</textarea><div class="field-error"></div></td><td>2026-10-14 20:30</td></tr>
+            <tr><td>李子涵</td><td>S000128</td><td><span class="tag tag-success">出勤</span></td><td><select class="select"><option>（未评）</option><option>1 分</option><option>2 分</option><option>3 分</option><option selected>4 分</option><option>5 分</option></select><div class="field-error"></div></td><td><textarea class="textarea">异分母通分偶尔忘记约分，回家多练两道。</textarea><div class="field-error"></div></td><td>2026-10-14 20:31</td></tr>
+            <tr><td>王雨桐</td><td>S000131</td><td><span class="tag tag-info">迟到</span></td><td><select class="select invalid"><option selected>（未评）</option><option>1 分</option><option>2 分</option><option>3 分</option><option>4 分</option><option>5 分</option></select><div class="field-error">写了评语就要选评分</div></td><td><textarea class="textarea">迟到 10 分钟，后半节专注。</textarea><div class="field-error"></div></td><td>—</td></tr>
+            <tr class="muted"><td>刘浩然</td><td>S000135</td><td><span class="tag tag-danger">缺勤</span></td><td>—</td><td>缺勤，不能写反馈</td><td>—</td></tr>
+            <tr class="muted"><td>赵可欣</td><td>S000140</td><td><span class="tag tag-warning">请假</span></td><td>—</td><td>请假，不能写反馈</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      名单是这节课的应到学员（<code>roster</code>），按 <code>student_id</code> 升序。点名为「出勤」「迟到」的学员可以写：评分 1–5 分（下拉），评语 0–300 个字；「缺勤」「请假」的学员整行 <code>.muted</code>，没有输入框。已有反馈的带出原来的评分、评语与最近更新时间（<code>updated_at</code>，北京时间）。<br>
+      「保存反馈」调用 <code>PUT /api/lessons/:id/feedback</code>，请求体 <code>{"items": [{"student_id", "rating", "comment"}]}</code>，只放选了评分的学员；没选评分也没写评语的学员不放进请求（已有的反馈保持不变）。反馈不能删除，所以已有反馈的学员评分下拉里没有「（未评）」，只能改不能清空。写了评语没选评分时提交前在这一格下提示「写了评语就要选评分」。<br>
+      成功后用接口返回的列表刷新「最近更新」，提示「反馈已保存」（家长端「成绩与反馈」能看到）。返回 400（学员不是出勤或迟到）、409（课次不是已完成）时显示在卡片顶部的 <code>alert-error</code>，已填的内容不清空。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>对象不存在（404）</h3><div class="card state"><div class="title">这节课不存在</div>可能网址有误<br><a class="btn" href="schedule.html">返回课表</a></div></section>
+      <section><h3>课次还没点名（未完成）</h3><div class="card state"><div class="title">这节课还没点名</div>点名后才能写课堂反馈<br><a class="btn btn-primary" href="attendance.html">去点名</a></div><div class="proto-note">课次状态是「待上课」（<code>scheduled</code>）时显示这一块，不显示反馈表格与「保存反馈」；「去点名」只对能点名的角色（这节课的教师、academic、admin）显示。课次「已取消」时写「这节课已取消，不能写反馈」，没有按钮。</div></section>
+      <section><h3>没有出勤的学员</h3><div class="card"><div class="card-header"><h2>学员反馈</h2></div><div class="state"><div class="title">这节课没有出勤或迟到的学员</div>只能给出勤、迟到的学员写反馈</div></div></section>
+      <section><h3>sales 只读</h3><div class="card"><div class="table-wrap"><table class="table"><tbody><tr><td>张一鸣</td><td>S000127</td><td><span class="tag tag-success">出勤</span></td><td>5 分</td><td>课堂积极发言，通分步骤掌握得很好。</td><td>2026-10-14 20:30</td></tr></tbody></table></div></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>这节课不是你的课<br><a class="btn" href="my-schedule.html">返回我的课表</a></div><div class="proto-note">teacher 打开别人的课次时显示；finance 打开时按钮是「返回工作台」。</div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">课堂反馈加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

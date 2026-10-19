@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>点名 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-026。点名与消课：出勤、迟到、缺勤、请假，已点名的查看与 7 天内更正。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">李娜（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html" class="on">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+<div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的（PRD 的权限表）。点名给 admin、academic 与这节课的上课教师（teacher 从「我的课表」进来，侧栏是 teacher 的）；点名更正只给 admin、academic。</div>
+    <div class="crumbs"><a href="schedule.html">课表</a> / <a href="class-detail.html">三年级数学提高班</a> / <a href="lesson-detail.html">第 10 次课</a> / 点名</div>
+    <div class="page-header">
+      <h1>点名：三年级数学提高班 第 10 次课</h1>
+      <span class="tag tag-warning">待上课</span>
+    </div>
+    <p class="meta">2026-10-14 周三 18:30–20:00 · 东湖校区 A101 · 刘建国 · 课程：三年级数学提高</p>
+
+    <div class="alert alert-info">出勤、迟到、缺勤各扣这个学员 1 节课时；请假不扣。有已批准请假的学员只能记请假。点名后 7 天内（课次日期起算，今天减课次日期不超过 7 天）教务可以更正；这个月的工资单确认后不能再更正。</div>
+
+    <form class="card">
+      <div class="card-header"><h2>应到学员（6 人）</h2><span class="grow"></span><button class="btn btn-sm" type="button">未请假的全部设为出勤</button></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>学号</th><th>姓名</th><th>来源</th><th class="num">课时余额（节）</th><th>请假</th><th>点名</th></tr></thead>
+          <tbody>
+            <tr><td>S000105</td><td>王雨桐</td><td>本班</td><td class="num">22</td><td></td><td><div class="radio-group"><label class="checkbox"><input type="radio" name="S000105" checked> 出勤</label><label class="checkbox"><input type="radio" name="S000105"> 迟到</label><label class="checkbox"><input type="radio" name="S000105"> 缺勤</label><label class="checkbox"><input type="radio" name="S000105"> 请假</label></div></td></tr>
+            <tr><td>S000112</td><td>赵晨阳</td><td>本班</td><td class="num">0 <span class="tag tag-danger">余额不足</span></td><td><span class="tag tag-warning">待审批</span></td><td><div class="radio-group"><label class="checkbox"><input type="radio" name="S000112"> 出勤</label><label class="checkbox"><input type="radio" name="S000112"> 迟到</label><label class="checkbox"><input type="radio" name="S000112" checked> 缺勤</label><label class="checkbox"><input type="radio" name="S000112"> 请假</label></div></td></tr>
+            <tr><td>S000119</td><td>孙可欣</td><td>本班</td><td class="num">31</td><td><span class="tag tag-success">已批准</span></td><td><div class="radio-group"><label class="checkbox"><input type="radio" name="S000119" disabled> 出勤</label><label class="checkbox"><input type="radio" name="S000119" disabled> 迟到</label><label class="checkbox"><input type="radio" name="S000119" disabled> 缺勤</label><label class="checkbox"><input type="radio" name="S000119" checked> 请假</label></div><div class="field-hint">已批准请假，只能记请假</div></td></tr>
+            <tr><td>S000127</td><td>张一鸣</td><td>本班</td><td class="num">40</td><td></td><td><div class="radio-group"><label class="checkbox"><input type="radio" name="S000127"> 出勤</label><label class="checkbox"><input type="radio" name="S000127" checked> 迟到</label><label class="checkbox"><input type="radio" name="S000127"> 缺勤</label><label class="checkbox"><input type="radio" name="S000127"> 请假</label></div></td></tr>
+            <tr><td>S000128</td><td>李子涵</td><td>本班</td><td class="num">28</td><td></td><td><div class="radio-group"><label class="checkbox"><input type="radio" name="S000128" checked> 出勤</label><label class="checkbox"><input type="radio" name="S000128"> 迟到</label><label class="checkbox"><input type="radio" name="S000128"> 缺勤</label><label class="checkbox"><input type="radio" name="S000128"> 请假</label></div></td></tr>
+            <tr><td>S000131</td><td>周子墨</td><td><span class="tag">补课</span></td><td class="num">5</td><td></td><td><div class="radio-group"><label class="checkbox"><input type="radio" name="S000131" checked> 出勤</label><label class="checkbox"><input type="radio" name="S000131"> 迟到</label><label class="checkbox"><input type="radio" name="S000131"> 缺勤</label><label class="checkbox"><input type="radio" name="S000131"> 请假</label></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-warning">赵晨阳的课时余额是 0 节，记出勤、迟到或缺勤都要扣 1 节，提交会失败；可以改记请假，或先给他续费。</div>
+        <div class="alert alert-error">学员赵晨阳的「三年级数学提高」课时余额不足，不能扣课时</div>
+        <div class="field"><label class="field-label">课堂内容</label><textarea class="textarea">两位数乘两位数的竖式计算；课后练习第 3 页</textarea><div class="field-hint">0–1000 个字符，记到这节课的课堂内容</div><div class="field-error"></div></div>
+        <div class="form-actions"><a class="btn" href="lesson-detail.html">取消</a><button class="btn btn-primary" type="submit">提交点名</button></div>
+      </div>
+    </form>
+    <div class="proto-note">
+      <b>打开时：</b><code>GET /api/lessons/:id</code> 取课次与 <code>roster</code>（应到学员，按 <code>student_id</code> 升序）。每人一组单选（<code>.radio-group</code>）：出勤 / 迟到 / 缺勤 / 请假。「课时余额」是 roster 的 <code>remaining</code>；余额为 0 的学员在余额后加 <code>tag-danger</code>「余额不足」，并且他被选成出勤、迟到或缺勤时，在表单底部用 <code>alert-warning</code> 提前提醒（只提醒，不禁用提交，以接口为准）。默认值：请假状态是「已批准」的学员默认选「请假」且其他三项禁用（下方提示「已批准请假，只能记请假」）；其他人默认不选，必须每人选一项才能提交（没选的行在提交时标红，表单顶部提示「还有 2 人没有点名」）。「未请假的全部设为出勤」把还没选的、没有已批准请假的学员都设为出勤。请假列显示这节课最近一条请假的状态（待审批的请假不影响点名，可以选任何一项）。
+      <b>提交：</b><code>POST /api/lessons/:id/attendance</code>，请求体 <code>{"records": [{"student_id", "status"}], "content"}</code>，<code>status</code> 是 <code>present</code> 出勤 | <code>late</code> 迟到 | <code>absent</code> 缺勤 | <code>leave</code> 请假，<code>records</code> 包含名单上的每一个人。成功后进入课次详情 <code>lesson-detail.html</code> 并提示「点名完成」。
+      <b>失败：</b>409（有人课时余额不足、课次不是待上课或日期晚于今天）或 400（名单与应到学员不一致、已批准请假的学员没有记请假）时整个点名不生效，在表单底部的 <code>alert-error</code> 显示接口的 <code>message</code>，已选的不清空；名单不一致（期间有人加入或退班）时提示后点「刷新名单」重新取 <code>roster</code>。提交中按钮禁用并改成「提交中…」。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">更正点名</div>
+      <div class="dialog-body">
+        <p>更正时先把原来每人扣的课时和确认的收入原样退回，再按新的点名状态重新扣。确定提交更正吗？</p>
+        <p class="meta">改动：赵晨阳 缺勤 → 请假（退回 1 节课时）；张一鸣 迟到 → 出勤（课时不变）</p>
+        <div class="alert alert-error">2026-10 的工资单已确认，这个月的课次不能再更正点名</div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">提交更正</button></div>
+    </div></div>
+    <div class="proto-note">更正（见下方「已点名」状态里的「更正点名」）把单选改成可编辑，提交时先弹这个确认框，列出和原来不同的人。确认后 <code>PUT /api/lessons/:id/attendance</code>（请求体同点名）。成功后关闭弹窗、回到已点名的查看状态并提示「已更正」。返回 409（超过 7 天、这个月的工资单已确认、有人课时余额不足）时确认框不关，框内显示接口的 <code>message</code>；整个更正不生效。页面拿不到工资单状态（工资单接口只给 admin、finance），所以「更正点名」按钮不因工资单隐藏，只靠接口的 409 提示。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>已点名（查看，7 天内，admin 或 academic）</h3>
+        <div class="page-header"><h1>点名：三年级数学提高班 第 9 次课</h1><span class="tag tag-success">已完成</span><span class="grow"></span><button class="btn btn-primary">更正点名</button></div>
+        <div class="card">
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>学号</th><th>姓名</th><th>点名</th><th>扣课时</th><th class="num">确认收入</th></tr></thead>
+              <tbody>
+                <tr><td>S000105</td><td>王雨桐</td><td><span class="tag tag-success">出勤</span></td><td>扣 1 节</td><td class="num money">¥150.00</td></tr>
+                <tr><td>S000112</td><td>赵晨阳</td><td><span class="tag tag-danger">缺勤</span></td><td>扣 1 节</td><td class="num money">¥142.50</td></tr>
+                <tr><td>S000119</td><td>孙可欣</td><td><span class="tag tag-warning">请假</span></td><td>不扣</td><td class="num money">¥0.00</td></tr>
+                <tr><td>S000127</td><td>张一鸣</td><td><span class="tag tag-info">迟到</span></td><td>扣 1 节</td><td class="num money">¥150.00</td></tr>
+                <tr><td>S000128</td><td>李子涵</td><td><span class="tag tag-success">出勤</span></td><td>扣 1 节</td><td class="num money">¥150.00</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-body"><dl class="desc"><div class="item" style="grid-column: 1 / -1"><dt>课堂内容</dt><dd>分数的初步认识；课后练习第 1 页</dd></div></dl></div>
+        </div>
+        <div class="proto-note">已完成的课次打开本页时显示点名结果：<code>GET /api/lessons/:id/attendance</code>（按 <code>student_id</code> 升序；「扣课时」看 <code>package_id</code> 是否为空，「确认收入」是 <code>recognized_amount</code> 从分换算成元），课堂内容取课次的 <code>content</code>。标签：出勤 <code>tag-success</code>、迟到 <code>tag-info</code>、缺勤 <code>tag-danger</code>、请假 <code>tag-warning</code>。「更正点名」只给 admin、academic，且只在今天减课次日期不超过 7 天时显示；点了以后表格变回上面点名时的单选表单（预选原来的状态），按钮改为「提交更正」。</div>
+      </section>
+      <section><h3>已点名超过 7 天</h3>
+        <div class="page-header"><h1>点名：三年级数学提高班 第 3 次课</h1><span class="tag tag-success">已完成</span></div>
+        <div class="alert alert-info">这节课已超过 7 天，点名不能再更正。</div>
+        <div class="proto-note">超过 7 天：没有「更正点名」，只读显示点名结果。teacher 打开任何已完成的课次都是只读，也没有这条提示。</div>
+      </section>
+      <section><h3>还不能点名（日期晚于今天）</h3><div class="card state"><div class="title">这节课还没到上课日期</div>2026-10-17 当天及以后才能点名<br><a class="btn" href="lesson-detail.html">返回课次详情</a></div></section>
+      <section><h3>已停课的课次</h3><div class="card state"><div class="title">这节课已停课，不需要点名</div>停课原因：教师外出培训<br><a class="btn" href="lesson-detail.html">返回课次详情</a></div></section>
+      <section><h3>课次不存在（404）</h3><div class="card state"><div class="title">这个课次不存在</div>网址有误，请从课表进入<br><a class="btn" href="schedule.html">返回课表</a></div></section>
+      <section><h3>无权限（403，例如 sales 打开，或教师打开别人的课次）</h3><div class="card state"><div class="title">没有权限查看</div>你不能给这节课点名<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">名单加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

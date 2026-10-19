@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>原型目录 · 小树培训学校教务系统</title>
+<!-- 原型入口：按期列出全部页面（与 PRD"页面"一节的表一致）。这一页本身不是产品的页面。 -->
+<link rel="stylesheet" href="theme.css">
+<style>
+  .index { max-width: 960px; margin: 0 auto; padding: var(--space-6) var(--space-4); }
+  .index .card { margin-bottom: var(--space-6); }
+</style>
+</head>
+<body>
+<main class="index">
+  <div class="page-header"><h1>小树培训学校教务系统 · 原型目录</h1></div>
+  <div class="proto-note">
+    这些是低保真线框：<b>布局、字段、按钮和交互以原型为准</b>；颜色、字号、间距与组件写法以 <a href="DESIGN.md">DESIGN.md</a> 与 <a href="theme.css">theme.css</a> 为准。
+    页面里虚线框（<code>.proto-note</code>）是说明；画在页面里的弹窗（<code>.proto-dialog</code>）实际是点按钮后弹出的对话框；页面底部"其他状态"一节（<code>.proto-states</code>）演示加载中、空、出错、无权限，不是页面的一部分。
+    员工页面的侧栏画的是 admin 能看到的全部入口，实际按角色显示。
+  </div>
+  <div class="card"><div class="card-header">通用</div><div class="card-body">
+    <a href="common-states.html">列表的四种状态、表单错误、确认框与轻提示</a>（REQ-050）
+  </div></div>
+  <div class="card"><div class="card-header">第一期：服务、登录与基础资料</div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>页面</th><th>路径</th><th>对应需求</th><th>期</th></tr></thead>
+    <tbody>
+      <tr><td><a href="login.html">登录</a></td><td><code>/login</code></td><td>REQ-002</td><td>一</td></tr>
+      <tr><td><a href="dashboard.html">工作台（第一期只有欢迎语与快捷入口，第五期补看板数字）</a></td><td><code>/</code></td><td>REQ-045</td><td>一、五</td></tr>
+      <tr><td><a href="password.html">修改密码</a></td><td><code>/account/password</code></td><td>REQ-002</td><td>一</td></tr>
+      <tr><td><a href="users.html">用户管理</a></td><td><code>/users</code></td><td>REQ-003</td><td>一</td></tr>
+      <tr><td><a href="campuses.html">校区</a></td><td><code>/campuses</code></td><td>REQ-005</td><td>一</td></tr>
+      <tr><td><a href="rooms.html">教室</a></td><td><code>/rooms</code></td><td>REQ-006</td><td>一</td></tr>
+      <tr><td><a href="subjects.html">科目</a></td><td><code>/subjects</code></td><td>REQ-007</td><td>一</td></tr>
+      <tr><td><a href="courses.html">课程</a></td><td><code>/courses</code></td><td>REQ-008</td><td>一</td></tr>
+      <tr><td><a href="calendar.html">学期与节假日</a></td><td><code>/calendar</code></td><td>REQ-009</td><td>一</td></tr>
+      <tr><td><a href="teachers.html">教师列表</a></td><td><code>/teachers</code></td><td>REQ-010</td><td>一</td></tr>
+      <tr><td><a href="teacher-detail.html">教师详情与可上课时间</a></td><td><code>/teachers/:id</code></td><td>REQ-010、REQ-011</td><td>一</td></tr>
+    </tbody>
+  </table></div></div>
+  <div class="card"><div class="card-header">第二期：学员、招生与报名收费</div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>页面</th><th>路径</th><th>对应需求</th><th>期</th></tr></thead>
+    <tbody>
+      <tr><td><a href="leads.html">线索列表</a></td><td><code>/leads</code></td><td>REQ-014</td><td>二</td></tr>
+      <tr><td><a href="lead-detail.html">线索详情（跟进、试听、转化、流失）</a></td><td><code>/leads/:id</code></td><td>REQ-014、REQ-015、REQ-016、REQ-017</td><td>二</td></tr>
+      <tr><td><a href="trials.html">试听日程</a></td><td><code>/trials</code></td><td>REQ-016</td><td>二</td></tr>
+      <tr><td><a href="students.html">学员列表</a></td><td><code>/students</code></td><td>REQ-012</td><td>二</td></tr>
+      <tr><td><a href="student-detail.html">学员详情（资料、家长、课时账户与流水、订单；第三期起有考勤，第四期起有余额）</a></td><td><code>/students/:id</code></td><td>REQ-012、REQ-013、REQ-020、REQ-030、REQ-033</td><td>二、三、四</td></tr>
+      <tr><td><a href="discounts.html">优惠</a></td><td><code>/discounts</code></td><td>REQ-018</td><td>二</td></tr>
+      <tr><td><a href="order-new.html">报名下单</a></td><td><code>/orders/new</code></td><td>REQ-019</td><td>二</td></tr>
+      <tr><td><a href="orders.html">订单列表</a></td><td><code>/orders</code></td><td>REQ-019</td><td>二</td></tr>
+      <tr><td><a href="order-detail.html">订单详情（支付、取消）</a></td><td><code>/orders/:id</code></td><td>REQ-019</td><td>二</td></tr>
+      <tr><td><a href="receipt.html">收据</a></td><td><code>/orders/:id/receipt</code></td><td>REQ-019</td><td>二</td></tr>
+    </tbody>
+  </table></div></div>
+  <div class="card"><div class="card-header">第三期：班级、排课、点名与请假</div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>页面</th><th>路径</th><th>对应需求</th><th>期</th></tr></thead>
+    <tbody>
+      <tr><td><a href="classes.html">班级列表</a></td><td><code>/classes</code></td><td>REQ-021</td><td>三</td></tr>
+      <tr><td><a href="class-form.html">新建与编辑班级</a></td><td><code>/classes/new、/classes/:id/edit</code></td><td>REQ-021</td><td>三</td></tr>
+      <tr><td><a href="class-detail.html">班级详情（课次、学员、发布、结课、取消）</a></td><td><code>/classes/:id</code></td><td>REQ-021、REQ-022、REQ-025、REQ-029</td><td>三</td></tr>
+      <tr><td><a href="schedule.html">课表（周视图）</a></td><td><code>/schedule</code></td><td>REQ-023</td><td>三</td></tr>
+      <tr><td><a href="lesson-detail.html">课次详情（名单、调课、代课、停课）</a></td><td><code>/lessons/:id</code></td><td>REQ-023、REQ-024</td><td>三</td></tr>
+      <tr><td><a href="attendance.html">点名</a></td><td><code>/lessons/:id/attendance</code></td><td>REQ-026</td><td>三</td></tr>
+      <tr><td><a href="leaves.html">请假</a></td><td><code>/leaves</code></td><td>REQ-027</td><td>三</td></tr>
+      <tr><td><a href="makeups.html">补课</a></td><td><code>/makeups</code></td><td>REQ-028</td><td>三</td></tr>
+      <tr><td><a href="my-schedule.html">我的课表（教师）</a></td><td><code>/my/schedule</code></td><td>REQ-023、REQ-026</td><td>三</td></tr>
+    </tbody>
+  </table></div></div>
+  <div class="card"><div class="card-header">第四期：退费、转课、财务与课酬</div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>页面</th><th>路径</th><th>对应需求</th><th>期</th></tr></thead>
+    <tbody>
+      <tr><td><a href="refunds.html">退费列表与发起退费</a></td><td><code>/refunds</code></td><td>REQ-031</td><td>四</td></tr>
+      <tr><td><a href="refund-detail.html">退费详情与审批</a></td><td><code>/refunds/:id</code></td><td>REQ-031</td><td>四</td></tr>
+      <tr><td><a href="course-transfers.html">转课</a></td><td><code>/course-transfers</code></td><td>REQ-032</td><td>四</td></tr>
+      <tr><td><a href="payments.html">收款流水与汇总</a></td><td><code>/payments</code></td><td>REQ-034</td><td>四</td></tr>
+      <tr><td><a href="revenue.html">收入确认</a></td><td><code>/reports/revenue</code></td><td>REQ-035</td><td>四</td></tr>
+      <tr><td><a href="pay-rates.html">课酬标准</a></td><td><code>/pay-rates</code></td><td>REQ-036</td><td>四</td></tr>
+      <tr><td><a href="payrolls.html">工资单列表</a></td><td><code>/payrolls</code></td><td>REQ-037</td><td>四</td></tr>
+      <tr><td><a href="payroll-detail.html">工资单详情（调整、确认、发放）</a></td><td><code>/payrolls/:id</code></td><td>REQ-037</td><td>四</td></tr>
+      <tr><td><a href="my-pay.html">我的课酬（教师）</a></td><td><code>/my/pay</code></td><td>REQ-037</td><td>四</td></tr>
+    </tbody>
+  </table></div></div>
+  <div class="card"><div class="card-header">第五期：作业成绩、家长端、通知、报表与日志</div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>页面</th><th>路径</th><th>对应需求</th><th>期</th></tr></thead>
+    <tbody>
+      <tr><td><a href="homeworks.html">作业列表</a></td><td><code>/homeworks</code></td><td>REQ-038</td><td>五</td></tr>
+      <tr><td><a href="homework-detail.html">作业详情（提交情况与批改）</a></td><td><code>/homeworks/:id</code></td><td>REQ-038、REQ-039</td><td>五</td></tr>
+      <tr><td><a href="exams.html">考试列表</a></td><td><code>/exams</code></td><td>REQ-040</td><td>五</td></tr>
+      <tr><td><a href="exam-detail.html">考试详情（成绩录入、排名与统计）</a></td><td><code>/exams/:id</code></td><td>REQ-040</td><td>五</td></tr>
+      <tr><td><a href="feedback.html">课堂反馈</a></td><td><code>/lessons/:id/feedback</code></td><td>REQ-041</td><td>五</td></tr>
+      <tr><td><a href="notifications.html">通知中心</a></td><td><code>/notifications</code></td><td>REQ-043</td><td>五</td></tr>
+      <tr><td><a href="announcements.html">公告管理</a></td><td><code>/announcements</code></td><td>REQ-044</td><td>五</td></tr>
+      <tr><td><a href="report-enrollment.html">招生报表</a></td><td><code>/reports/enrollment</code></td><td>REQ-046</td><td>五</td></tr>
+      <tr><td><a href="report-consumption.html">消课与出勤报表</a></td><td><code>/reports/consumption</code></td><td>REQ-047</td><td>五</td></tr>
+      <tr><td><a href="report-low-balance.html">余额预警</a></td><td><code>/reports/low-balance</code></td><td>REQ-047</td><td>五</td></tr>
+      <tr><td><a href="audit-logs.html">操作日志</a></td><td><code>/audit-logs</code></td><td>REQ-049</td><td>五</td></tr>
+      <tr><td><a href="parent-home.html">家长端首页（孩子、课时、近期课程、公告）</a></td><td><code>/parent</code></td><td>REQ-042、REQ-044</td><td>五</td></tr>
+      <tr><td><a href="parent-schedule.html">家长端课表与请假</a></td><td><code>/parent/schedule</code></td><td>REQ-042、REQ-027</td><td>五</td></tr>
+      <tr><td><a href="parent-homeworks.html">家长端作业</a></td><td><code>/parent/homeworks</code></td><td>REQ-042、REQ-039</td><td>五</td></tr>
+      <tr><td><a href="parent-reports.html">家长端成绩与反馈</a></td><td><code>/parent/reports</code></td><td>REQ-042</td><td>五</td></tr>
+      <tr><td><a href="parent-notifications.html">家长端通知</a></td><td><code>/parent/notifications</code></td><td>REQ-043</td><td>五</td></tr>
+    </tbody>
+  </table></div></div>
+</main>
+</body>
+</html>

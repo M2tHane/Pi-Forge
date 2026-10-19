@@ -1,0 +1,144 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { parseConfig } from '../../src/core/state/config.ts';
+import { phaseOfStage, renderStatus, taskActivity, notices, snapshotOf, actionsNeeded, statusLine } from '../../src/core/ops/status-view.ts';
+import { hashToken } from '../../src/core/state/state-machine.ts';
+import { setupProject } from '../helpers/project.ts';
+import { TEST_YAML, REAL_TEMPLATE_YAML } from '../helpers/config.ts';
+import { mkTask, hard } from '../helpers/tasks.ts';
+
+test('phaseOfStage：S0 是架构，其余是开发', () => {
+  assert.deepEqual(['S0', 'S1', 'S3'].map(phaseOfStage), ['arch', 'dev', 'dev']);
+});
+
+test('任务活动用人话表示，重试带上次失败原因', () => {
+  const lease = { run_id: 'r', role: 'worker', token_hash: 'a'.repeat(64), acquired_at: 'x', expires_at: 'y' };
+  assert.equal(taskActivity(mkTask('T-1', { status: 'in_progress', lease }), null), '实现中');
+  assert.equal(taskActivity(mkTask('T-1', { status: 'in_progress', attempts: 1 }), '合并时全量测试失败'), '等待重新派发（第 2 次，上次：合并时全量测试失败）');
+  const qaLease = { ...lease, role: 'stage-qa' };
+  assert.equal(taskActivity(mkTask('T-1', { status: 'in_progress', lease: qaLease, kind: 'qa', role: 'stage-qa', scopes: ['qa'], writes: [], for_task: 'T-2' }), null), '阶段验收中');
+  assert.equal(taskActivity(mkTask('T-1', { status: 'queued_merge' }), null), '合入中');
+  assert.equal(taskActivity(mkTask('T-1', { status: 'merging' }), null), '合入中');
+});
+
+test('/forge status 精简视图：阶段条、进度、正在进行、需要你处理放在最上面', async () => {
+  // 咨询任务不算进进度（不是计划里的任务）
+  const p = await setupProject({ tasks: [mkTask('T-001', { title: '用户服务' }), mkTask('T-002', { deps: [hard('T-001')] }), mkTask('T-003'),
+    mkTask('T-004', { kind: 'consult', role: 'architect', for_task: 'T-001', title: '咨询：用哪个数据库' })] });
+  try {
+    let out = renderStatus(p.store, p.config);
+    assert.match(out, /^需要你处理：无/);
+    assert.match(out, /架构 ✓ → \[开发\] → 交付/);
+    assert.match(out, /开发阶段：按任务实施并运行全量验证/);
+    assert.match(out, /进度：0 \/ 3 个任务完成/);
+    assert.doesNotMatch(out, /pending|in_progress|queued_merge|S3/, '不暴露内部状态名');
+
+    await p.store.transitionTask(p.flowId, 'T-001', { to: 'ready', trigger: 'schedule', actor: 's' });
+    await p.store.transitionTask(p.flowId, 'T-001', { to: 'in_progress', trigger: 'dispatch', actor: 'd', patch: {
+      lease: { run_id: 'r-1', role: 'worker', token_hash: hashToken('t'), acquired_at: 'x', expires_at: '2999-01-01T00:00:00Z' },
+      worktree: '/w', branch: 'b', base_sha: 'c' } });
+    out = renderStatus(p.store, p.config);
+    assert.match(out, /正在进行：\n- T-001 用户服务（worker）实现中/);
+
+    await p.store.transitionTask(p.flowId, 'T-001', { to: 'blocked', trigger: 'block', actor: 'run:r-1', facts: { reason: '用 PostgreSQL 还是 SQLite？' } });
+    out = renderStatus(p.store, p.config);
+    // 子进程的提问先交给主会话；用户也可以直接回答
+    assert.match(out, /^需要你处理：无\n主会话处理中（forge_decide）：\n- T-001「用户服务」有问题要问你：用 PostgreSQL 还是 SQLite？\n  → 也可以直接 \/forge answer T-001/);
+    assert.match(out, /有任务等主会话决定/);
+    await p.store.transitionTask(p.flowId, 'T-001', { to: 'blocked', trigger: 'hand_to_user', actor: 'orchestrator', facts: { reason: '要用户选' } });
+    out = renderStatus(p.store, p.config);
+    assert.match(out, /^需要你处理：\n- T-001「用户服务」有问题要问你：用 PostgreSQL 还是 SQLite？ 主会话：要用户选\n  → \/forge answer T-001/);
+    assert.match(out, /阻塞：T-001/);
+
+    await p.store.transitionStage(p.flowId, { to: 'awaiting_gate', trigger: 'submit_gate', actor: 'engine' });
+    await p.store.transitionStage(p.flowId, { to: 'awaiting_human', trigger: 'gate_passed', actor: 'engine', needs_human: true });
+    assert.ok(actionsNeeded(p.store, p.config).some((a) => /全部任务已完成，等你批准合入主分支/.test(a.text) && a.command.startsWith('/forge-approve')));
+  } finally { p.cleanup(); }
+});
+
+test('主动通知：只在进入新阶段、出现需要处理的事、首次失败重试时出现', async () => {
+  const p = await setupProject({ tasks: [mkTask('T-001'), mkTask('T-002')] });
+  try {
+    const s0 = snapshotOf(p.store, p.config);
+    await p.store.transitionTask(p.flowId, 'T-001', { to: 'ready', trigger: 'schedule', actor: 's' });
+    assert.deepEqual(notices(s0, snapshotOf(p.store, p.config)), [], '普通的任务推进不通知');
+    const s1 = snapshotOf(p.store, p.config);
+    await p.store.transitionTask(p.flowId, 'T-001', { to: 'in_progress', trigger: 'dispatch', actor: 'd', patch: {
+      lease: { run_id: 'r-1', role: 'worker', token_hash: hashToken('t'), acquired_at: 'x', expires_at: '2999-01-01T00:00:00Z' },
+      worktree: '/w', branch: 'b', base_sha: 'c' } });
+    await p.store.transitionTask(p.flowId, 'T-001', { to: 'in_progress', trigger: 'run_failed', actor: 'd', facts: { reason: '崩溃' } });
+    const s2 = snapshotOf(p.store, p.config);
+    assert.deepEqual(notices(s1, s2, () => '运行中断'), ['pi-forge：T-001 第一次未通过（运行中断），程序已自动重试。']);
+    await p.store.transitionTask(p.flowId, 'T-002', { to: 'ready', trigger: 'schedule', actor: 's' });
+    await p.store.transitionStage(p.flowId, { to: 'awaiting_gate', trigger: 'submit_gate', actor: 'engine' });
+    await p.store.transitionStage(p.flowId, { to: 'awaiting_human', trigger: 'gate_passed', actor: 'engine', needs_human: true });
+    const n = notices(s2, snapshotOf(p.store, p.config));
+    assert.equal(n.length, 1);
+    assert.match(n[0]!, /需要你处理：全部任务已完成，等你批准合入主分支/);
+    await p.store.transitionStage(p.flowId, { to: 'done', trigger: 'approve', actor: 'human' });
+    const s3 = snapshotOf(p.store, p.config);
+    await p.store.advanceStage(p.flowId, 'human');
+    assert.deepEqual(notices(s3, snapshotOf(p.store, p.config)), ['pi-forge：B-001 已结束。'], '流程结束时提醒一次');
+  } finally { p.cleanup(); }
+});
+
+test('状态栏一行：流程、高层阶段、进度、进行中的任务、需要处理的事项；没有流程时为 null', async () => {
+  const p = await setupProject({ tasks: [mkTask('T-001'), mkTask('T-002', { deps: [hard('T-001')] }), mkTask('T-003', { writes: ['src/server/t-003/**'] })] });
+  try {
+    await p.store.transitionTask(p.flowId, 'T-001', { to: 'ready', trigger: 'schedule', actor: 'scheduler' });
+    await p.store.transitionTask(p.flowId, 'T-001', { to: 'in_progress', trigger: 'dispatch', actor: 'dispatcher',
+      patch: { worktree: '/w', branch: 'b', base_sha: 'abc', lease: { run_id: 'r-1', role: 'worker', token_hash: hashToken('t'), acquired_at: '2026-10-01T00:00:00Z', expires_at: '2099-01-01T00:00:00Z' } } });
+    assert.equal(statusLine(p.store, p.config), 'pi-forge B-001 开发 · 0/3 · 1 个任务进行中');
+    await p.store.transitionTask(p.flowId, 'T-001', { to: 'blocked', trigger: 'block', actor: 'run:r-1', facts: { token: 't', reason: '需要决定' } });
+    assert.match(statusLine(p.store, p.config)!, /主会话处理 1 项$/);
+    await p.store.transitionTask(p.flowId, 'T-001', { to: 'blocked', trigger: 'hand_to_user', actor: 'orchestrator', facts: { reason: '要用户决定' } });
+    assert.match(statusLine(p.store, p.config)!, /需要你处理 1 项$/);
+    await p.store.transitionStage(p.flowId, { to: 'aborted', trigger: 'abort', actor: 'human' });
+    assert.equal(statusLine(p.store, p.config), null);
+  } finally { p.cleanup(); }
+});
+
+test('需要你处理：停滞按引擎的等待规则报告——fix 不等硬依赖原 impl 的别的 task，即使它已阻塞', async () => {
+  const at = mkTask('T-002', { deps: [hard('T-001')] });
+  const p = await setupProject({ tasks: [mkTask('T-001'), at, mkTask('T-001.fx-1', { kind: 'fix', for_task: 'T-001' })] });
+  const force = (id: string, patch: Record<string, unknown>) => p.store.transaction((tx) => { tx.putTask(p.flowId, { ...tx.readTask(p.flowId, id), ...patch } as never); tx.event({ flow: p.flowId, task: id, actor: 't', type: 'note', reason: 'test' }); });
+  try {
+    await force('T-001', { status: 'done' });
+    await force('T-002', { status: 'blocked', blocked_by: 'agent', blocked_reason: '测试写不出来' });
+    await force('T-001.fx-1', { status: 'in_review' });
+    const waits = () => actionsNeeded(p.store, p.config).filter((a) => /在等/.test(a.text));
+    assert.deepEqual(waits(), [], 'T-002 硬依赖 T-001：不是 fx-1 等的对象，不该报"在等它"');
+    await force('T-001', { status: 'in_progress' });
+    assert.deepEqual(waits(), [], 'T-001 没 done 时也一样');
+    // pending 等在已阻塞的依赖上是排队常态（T-002 自己有一条带解除命令的项）；等到已取消的才报
+    await force('T-001.fx-1', { status: 'pending', depends_on: [{ task: 'T-002', type: 'hard' }] });
+    assert.deepEqual(waits(), []);
+    await force('T-002', { status: 'cancelled' });
+    const w = waits();
+    assert.equal(w.length, 1);
+    assert.match(w[0]!.text, /T-001\.fx-1 在等 T-002，但 T-002 已取消/);
+  } finally { p.cleanup(); }
+});
+
+test('需要你处理：互相等待报一项，建议先看等待关系', async () => {
+  const p = await setupProject({ tasks: [mkTask('T-001', { deps: [hard('T-002')] }), mkTask('T-002', { deps: [hard('T-001')] })] });
+  try {
+    const a = actionsNeeded(p.store, p.config).filter((x) => /互相等待/.test(x.text));
+    assert.equal(a.length, 1);
+    assert.match(a[0]!.text, /T-001、T-002 互相等待/);
+    assert.match(a[0]!.command, /forge-status --detail/);
+  } finally { p.cleanup(); }
+});
+
+test('打回之后还没有新的修改：需要你处理里提示 /forge gate（流程不会自己重新验收）；有了新任务就不再提示', async () => {
+  const p = await setupProject({ stages: ['S1'], tasks: [] });
+  try {
+    await p.store.transitionStage(p.flowId, { to: 'awaiting_gate', trigger: 'submit_gate', actor: 'engine' });
+    await p.store.transitionStage(p.flowId, { to: 'awaiting_human', trigger: 'gate_passed', actor: 'gate', needs_human: true });
+    await p.store.transitionStage(p.flowId, { to: 'active', trigger: 'reject', actor: 'human', reason: '列表要排序' });
+    const item = () => actionsNeeded(p.store, p.config).find((a) => /已打回/.test(a.text));
+    assert.match(item()?.command ?? '', /\/forge gate/);
+    await p.store.addTasks(p.flowId, [mkTask('T-002', { stage: 'S1' })], 'orchestrator');
+    assert.equal(item(), undefined);
+  } finally { p.cleanup(); }
+});

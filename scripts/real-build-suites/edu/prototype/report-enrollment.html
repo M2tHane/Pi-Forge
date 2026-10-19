@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>招生报表 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-046。按日期范围（可选校区、负责顾问）统计线索、转化、试听与订单，数据来自 GET /api/reports/enrollment。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">2</span></a>
+  <a class="user" href="password.html">周明（管理员）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html" class="on">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的（PRD 的权限表）。招生报表只有 admin 与 sales（课程顾问）能看，其他角色的侧栏没有这个入口。</div>
+
+    <div class="page-header">
+      <h1>招生报表</h1>
+      <span class="grow"></span>
+    </div>
+
+    <form class="toolbar">
+      <label class="meta" for="from">日期</label>
+      <input class="input" id="from" type="date" value="2026-10-01">
+      <span class="meta">至</span>
+      <input class="input" type="date" value="2026-10-15">
+      <select class="select"><option>全部校区</option><option>东湖校区</option><option>光谷校区</option></select>
+      <select class="select"><option>全部顾问</option><option>王芳</option><option>刘畅</option><option>周明</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="button">本月</button>
+      <button class="btn-link" type="button">上月</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+    <div class="proto-note">
+      筛选写进网址参数，与接口一致：<code>?from=2026-10-01&amp;to=2026-10-15&amp;campus_id=1&amp;owner_id=5</code>，刷新后不变。<code>from</code>、<code>to</code> 必填，打开页面没有时默认本月 1 日到今天（北京时间）；「本月」「上月」只是快速填日期并查询。「清除筛选」恢复默认日期、去掉校区与顾问。
+      开始日期晚于结束日期时页面不发请求，在日期旁显示「开始日期不能晚于结束日期」（接口同样返回 400）。
+      「负责顾问」下拉的选项来自 <code>GET /api/users/options?role=sales</code> 与 <code>?role=admin</code>（线索的负责人可以是 sales 或 admin），可以输入姓名过滤（参数 <code>q</code>）。选了顾问时，线索与试听只算这个人负责的线索，订单只算这个人创建的。<b>课程顾问（sales）看不到这个下拉</b>，接口总是按自己算，页面标题下显示一行「只统计你负责的线索、试听与你创建的订单」。
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="label">新增线索</div><div class="value">86</div><div class="sub">按线索的建档日期</div></div>
+      <div class="stat"><div class="label">其中已转化</div><div class="value">23</div><div class="sub">现在的状态是已转化</div></div>
+      <div class="stat"><div class="label">转化率</div><div class="value">27%</div><div class="sub">已转化 / 新增线索</div></div>
+      <div class="stat"><div class="label">试听</div><div class="value">41</div><div class="sub">试听日期在这段时间内，不含已取消的</div></div>
+      <div class="stat"><div class="label">到场试听</div><div class="value">32</div><div class="sub">试听状态是已到</div></div>
+      <div class="stat"><div class="label">支付订单</div><div class="value">27</div><div class="sub">按支付日期</div></div>
+      <div class="stat"><div class="label">订单金额</div><div class="value money">¥96,480.00</div><div class="sub">应付金额之和</div></div>
+    </div>
+    <div class="proto-note">
+      七个数字依次是接口的 <code>leads</code>、<code>converted</code>、<code>conversion_rate</code>、<code>trials</code>、<code>trials_attended</code>、<code>orders</code>、<code>order_amount</code>（分，显示为元）。<code>conversion_rate</code> 为 <code>null</code>（新增线索为 0）时显示「—」。
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>按来源</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>来源</th><th class="num">新增线索</th><th class="num">已转化</th><th class="num">转化率</th></tr></thead>
+          <tbody>
+            <tr><td>活动</td><td class="num">12</td><td class="num">2</td><td class="num">17%</td></tr>
+            <tr><td>网络</td><td class="num">38</td><td class="num">8</td><td class="num">21%</td></tr>
+            <tr><td>其他</td><td class="num">4</td><td class="num">0</td><td class="num">0%</td></tr>
+            <tr><td>转介绍</td><td class="num">17</td><td class="num">9</td><td class="num">53%</td></tr>
+            <tr><td>到访</td><td class="num">15</td><td class="num">4</td><td class="num">27%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">
+      来自 <code>by_source</code>，只列有线索的来源，顺序照接口（按来源的英文取值字母顺序：活动 event、网络 online、其他 other、转介绍 referral、到访 walk_in）。来源显示中文：到访、转介绍、网络、活动、其他。「转化率」由页面按 已转化 / 新增线索 计算，四舍五入取整数。不分页，没有导出。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3>
+        <div class="stats"><div class="stat"><div class="skeleton-row"></div></div><div class="stat"><div class="skeleton-row"></div></div><div class="stat"><div class="skeleton-row"></div></div><div class="stat"><div class="skeleton-row"></div></div></div>
+        <div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>
+      </section>
+      <section><h3>这段时间没有线索</h3>
+        <div class="stats">
+          <div class="stat"><div class="label">新增线索</div><div class="value">0</div></div>
+          <div class="stat"><div class="label">其中已转化</div><div class="value">0</div></div>
+          <div class="stat"><div class="label">转化率</div><div class="value">—</div></div>
+          <div class="stat"><div class="label">试听</div><div class="value">0</div></div>
+        </div>
+        <div class="card state"><div class="title">这段时间没有新增线索</div>换一个日期范围试试<br><button class="btn">清除筛选</button></div>
+        <div class="proto-note">数字卡片照常显示 0；「按来源」卡片里显示这块空状态。试听、订单数字照接口显示，可能不为 0。</div>
+      </section>
+      <section><h3>日期填写错误（页面自己检查）</h3>
+        <form class="toolbar">
+          <input class="input invalid" type="date" value="2026-10-20"><span class="meta">至</span><input class="input invalid" type="date" value="2026-10-01">
+          <button class="btn" type="submit">查询</button>
+        </form>
+        <div class="alert alert-error">开始日期不能晚于结束日期</div>
+      </section>
+      <section><h3>课程顾问看到的筛选条</h3>
+        <form class="toolbar">
+          <input class="input" type="date" value="2026-10-01"><span class="meta">至</span><input class="input" type="date" value="2026-10-15">
+          <select class="select"><option>全部校区</option><option>东湖校区</option></select>
+          <button class="btn" type="submit">查询</button>
+        </form>
+        <div class="alert alert-info">只统计你负责的线索、试听与你创建的订单</div>
+      </section>
+      <section><h3>出错</h3><div class="card state"><div class="title">招生报表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看招生报表<br><a class="btn" href="dashboard.html">返回工作台</a></div>
+        <div class="proto-note">教务、财务、教师直接打开 <code>/reports/enrollment</code> 时内容区只显示这一块。</div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

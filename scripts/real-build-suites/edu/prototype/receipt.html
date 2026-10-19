@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>收据 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-019 AC9。已支付订单的收据。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">王芳（课程顾问）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html" class="on">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="crumbs"><a href="orders.html">订单</a> / <a href="order-detail.html">OD000088</a> / 收据</div>
+    <div class="page-header">
+      <h1>收据</h1>
+      <span class="grow"></span>
+      <a class="btn" href="order-detail.html">返回订单</a>
+    </div>
+    <div class="proto-note">能看订单的角色（admin、academic、sales、finance）都能看收据。系统不做打印（PRD「不做的」），所以这里没有打印按钮；需要纸质时用浏览器自带的打印。</div>
+
+    <div class="card" style="max-width: 70%; margin: 0 auto">
+      <div class="card-header"><h2>小树培训学校 · 收据</h2><span class="grow"></span><span class="meta">收据号 RC000041</span></div>
+      <div class="card-body">
+        <dl class="desc">
+          <div class="item"><dt>订单号</dt><dd>OD000088</dd></div>
+          <div class="item"><dt>学员</dt><dd>李子涵</dd></div>
+          <div class="item"><dt>学号</dt><dd>S000128</dd></div>
+          <div class="item"><dt>支付方式</dt><dd>微信</dd></div>
+          <div class="item"><dt>支付时间</dt><dd>2026-10-15 15:02</dd></div>
+        </dl>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>课程</th><th class="num">课时数</th><th class="num">实付金额</th></tr></thead>
+          <tbody>
+            <tr><td>四年级数学提高</td><td class="num">20</td><td class="num">¥2,285.72</td></tr>
+            <tr><td>少儿英语</td><td class="num">12</td><td class="num">¥1,714.28</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-body">
+        <dl class="desc">
+          <div class="item"><dt>原价</dt><dd class="money">¥4,200.00</dd></div>
+          <div class="item"><dt>优惠</dt><dd class="money negative">-¥200.00</dd></div>
+          <div class="item"><dt>实收</dt><dd class="money" style="font-size: var(--text-xl); font-weight: var(--weight-bold)">¥4,000.00</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="proto-note">
+      <code>GET /api/orders/:id/receipt</code>，字段全部来自这个接口：收据号、订单号、学员、学号、每行的课程名称、课时数与实付金额（已扣掉优惠分摊，各行相加等于实收），原价、优惠、实收（应付）、支付方式、支付时间（北京时间）。
+      收据号第一次打开这一页时由接口生成，以后再打开不变。各行实付之和等于实收。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>订单还没有支付（接口 409）</h3><div class="card state"><div class="title">这张订单还没有支付，没有收据</div>收款后才能查看收据<br><a class="btn" href="order-detail.html">返回订单</a></div><div class="proto-note">已取消的订单同样显示这一块（文字改为「这张订单已取消，没有收据」，以接口的 <code>message</code> 为准）。</div></section>
+      <section><h3>对象不存在（404）</h3><div class="card state"><div class="title">这张订单不存在</div>可能已被删除，或网址有误<br><a class="btn" href="orders.html">返回订单列表</a></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">收据加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看订单<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

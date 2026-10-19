@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>线索 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-014。线索列表：筛选、新建线索，点进线索详情跟进。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">王芳（课程顾问）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html" class="on">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">线索只有 admin 与 sales 能用（PRD 权限表）；academic、finance、teacher 的侧栏没有「线索」，直接打开显示无权限。sales 只看到自己负责的线索（<code>owner_id</code> 是自己），admin 看到全部。</div>
+
+    <div class="page-header">
+      <h1>线索</h1>
+      <span class="grow"></span>
+      <button class="btn btn-primary">新建线索</button>
+    </div>
+
+    <form class="toolbar">
+      <input class="input search" placeholder="姓名或手机号">
+      <select class="select"><option>全部状态</option><option>新建</option><option>已联系</option><option>已约试听</option><option>已试听</option><option>已转化</option><option>流失</option></select>
+      <select class="select"><option>全部来源</option><option>到访</option><option>转介绍</option><option>网络</option><option>活动</option><option>其他</option></select>
+      <select class="select"><option>全部校区</option><option>东湖校区</option><option>光谷校区</option></select>
+      <select class="select"><option>全部顾问</option><option>王芳</option><option>孙磊</option></select>
+      <label class="field-label">下次跟进不晚于</label><input class="input" type="date" value="2026-10-15">
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+      <span class="grow"></span>
+      <button class="btn btn-sm" type="button">今天要跟进</button>
+    </form>
+    <div class="proto-note">
+      筛选写进网址参数，名字与 <code>GET /api/leads</code> 一致：<code>q</code>、<code>status</code>、<code>source</code>、<code>campus_id</code>、<code>owner_id</code>、<code>follow_up_before</code>、<code>page</code>（例如 <code>?status=contacted&amp;follow_up_before=2026-10-15&amp;page=2</code>），刷新后不变；改任何筛选条件时回到第 1 页。
+      「全部顾问」下拉只有 admin 能看到（选项同新建弹窗的负责顾问；sales 带这个参数也无效，总是只看自己的）。「今天要跟进」把「下次跟进不晚于」设为今天（北京时间）并查询，用来找今天该跟进和已经过期没跟进的线索。默认不带任何筛选。
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>姓名</th><th>手机</th><th>年级</th><th>来源</th><th>意向课程</th><th>校区</th><th>负责顾问</th><th>状态</th><th>下次跟进</th><th>创建时间</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><a href="lead-detail.html">刘雨桐</a></td><td>139 2222 6688</td><td>三年级</td><td>转介绍</td><td>三年级数学提高</td><td>东湖校区</td><td>王芳</td><td><span class="tag tag-warning">已约试听</span></td><td>2026-10-17</td><td>2026-10-12 10:05</td><td class="ops"><a class="btn-link" href="lead-detail.html">查看</a></td></tr>
+            <tr><td><a href="lead-detail.html">周子轩</a></td><td>186 0000 3456</td><td>五年级</td><td>网络</td><td>少儿英语</td><td>光谷校区</td><td>王芳</td><td><span class="tag tag-info">已联系</span></td><td>2026-10-14</td><td>2026-10-10 19:22</td><td class="ops"><a class="btn-link" href="lead-detail.html">查看</a></td></tr>
+            <tr><td><a href="lead-detail.html">吴可欣</a></td><td>135 8888 0101</td><td>—</td><td>到访</td><td>—</td><td>东湖校区</td><td>王芳</td><td><span class="tag">新建</span></td><td>—</td><td>2026-10-15 09:40</td><td class="ops"><a class="btn-link" href="lead-detail.html">查看</a></td></tr>
+            <tr><td><a href="lead-detail.html">黄嘉怡</a></td><td>137 1234 5678</td><td>二年级</td><td>活动</td><td>少儿英语</td><td>东湖校区</td><td>王芳</td><td><span class="tag tag-info">已试听</span></td><td>2026-10-16</td><td>2026-10-02 15:10</td><td class="ops"><a class="btn-link" href="lead-detail.html">查看</a></td></tr>
+            <tr><td><a href="lead-detail.html">李子涵</a></td><td>138 0000 1234</td><td>四年级</td><td>转介绍</td><td>四年级数学提高</td><td>东湖校区</td><td>王芳</td><td><span class="tag tag-success">已转化</span></td><td>—</td><td>2026-08-28 11:00</td><td class="ops"><a class="btn-link" href="lead-detail.html">查看</a></td></tr>
+            <tr><td><a href="lead-detail.html">郑浩</a></td><td>150 6666 7777</td><td>七年级</td><td>其他</td><td>—</td><td>光谷校区</td><td>王芳</td><td><span class="tag tag-danger">流失</span></td><td>—</td><td>2026-09-20 14:30</td><td class="ops"><a class="btn-link" href="lead-detail.html">查看</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 46 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 3 页</span><button class="btn btn-sm">下一页</button></div>
+    </div>
+    <div class="proto-note">
+      按 <code>id</code> 降序（新建的在前），每页 20 条。点姓名或「查看」进线索详情（跟进、试听、转化、流失都在详情页做）。
+      年级显示「三年级」这类中文（1–12 对应一年级到十二年级），没有填写显示「—」；下次跟进为空显示「—」；创建时间按北京时间显示。
+      意向课程、校区、负责顾问取 <code>interest_course_name</code>、<code>campus_name</code>、<code>owner_name</code>。状态标签：新建（中性）、已联系（蓝）、已约试听（黄）、已试听（蓝）、已转化（绿）、流失（红）。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">新建线索</div>
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">姓名<span class="required">*</span></label><input class="input" value="刘雨桐"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">手机<span class="required">*</span></label><input class="input invalid" value="139 2222 6688"><div class="field-error">这个手机号已有一条未结束的线索</div></div>
+          <div class="field"><label class="field-label">年级</label><select class="select"><option>（不填）</option><option>一年级</option><option>…</option><option>十二年级</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">来源<span class="required">*</span></label><select class="select"><option>到访</option><option>转介绍</option><option>网络</option><option>活动</option><option>其他</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">意向课程</label><select class="select"><option>（不填）</option><option>三年级数学提高</option><option>四年级数学提高</option><option>少儿英语</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">所属校区<span class="required">*</span></label><select class="select"><option>东湖校区</option><option>光谷校区</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">负责顾问</label><select class="select"><option>（我自己）</option><option>王芳</option><option>孙磊</option></select><div class="field-hint">只有 admin 能看到这一项；不选时是创建人（sales 创建的总是自己负责）</div><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">下次跟进</label><input class="input" type="date"><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">备注</label><textarea class="textarea" placeholder="最多 500 字"></textarea><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">
+      <code>POST /api/leads</code>。手机 5–20 个字符，只能有数字、空格、<code>-</code>、<code>+</code>；意向课程下拉只列启用的课程（<code>GET /api/courses?active=true&amp;page_size=100</code>），校区下拉只列启用的校区（<code>GET /api/campuses?active=true&amp;page_size=100</code>）；负责顾问下拉（只有 admin 看到）合并 <code>GET /api/users/options?role=sales</code> 与 <code>GET /api/users/options?role=admin</code> 的结果（启用的用户，输入时带 <code>q</code> 搜索）。sales 新建时接口忽略 <code>owner_id</code>，负责人总是自己，所以 sales 看不到这一项。
+      同一个手机号已有未结束的线索时接口返回 409，<code>message</code> 显示在手机下面（如上图）。保存成功后关闭弹窗，直接进入这条线索的详情页（<code>lead-detail.html</code>）。编辑线索在详情页，用同一个弹窗。
+    </div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有线索）</h3><div class="card state"><div class="title">还没有线索</div>记录到访、电话咨询或活动报名的家长，之后在这里跟进<br><button class="btn btn-primary">新建线索</button></div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">没有符合条件的线索</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">线索列表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看线索<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

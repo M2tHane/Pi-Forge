@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>登录 - 小组待办（原型）</title>
+<!-- 示例原型：对应 PRD 的 REQ-001。顶部的灰色条只用来切换演示状态，不是页面的一部分。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div class="demo">演示：
+  <button data-demo="ok">登录成功</button>
+  <button data-demo="wrong">密码错误</button>
+  <button data-demo="network">网络出错</button>
+</div>
+<main class="page page-narrow">
+  <h1>小组待办</h1>
+  <form class="card card-body" id="login" novalidate>
+    <div class="alert-error" id="form-error" role="alert" hidden></div>
+    <label class="field-label" for="email">邮箱</label>
+    <input class="input" id="email" name="email" type="email" autocomplete="username" placeholder="alice@example.com">
+    <div class="field-error" id="email-error"></div>
+    <label class="field-label" for="password">密码</label>
+    <input class="input" id="password" name="password" type="password" autocomplete="current-password">
+    <div class="field-error" id="password-error"></div>
+    <button class="btn btn-primary btn-block" type="submit" id="submit">登录</button>
+  </form>
+  <p class="hint">账号由管理员分配；没有账号请联系管理员。</p>
+</main>
+<script>
+  // 演示用：选择「登录成功 / 密码错误 / 网络出错」后点「登录」，看各状态的表现
+  let outcome = 'ok';
+  document.querySelectorAll('[data-demo]').forEach((b) => b.onclick = () => { outcome = b.dataset.demo; });
+  const $ = (id) => document.getElementById(id);
+  $('login').onsubmit = (e) => {
+    e.preventDefault();
+    $('form-error').hidden = true;
+    let empty = false;
+    for (const id of ['email', 'password']) {
+      const blank = !$(id).value.trim();
+      $(id).classList.toggle('invalid', blank);
+      $(id + '-error').textContent = blank ? '必填' : '';
+      empty = empty || blank;
+    }
+    if (empty) return; // 有空字段时不发请求
+    $('submit').disabled = true;
+    $('submit').textContent = '登录中…';
+    setTimeout(() => {
+      $('submit').disabled = false;
+      $('submit').textContent = '登录';
+      if (outcome === 'ok') { location.href = 'tasks.html'; return; }
+      $('form-error').textContent = outcome === 'wrong' ? '邮箱或密码错误' : '网络出错，请稍后重试';
+      $('form-error').hidden = false;
+      if (outcome === 'wrong') $('password').value = '';
+    }, 600);
+  };
+</script>
+</body>
+</html>

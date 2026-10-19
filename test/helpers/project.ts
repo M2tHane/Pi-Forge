@@ -1,0 +1,75 @@
+// 测试项目夹具：临时 git 仓库 + workflow.yaml + 规则 + 已初始化的 .forge/ + 一个 build 流程与集成分支。
+import { mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import path from 'node:path';
+import { StateStore } from '../../src/core/state/state-store.ts';
+import { parseConfig, type FlowConfig } from '../../src/core/state/config.ts';
+import { ensureIntegrationBranch, worktreesRoot } from '../../src/core/workspace/worktree.ts';
+import { taskRel, type TaskInput } from '../../src/core/state/state-store.ts';
+import { tmpRepo } from './repo.ts';
+import { TEST_YAML } from './config.ts';
+
+/** 临时的 Pi 用户目录里放一个占位的 pi-playwright（开流程前的依赖检查要求用户级安装） */
+export function stubPlaywrightSkill(agentDir: string): void {
+  const dir = path.join(agentDir, 'npm', 'node_modules', 'pi-playwright');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'pi-playwright', version: '0.1.2' }));
+}
+
+export const PROJECT_YAML = TEST_YAML
+  .replace(/commands:[\s\S]*?\nlimits:/, `commands:
+  install:   "true"
+  typecheck: "true"
+  lint:      "true"
+  test:      "test -f src/server/t-001/a.ts && ! grep -q FAIL src/server/t-001/a.ts"
+  e2e:       "true"
+  acceptance: "true"
+limits:`)
+  // 旧的流水线测试不跑 stage-qa；M6 的测试显式打开
+  .replace(/^  qa: true$/m, '  qa: false');
+
+/** 第五轮起提交后都直接合并（合并时跑全量测试）：保留这个名字给旧测试 */
+export const DIRECT_YAML = PROJECT_YAML;
+
+export interface Project {
+  dir: string;
+  git: (...a: string[]) => string;
+  store: StateStore;
+  config: FlowConfig;
+  flowId: string;
+  cleanup: () => void;
+}
+
+/**
+ * 测试里把任务直接标为已取消（产品里没有取消任务的入口，只用来占编号或让阶段里没有未结束的任务）。
+ * 经事务写入，事件日志记下新内容的哈希，完整性校验照常通过
+ */
+export async function cancelTask(p: Pick<Project, 'store'>, flowId: string, id: string): Promise<void> {
+  await p.store.transaction((tx) => {
+    tx.putTask(flowId, { ...tx.readTask(flowId, id), status: 'cancelled', lease: null });
+    tx.event({ flow: flowId, task: id, actor: 'test', type: 'note', reason: '测试：直接标为已取消' });
+  });
+}
+
+export async function setupProject(opts: { yaml?: string; tasks?: TaskInput[]; now?: () => Date; files?: Record<string, string>; stages?: string[] } = {}): Promise<Project> {
+  const repo = tmpRepo();
+  const yaml = opts.yaml ?? PROJECT_YAML;
+  writeFileSync(path.join(repo.dir, 'workflow.yaml'), yaml);
+  mkdirSync(path.join(repo.dir, 'rules'));
+  writeFileSync(path.join(repo.dir, 'rules/global.md'), '- 完成定义：verify 全绿');
+  writeFileSync(path.join(repo.dir, 'rules/backend.md'), '- handler 内不写业务逻辑');
+  writeFileSync(path.join(repo.dir, 'README.md'), 'demo');
+  for (const [rel, content] of Object.entries(opts.files ?? {})) {
+    mkdirSync(path.dirname(path.join(repo.dir, rel)), { recursive: true });
+    writeFileSync(path.join(repo.dir, rel), content);
+  }
+  repo.git('add', '.');
+  repo.git('commit', '-q', '-m', 'init');
+  const config = parseConfig(yaml);
+  const store = await StateStore.init(repo.dir, { ...(opts.now ? { now: opts.now } : {}), limits: config.limits });
+  const base = repo.git('rev-parse', 'HEAD');
+  const flow = await store.createFlow({ mode: 'build', title: '演示', stages: opts.stages ?? ['S3'], base_sha: base });
+  ensureIntegrationBranch(repo.dir, flow.integration_branch, base);
+  if (opts.tasks?.length) await store.addTasks(flow.id, opts.tasks, 'architect');
+  const cleanup = () => { rmSync(worktreesRoot(repo.dir), { recursive: true, force: true }); repo.cleanup(); };
+  return { dir: repo.dir, git: repo.git, store, config, flowId: flow.id, cleanup };
+}

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的课酬 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-037 AC5（/api/payrolls/mine）。教师按月查看自己已确认或已发放的课酬。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">1</span></a>
+  <a class="user" href="password.html">刘洋（教师）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">我的</div>
+    <a href="my-schedule.html">我的课表</a>
+    <a href="my-pay.html" class="on">我的课酬</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">这是 teacher 的侧栏：工作台；「我的」组（我的课表、我的课酬）；教务组里教师能看的课表、班级、作业、考试。教师没有工资单列表与课酬标准的权限，只能通过 <code>GET /api/payrolls/mine</code> 看自己的那一行。</div>
+
+    <div class="page-header">
+      <h1>我的课酬</h1>
+    </div>
+
+    <form class="toolbar">
+      <select class="select" aria-label="月份"><option>2026-09</option><option>2026-08</option><option>2026-07</option></select>
+    </form>
+    <div class="proto-note">月份下拉来自 <code>GET /api/payrolls/mine</code>（不带 <code>month</code>，返回自己全部已确认、已发放的行，每项带 <code>month</code>、<code>status</code>，按月份降序），只列有课酬的月份。选中的月份写进网址参数 <code>month</code>（<code>YYYY-MM</code>），切换即刷新，不需要「查询」按钮；网址里没有 <code>month</code> 时默认第一项（最近的月份）。卡片用列表里这一项的数据；网址里的月份不在列表中时请求 <code>GET /api/payrolls/mine?month=…</code>，404 显示下方「这个月还没有课酬」（草稿、还没生成、这个月自己没有课都算）。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>2026-09</h2><span class="tag tag-info">已确认</span></div>
+      <div class="card-body">
+        <div class="stats">
+          <div class="stat"><div class="label">课次数</div><div class="value">24</div><div class="sub">本月点名完成的课</div></div>
+          <div class="stat"><div class="label">课酬</div><div class="value">¥4,800.00</div><div class="sub">各节课酬之和</div></div>
+          <div class="stat"><div class="label">调整</div><div class="value">¥200.00</div><div class="sub">9 月全勤奖</div></div>
+          <div class="stat"><div class="label">合计</div><div class="value">¥5,000.00</div><div class="sub">课酬 + 调整</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="proto-note">状态：已确认（<code>confirmed</code>，等待发放）、已发放（<code>paid</code>，用中性 <code>.tag</code>）。调整为负数时数字用 <code>.negative</code> 带负号；没有调整说明时「调整」下面不显示说明。</div>
+
+    <div class="card">
+      <div class="card-header"><h2>历月课酬</h2></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>月份</th><th class="num">课次数</th><th class="num">课酬</th><th class="num">调整</th><th>调整说明</th><th class="num">合计</th><th>状态</th></tr></thead>
+          <tbody>
+            <tr><td><a href="my-pay.html">2026-09</a></td><td class="num">24</td><td class="num">¥4,800.00</td><td class="num">¥200.00</td><td>9 月全勤奖</td><td class="num">¥5,000.00</td><td><span class="tag tag-info">已确认</span></td></tr>
+            <tr><td><a href="my-pay.html">2026-08</a></td><td class="num">22</td><td class="num">¥4,400.00</td><td class="num">¥0.00</td><td></td><td class="num">¥4,400.00</td><td><span class="tag">已发放</span></td></tr>
+            <tr><td><a href="my-pay.html">2026-07</a></td><td class="num">20</td><td class="num">¥4,000.00</td><td class="num negative">-¥50.00</td><td>7 月 18 日迟到</td><td class="num">¥3,950.00</td><td><span class="tag">已发放</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="proto-note">同一次 <code>GET /api/payrolls/mine</code> 的结果，按月份降序，不分页。点月份等于在上面的下拉里选中它（<code>?month=2026-08</code>）。</div>
+
+    <div class="alert alert-info">每节课按你这门课的课酬标准计算（没有单独标准时按你的默认每节课酬）；一节课实到人数为 0 时按一半计。对金额有疑问请联系财务。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>还没有任何课酬</h3><div class="card state"><div class="title">还没有课酬记录</div>财务确认工资单后，你每个月的课酬会显示在这里</div><div class="proto-note"><code>GET /api/payrolls/mine</code> 返回空数组时，月份下拉、卡片与历月表格都换成这一块。</div></section>
+      <section><h3>这个月还没有课酬（404）</h3><div class="card state"><div class="title">2026-10 还没有课酬</div>财务确认这个月的工资单后会显示在这里</div></section>
+      <section><h3>已发放</h3><div class="card"><div class="card-header"><h2>2026-08</h2><span class="tag">已发放</span></div><div class="card-body"><div class="stats"><div class="stat"><div class="label">课次数</div><div class="value">22</div></div><div class="stat"><div class="label">课酬</div><div class="value">¥4,400.00</div></div><div class="stat"><div class="label">调整</div><div class="value">¥0.00</div></div><div class="stat"><div class="label">合计</div><div class="value">¥4,400.00</div></div></div></div></div></section>
+      <section><h3>账号没有绑定教师档案</h3><div class="card state"><div class="title">你的账号还没有绑定教师档案</div>请联系管理员在教师资料里绑定你的账号<br><a class="btn" href="dashboard.html">返回工作台</a></div><div class="proto-note">当前用户 <code>teacher_id</code> 为 <code>null</code>（<code>GET /api/auth/me</code>）时显示，不请求课酬接口（没有绑定档案时接口返回 404）。</div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">课酬加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>只有教师能查看自己的课酬<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

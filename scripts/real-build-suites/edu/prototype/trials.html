@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>试听日程 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-016。按日期看试听安排，登记试听结果、修改或取消试听。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">王芳（课程顾问）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html" class="on">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+    <div class="proto-note">试听只有 admin 与 sales 能用；sales 只看到自己负责的线索的试听。新的试听在线索详情里安排（<code>lead-detail.html</code> 的「安排试听」），这一页用来看每天的试听安排和登记结果，所以没有「新建」按钮。</div>
+
+    <div class="page-header">
+      <h1>试听日程</h1>
+    </div>
+
+    <form class="toolbar">
+      <button class="btn btn-sm" type="button">前一天</button>
+      <input class="input" type="date" value="2026-10-18">
+      <button class="btn btn-sm" type="button">后一天</button>
+      <button class="btn btn-sm" type="button">今天</button>
+      <select class="select"><option>全部校区</option><option>东湖校区</option><option>光谷校区</option></select>
+      <select class="select"><option>全部状态</option><option>已安排</option><option>已到</option><option>未到</option><option>已取消</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+    <div class="proto-note">
+      <code>GET /api/trials</code>。筛选写进网址参数：<code>date</code>、<code>campus_id</code>、<code>status</code>、<code>page</code>（例如 <code>?date=2026-10-18&amp;status=scheduled</code>）。第一次打开（网址没有任何参数）时 <code>date</code> 取今天（北京时间）；「清除筛选」去掉全部参数并显示所有日期的试听（网址写 <code>?date=</code> 表示不限日期，避免刷新后又回到今天）。「前一天」「后一天」「今天」只改 <code>date</code> 并回到第 1 页。
+      网址带 <code>lead_id</code> 时只看这条线索的试听，筛选条前面显示「线索：刘雨桐 ×」，点 × 去掉这个条件。
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>日期</th><th>开始时间</th><th>线索</th><th>试听课程</th><th>校区</th><th>试听教师</th><th>状态</th><th>反馈</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td>2026-10-18</td><td>09:00</td><td><a href="lead-detail.html">黄嘉怡</a></td><td>少儿英语</td><td>东湖校区</td><td>李明</td><td><span class="tag tag-info">已到</span></td><td>发音不错，家长想报 12 节</td><td class="ops"></td></tr>
+            <tr><td>2026-10-18</td><td>10:00</td><td><a href="lead-detail.html">刘雨桐</a></td><td>三年级数学提高</td><td>东湖校区</td><td>陈静</td><td><span class="tag tag-warning">已安排</span></td><td></td><td class="ops"><button class="btn-link">登记结果</button><button class="btn-link">修改</button><button class="btn-link danger">取消</button></td></tr>
+            <tr><td>2026-10-18</td><td>14:00</td><td><a href="lead-detail.html">周子轩</a></td><td>少儿英语</td><td>光谷校区</td><td>—</td><td><span class="tag tag-danger">未到</span></td><td>家长临时有事</td><td class="ops"></td></tr>
+            <tr class="muted"><td>2026-10-18</td><td>16:30</td><td><a href="lead-detail.html">吴可欣</a></td><td>三年级数学提高</td><td>东湖校区</td><td>陈静</td><td><span class="tag tag-danger">已取消</span></td><td></td><td class="ops"></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 4 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 1 页</span><button class="btn btn-sm" disabled>下一页</button></div>
+    </div>
+    <div class="proto-note">
+      按日期、开始时间、编号升序，每页 20 条。点线索姓名进线索详情。试听教师为空显示「—」。
+      校区、试听教师取 <code>campus_name</code>、<code>teacher_name</code>。状态：已安排（黄）、已到（蓝）、未到（红）、已取消（红，整行灰）。「登记结果」「修改」「取消」只在「已安排」的行显示；其他状态的试听接口不允许再改（409）。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">登记试听结果</div>
+      <div class="dialog-body">
+        <p class="meta">2026-10-18 10:00 · 刘雨桐 · 三年级数学提高 · 陈静</p>
+        <div class="field"><label class="field-label">是否到场<span class="required">*</span></label>
+          <div class="radio-group"><label class="checkbox"><input type="radio" name="attended" checked> 已到</label><label class="checkbox"><input type="radio" name="attended"> 未到</label></div>
+          <div class="field-error"></div></div>
+        <div class="field"><label class="field-label">试听反馈</label><textarea class="textarea" placeholder="孩子表现、家长意见，最多 500 字"></textarea><div class="field-error"></div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/trials/:id/complete</code>，请求体 <code>{"attended", "feedback"}</code>。保存成功后关闭弹窗、刷新列表并提示「已登记」；这一行变为「已到」或「未到」（线索相应变为「已试听」或改回「已联系」）。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">修改试听</div>
+      <div class="dialog-body">
+        <div class="form-grid">
+          <div class="field"><label class="field-label">试听课程<span class="required">*</span></label><select class="select"><option>三年级数学提高</option><option>四年级数学提高</option><option>少儿英语</option></select><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">校区</label><div>东湖校区</div><div class="field-hint">试听的校区不能改</div></div>
+          <div class="field"><label class="field-label">日期<span class="required">*</span></label><input class="input" type="date" value="2026-10-18"><div class="field-error"></div></div>
+          <div class="field"><label class="field-label">开始时间<span class="required">*</span></label><input class="input" type="time" value="10:00"><div class="field-error"></div></div>
+          <div class="field span-2"><label class="field-label">试听教师</label><select class="select"><option>陈静</option><option>（暂不指定）</option><option>李明</option></select><div class="field-error"></div></div>
+        </div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">保存</button></div>
+    </div></div>
+    <div class="proto-note">和线索详情的「安排试听」是同一个弹窗。<code>PATCH /api/trials/:id</code>，只能改课程、教师、日期、开始时间（日期不限），只提交改过的字段；保存成功后关闭弹窗、刷新列表并提示「已保存」。改了日期后这一行可能不在当前筛选的日期里，刷新后就不再显示。</div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">取消试听</div>
+      <div class="dialog-body">确定取消刘雨桐 2026-10-18 10:00 的「三年级数学提高」试听吗？</div>
+      <div class="dialog-footer"><button class="btn">不取消</button><button class="btn btn-danger">取消试听</button></div>
+    </div></div>
+    <div class="proto-note"><code>POST /api/trials/:id/cancel</code>。成功后这一行变为「已取消」，提示「已取消试听」；409（试听已不是已安排）时确认框不关闭，显示接口的 <code>message</code>。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>这一天没有试听</h3><div class="card state"><div class="title">2026-10-19 没有试听安排</div>在线索详情里可以安排试听<br><a class="btn" href="leads.html">去线索列表</a></div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">没有符合条件的试听</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">试听加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看试听<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>补课 · 小树培训学校教务系统（原型）</title>
+<!-- 对应 PRD 的 REQ-028。补课列表：安排补课（请假的课补到同课程其他班级的课）、删除。 -->
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="app-header">
+  <span class="brand">小树培训学校</span>
+  <span class="grow"></span>
+  <a href="notifications.html">通知 <span class="badge">3</span></a>
+  <a class="user" href="password.html">李娜（教务）</a>
+  <a href="login.html">退出</a>
+</header>
+<div class="app-shell">
+  <nav class="sidebar">
+    <a href="dashboard.html">工作台</a>
+    <div class="nav-group">教务</div>
+    <a href="schedule.html">课表</a>
+    <a href="classes.html">班级</a>
+    <a href="leaves.html">请假</a>
+    <a href="makeups.html" class="on">补课</a>
+    <a href="homeworks.html">作业</a>
+    <a href="exams.html">考试</a>
+    <div class="nav-group">招生</div>
+    <a href="leads.html">线索</a>
+    <a href="trials.html">试听</a>
+    <a href="students.html">学员</a>
+    <a href="orders.html">订单</a>
+    <a href="discounts.html">优惠</a>
+    <div class="nav-group">财务</div>
+    <a href="payments.html">收款流水</a>
+    <a href="refunds.html">退费</a>
+    <a href="course-transfers.html">转课</a>
+    <a href="revenue.html">收入确认</a>
+    <a href="pay-rates.html">课酬标准</a>
+    <a href="payrolls.html">工资单</a>
+    <div class="nav-group">报表</div>
+    <a href="report-enrollment.html">招生报表</a>
+    <a href="report-consumption.html">消课与出勤</a>
+    <a href="report-low-balance.html">余额预警</a>
+    <div class="nav-group">基础资料</div>
+    <a href="campuses.html">校区</a>
+    <a href="rooms.html">教室</a>
+    <a href="subjects.html">科目</a>
+    <a href="courses.html">课程</a>
+    <a href="calendar.html">学期与节假日</a>
+    <a href="teachers.html">教师</a>
+    <div class="nav-group">系统</div>
+    <a href="users.html">用户</a>
+    <a href="announcements.html">公告</a>
+    <a href="audit-logs.html">操作日志</a>
+  </nav>
+  <main class="content"><div class="content-inner">
+<div class="proto-note">侧栏这里画的是 admin 能看到的全部入口；实际按角色只显示有权限的（PRD 的权限表）。</div>
+    <div class="page-header">
+      <h1>补课</h1>
+      <span class="grow"></span>
+      <button class="btn btn-primary">安排补课</button>
+    </div>
+    <div class="proto-note">补课只给 admin、academic（其他角色没有这个入口，打开显示无权限）。</div>
+
+    <form class="toolbar">
+      <input class="input search" placeholder="学员姓名或学号">
+      <select class="select"><option>全部状态</option><option>已安排</option><option>已完成</option></select>
+      <button class="btn" type="submit">查询</button>
+      <button class="btn-link" type="reset">清除筛选</button>
+    </form>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>学员</th><th>请假的课</th><th>补到的班级</th><th>补课时间</th><th>状态</th><th>安排时间</th><th class="ops">操作</th></tr></thead>
+          <tbody>
+            <tr><td><a href="student-detail.html">周子墨</a></td><td>2026-10-11 三年级数学周日班</td><td>三年级数学提高班</td><td><a href="lesson-detail.html">2026-10-17 09:00</a></td><td><span class="tag tag-warning">已安排</span></td><td>2026-10-12 15:40</td><td class="ops"><a class="btn-link" href="lesson-detail.html">查看补课的课</a><button class="btn-link danger">删除</button></td></tr>
+            <tr><td><a href="student-detail.html">孙可欣</a></td><td>2026-09-26 三年级数学提高班</td><td>三年级数学周日班</td><td><a href="lesson-detail.html">2026-09-27 14:00</a></td><td><span class="tag tag-success">已完成</span></td><td>2026-09-25 11:05</td><td class="ops"><a class="btn-link" href="lesson-detail.html">查看补课的课</a></td></tr>
+            <tr><td><a href="student-detail.html">王雨桐</a></td><td>2026-09-21 二年级英语启蒙班</td><td>二年级英语周六班</td><td><a href="lesson-detail.html">2026-09-26 10:00</a></td><td><span class="tag tag-success">已完成</span></td><td>2026-09-22 10:30</td><td class="ops"><a class="btn-link" href="lesson-detail.html">查看补课的课</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span class="total">共 3 条</span><button class="btn btn-sm" disabled>上一页</button><span>第 1 / 1 页</span><button class="btn btn-sm" disabled>下一页</button></div>
+    </div>
+    <div class="proto-note">
+      数据来自 <code>GET /api/makeups</code>，按 <code>id</code> 降序，分页。页码与筛选写进网址参数：<code>?page=1&amp;student_id=131&amp;status=scheduled</code>（学员用输入框搜 <code>GET /api/students?q=…</code>，选中后带 <code>student_id</code>）。状态：已安排（<code>scheduled</code>，<code>tag-warning</code>）、已完成（<code>done</code>，补到的课点名后自动变为已完成，<code>tag-success</code>）。
+      「请假的课」写 <code>from_lesson_date</code> 加 <code>from_class_name</code>，「补到的班级」写 <code>to_class_name</code>，「补课时间」写 <code>to_lesson_date</code> 加 <code>to_lesson_start_time</code>，点日期或「查看补课的课」进补到的那节课的课次详情 <code>lesson-detail.html</code>（学员会出现在那节课的名单里，来源是「补课」）。
+      「删除」只在已安排、补到的课还没点名也还没开始时显示（用 <code>to_lesson_date</code> 加 <code>to_lesson_start_time</code> 判断还没开始；是否已点名看状态是否已安排，接口仍会校验）。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog wide">
+      <div class="dialog-header">安排补课</div>
+      <div class="dialog-body">
+        <div class="alert alert-error">三年级数学周日班 2026-10-18 的课次应到人数已满（20 / 20）</div>
+        <div class="field"><label class="field-label">学员<span class="required">*</span></label><input class="input" placeholder="输入姓名、学号或手机号搜索" value="孙可欣 S000119"><div class="field-error"></div></div>
+        <div class="field"><label class="field-label">请假的课<span class="required">*</span></label><select class="select"><option>（请选择）</option><option selected>2026-09-30 周三 18:30 三年级数学提高班（三年级数学提高）</option><option>2026-09-26 周六 09:00 三年级数学提高班（已补课）</option></select><div class="field-hint">只列出这个学员点名为「请假」的课</div><div class="field-error"></div></div>
+        <div class="field"><label class="field-label">补到哪节课<span class="required">*</span></label><select class="select"><option>（请选择）</option><option selected>2026-10-18 周日 14:00–15:30 三年级数学周日班 第 6 次 · 光谷校区 B202 · 张伟</option><option>2026-10-25 周日 14:00–15:30 三年级数学周日班 第 7 次 · 光谷校区 B202 · 张伟</option></select><div class="field-hint">同一门课程、其他班级、还没开始的课（接下来 31 天内）</div><div class="field-error"></div></div>
+      </div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-primary">安排</button></div>
+    </div></div>
+    <div class="proto-note">
+      学员搜索 <code>GET /api/students?q=…&amp;status=active</code>。「请假的课」来自 <code>GET /api/students/:id/attendance</code> 里状态是请假的记录（写日期、时间、班级与课程），已经有已安排或已完成补课的（对照 <code>GET /api/makeups?student_id=…</code> 的 <code>from_lesson_id</code>）写「（已补课）」并禁用。「补到哪节课」用 <code>GET /api/lessons?course_id=请假的课的课程&amp;from=今天&amp;to=今天+30 天&amp;status=scheduled</code>，再去掉请假的课所在的班级和已经开始的课次。
+      提交 <code>POST /api/makeups</code>，请求体 <code>{"student_id", "from_lesson_id", "to_lesson_id"}</code>；成功后关闭弹窗、刷新列表并提示「已安排补课」。409（请假的课点名不是请假、补到的课已满、学员在那个时间有别的课、这节请假已经补过、课次已开始）或 400（不是同一门课程、是同一个班级）时弹窗不关，在框内 <code>alert-error</code> 显示接口的 <code>message</code>。
+    </div>
+
+    <div class="proto-dialog"><div class="dialog">
+      <div class="dialog-header">删除补课</div>
+      <div class="dialog-body">确定删除周子墨 2026-10-17 三年级数学提高班的补课吗？删除后他不再是那节课的应到学员。</div>
+      <div class="dialog-footer"><button class="btn">取消</button><button class="btn btn-danger">删除</button></div>
+    </div></div>
+    <div class="proto-note"><code>DELETE /api/makeups/:id</code>，成功（204）后刷新列表并提示「已删除」；409（补到的课已点名或已开始）时在框内显示接口的 <code>message</code>。</div>
+
+    <div class="proto-states">
+      <h2>其他状态（只用来演示，不是页面的一部分）</h2>
+      <section><h3>加载中</h3><div class="card"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div></section>
+      <section><h3>空（还没有补课）</h3><div class="card state"><div class="title">还没有补课记录</div>学员点名为「请假」的课，可以补到同一门课程其他班级的课上<br><button class="btn btn-primary">安排补课</button></div></section>
+      <section><h3>筛选后没有结果</h3><div class="card state"><div class="title">没有符合条件的补课</div><button class="btn">清除筛选</button></div></section>
+      <section><h3>安排补课：这个学员没有可补的请假</h3><div class="alert alert-info">孙可欣没有点名为「请假」且还没补过的课。</div><div class="proto-note">选了学员后「请假的课」没有可选项时，在弹窗里显示这条提示，「安排」禁用。「补到哪节课」没有可选项时提示「接下来 31 天内没有同一门课程其他班级的课」。</div></section>
+      <section><h3>出错</h3><div class="card state"><div class="title">补课列表加载失败</div>服务暂时不可用，请稍后重试<br><button class="btn">重试</button></div></section>
+      <section><h3>无权限（403）</h3><div class="card state"><div class="title">没有权限查看</div>你的角色不能查看补课<br><a class="btn" href="dashboard.html">返回工作台</a></div></section>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>
